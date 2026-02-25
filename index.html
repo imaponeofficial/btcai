@@ -2314,23 +2314,24 @@ async function initAuth(){
   if(!saved) return;
   try{
     const s=JSON.parse(saved);
-    // Refresh token
     const d=await supaAuth('/token?grant_type=refresh_token',{refresh_token:s.refresh_token});
     _session={access_token:d.access_token,refresh_token:d.refresh_token,user:d.user};
     localStorage.setItem('btcai_session',JSON.stringify(_session));
-    onLogin();
+    await onLogin(); // await garante que tudo carrega antes de restaurar IA
   }catch(e){localStorage.removeItem('btcai_session');}
 }
 
-function onLogin(){
+async function onLogin(){
   document.getElementById('login-btn').style.display='none';
   document.getElementById('user-avatar').classList.add('visible');
   document.getElementById('user-email-show').textContent=_session.user.email;
   document.getElementById('auth-modal').classList.remove('open');
   document.getElementById('user-modal').style.display='none';
   document.getElementById('ai-login-hint').style.display='none';
-  loadApiKeyFromDB();
-  loadTradeHistory();
+  // Ordem importa: histórico primeiro para saber se tem posição aberta
+  // antes de tentar restaurar estado da IA
+  await loadTradeHistory();
+  await loadApiKeyFromDB(); // restaura IA só depois de saber _openTrade
 }
 
 function openAuth(){document.getElementById('auth-modal').classList.add('open');}
@@ -2366,7 +2367,7 @@ async function doAuth(){
     const d=await supaAuth(path,{email,password:pass});
     _session={access_token:d.access_token,refresh_token:d.refresh_token,user:d.user};
     localStorage.setItem('btcai_session',JSON.stringify(_session));
-    onLogin();
+    await onLogin();
   }catch(e){err.textContent=e.message;err.style.display='block';}
   btn.disabled=false;btn.textContent=_authMode==='login'?'ENTRAR':'CRIAR CONTA';
 }
@@ -2430,23 +2431,28 @@ async function loadApiKeyFromDB(){
     drawChart();
 
     // ── Restaurar estado da IA ──────────────────────────
-    if(row.ai_active && _groqKey && !_openTrade){
-      // Restaurar TF que estava ativo
-      if(row.ai_tf && row.ai_tf !== currentTF){
-        currentTF = row.ai_tf;
-        // Atualizar botão TF ativo visualmente
-        document.querySelectorAll('.tf-btn').forEach(b=>{
-          b.classList.toggle('active', b.dataset.tf===currentTF);
-        });
-        await loadCandles(currentTF);
-        connectWS(currentTF);
+    if(row.ai_active && _groqKey){
+      if(_openTrade){
+        // Tem posição aberta — mantém IA desligada, só mostra banner
+        console.log('[AI] Posição aberta detectada — IA não restaurada automaticamente');
+        updateOpenBanner();
+      } else {
+        // Restaurar TF se diferente
+        if(row.ai_tf && row.ai_tf !== currentTF){
+          currentTF = row.ai_tf;
+          document.querySelectorAll('.tf-btn').forEach(b=>{
+            b.classList.toggle('active', b.dataset.tf===currentTF);
+          });
+          await loadCandles(currentTF);
+          connectWS(currentTF);
+        }
+        // Ligar IA
+        console.log('[AI] Restaurando estado — ligando IA no TF:', currentTF);
+        aiActive=true;
+        setAIButtonState(true);
+        switchTab('ai',document.querySelectorAll('.tab-btn2')[1]);
+        setTimeout(()=>{ runAI(); aiTimer=setInterval(runAI,90000); }, 1500);
       }
-      // Ligar IA
-      aiActive=true;
-      setAIButtonState(true);
-      switchTab('ai',document.querySelectorAll('.tab-btn2')[1]);
-      // Pequeno delay para o gráfico carregar antes de rodar
-      setTimeout(()=>{ runAI(); aiTimer=setInterval(runAI,90000); }, 1500);
     }
 
   }catch(e){console.warn('loadApiKey',e);}
