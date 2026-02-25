@@ -367,6 +367,7 @@ input[type=color]{display:none}
   </div>
   <button id="login-btn" onclick="openAuth()">🔑 LOGIN</button>
   <div id="user-avatar" onclick="openUserModal()" title="Minha conta">👤</div>
+  <button class="icon-btn" onclick="toggleFullscreen()" id="fs-btn" title="Tela cheia">⛶</button>
   <button class="icon-btn" onclick="openSettings()" title="Configurações">⚙️</button>
 </div>
 
@@ -615,7 +616,7 @@ function buildIndSettings(){
           <input type="color" id="cp-ind-${i}" value="${ind.color}" oninput="INDS_CONFIG[${INDS_CONFIG.indexOf(ind)}].color=this.value;document.getElementById('sw-ind-${i}').style.background=this.value;drawChart()">
         </div>
         <label class="toggle">
-          <input type="checkbox" ${ind.enabled?'checked':''} onchange="INDS_CONFIG[${INDS_CONFIG.indexOf(ind)}].enabled=this.checked;drawChart()">
+          <input type="checkbox" ${ind.enabled?'checked':''} onchange="INDS_CONFIG[${INDS_CONFIG.indexOf(ind)}].enabled=this.checked;drawChart();clearTimeout(_saveSettingsTimer);_saveSettingsTimer=setTimeout(saveSettingsToDB,800)">
           <span class="toggle-slider"></span>
         </label>
       </div>
@@ -632,6 +633,7 @@ function openSettings(){ buildIndSettings(); document.getElementById('settings-m
 function closeSettings(){ document.getElementById('settings-modal').classList.remove('open'); }
 document.getElementById('settings-modal')?.addEventListener('click',e=>{ if(e.target===document.getElementById('settings-modal'))closeSettings(); });
 
+let _saveSettingsTimer=null;
 function applySettings(){
   candleColors.bullBody   = document.getElementById('c-bull-body').value;
   candleColors.bullBorder = document.getElementById('c-bull-border').value;
@@ -640,6 +642,9 @@ function applySettings(){
   candleColors.bearBorder = document.getElementById('c-bear-border').value;
   candleColors.bearWick   = document.getElementById('c-bear-wick').value;
   drawChart();
+  // Salvar com debounce (espera 800ms após última mudança)
+  clearTimeout(_saveSettingsTimer);
+  _saveSettingsTimer = setTimeout(saveSettingsToDB, 800);
 }
 
 // ══════════════════════════════════════════════════════
@@ -1374,9 +1379,11 @@ canvas.addEventListener('mousedown', e => {
   drag.active=true; drag.type=zone;
   drag.startX=e.clientX; drag.startY=e.clientY;
   drag.startView=viewStart; drag.startCount=viewCount;
-  // Sempre snapshot do range atual para pan/zoom funcionar
+  // Snapshot do range atual — e desativa auto-scale ao iniciar qualquer drag
   if(priceAutoScale) calcPriceRange();
   drag.startMin=priceMin; drag.startMax=priceMax;
+  // Arrastar o gráfico NÃO reativa auto-scale
+  if(zone==='chart') priceAutoScale=false;
   if(zone==='chart') wrap.classList.replace('cursor-cross','cursor-grab');
 });
 
@@ -1506,7 +1513,8 @@ wrap.addEventListener('touchstart', e=>{
     tState.startY   = t0.clientY;
     tState.startView  = viewStart;
     tState.startCount = viewCount;
-    calcPriceRange();
+    if(priceAutoScale) calcPriceRange();
+    priceAutoScale = false; // usuário assume controle — sem auto-scale
     tState.startMin = priceMin;
     tState.startMax = priceMax;
   } else if(e.touches.length === 2){
@@ -2221,6 +2229,33 @@ function syncSwatch(inputEl,swatchId){
 }
 
 
+
+// ══════════════════════════════════════════════════════
+// FULLSCREEN
+// ══════════════════════════════════════════════════════
+function toggleFullscreen(){
+  const btn=document.getElementById('fs-btn');
+  if(!document.fullscreenElement){
+    document.documentElement.requestFullscreen().then(()=>{
+      btn.textContent='⛶'; btn.title='Sair da tela cheia';
+      btn.style.color='var(--accent)'; btn.style.borderColor='var(--accent)';
+    }).catch(()=>{});
+  } else {
+    document.exitFullscreen().then(()=>{
+      btn.textContent='⛶'; btn.title='Tela cheia';
+      btn.style.color=''; btn.style.borderColor='';
+    }).catch(()=>{});
+  }
+}
+document.addEventListener('fullscreenchange',()=>{
+  const btn=document.getElementById('fs-btn');
+  if(!btn) return;
+  if(!document.fullscreenElement){
+    btn.textContent='⛶'; btn.style.color=''; btn.style.borderColor='';
+  } else {
+    btn.textContent='✕'; btn.style.color='var(--accent)'; btn.style.borderColor='var(--accent)';
+  }
+});
 // ══════════════════════════════════════════════════════
 // SUPABASE CONFIG
 // ══════════════════════════════════════════════════════
@@ -2332,13 +2367,53 @@ let _groqKey='';
 async function loadApiKeyFromDB(){
   if(!_session) return;
   try{
-    const rows=await supa('/rest/v1/user_settings?user_id=eq.'+_session.user.id+'&select=groq_api_key',
+    const rows=await supa(
+      '/rest/v1/user_settings?user_id=eq.'+_session.user.id+'&select=groq_api_key,candle_colors,inds_config',
       'GET',null,_session.access_token);
-    if(rows&&rows.length&&rows[0].groq_api_key){
-      _groqKey=rows[0].groq_api_key;
+    if(!rows||!rows.length) return;
+    const row=rows[0];
+    // API Key
+    if(row.groq_api_key){
+      _groqKey=row.groq_api_key;
       document.getElementById('apikey-field').value='••••••••••••••••';
     }
+    // Cores dos candles
+    if(row.candle_colors){
+      const cc=JSON.parse(row.candle_colors);
+      Object.assign(candleColors,cc);
+      // Atualizar os inputs de cor
+      Object.entries({
+        'c-bull-body':cc.bullBody,'c-bull-border':cc.bullBorder,'c-bull-wick':cc.bullWick,
+        'c-bear-body':cc.bearBody,'c-bear-border':cc.bearBorder,'c-bear-wick':cc.bearWick,
+      }).forEach(([id,val])=>{
+        if(!val) return;
+        const inp=document.getElementById(id); if(inp) inp.value=val;
+        // Update swatch
+        const sw=document.getElementById('sw-'+id.replace('c-','')); if(sw) sw.style.background=val;
+      });
+    }
+    // Config de indicadores
+    if(row.inds_config){
+      const saved=JSON.parse(row.inds_config);
+      saved.forEach(s=>{
+        const ind=INDS_CONFIG.find(i=>i.id===s.id);
+        if(ind){ ind.enabled=s.enabled; ind.color=s.color; if(s.period) ind.period=s.period; }
+      });
+    }
+    drawChart();
   }catch(e){console.warn('loadApiKey',e);}
+}
+
+async function saveSettingsToDB(){
+  if(!_session) return;
+  try{
+    const payload={
+      user_id:_session.user.id,
+      candle_colors: JSON.stringify(candleColors),
+      inds_config: JSON.stringify(INDS_CONFIG.map(i=>({id:i.id,enabled:i.enabled,color:i.color,period:i.period}))),
+    };
+    await supa('/rest/v1/user_settings','POST',payload,_session.access_token);
+  }catch(e){console.warn('saveSettings',e);}
 }
 async function saveApiKey(){
   if(!_session){alert('Faça login primeiro');return;}
@@ -2347,12 +2422,15 @@ async function saveApiKey(){
   const st=document.getElementById('apikey-status');
   st.textContent='Salvando...';st.style.display='block';st.style.color='var(--text2)';
   try{
-    // Upsert
-    await supa('/rest/v1/user_settings','POST',
-      {user_id:_session.user.id,groq_api_key:val},_session.access_token);
+    await supa('/rest/v1/user_settings','POST',{
+      user_id:_session.user.id,
+      groq_api_key:val,
+      candle_colors:JSON.stringify(candleColors),
+      inds_config:JSON.stringify(INDS_CONFIG.map(i=>({id:i.id,enabled:i.enabled,color:i.color,period:i.period}))),
+    },_session.access_token);
     _groqKey=val;
     document.getElementById('apikey-field').value='••••••••••••••••';
-    st.textContent='✅ API Key salva com sucesso!';st.style.color='var(--green)';
+    st.textContent='✅ Salvo com sucesso!';st.style.color='var(--green)';
     setTimeout(()=>{st.style.display='none';},2500);
   }catch(e){st.textContent='❌ '+e.message;st.style.color='var(--red)';}
 }
