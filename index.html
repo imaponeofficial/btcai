@@ -1867,7 +1867,13 @@ function switchTab(id,btn){
 document.querySelectorAll('.tf-btn').forEach(b=>b.addEventListener('click',async()=>{
   document.querySelectorAll('.tf-btn').forEach(x=>x.classList.remove('active'));
   b.classList.add('active'); currentTF=b.dataset.tf;
-  await loadCandles(currentTF); connectWS(currentTF);
+  await loadCandles(currentTF);
+  connectWS(currentTF);
+  if(aiActive){
+    clearInterval(aiTimer);
+    saveAIState(true);
+    runAI(); aiTimer=setInterval(runAI,90000);
+  }
 }));
 
 // ══════════════════════════════════════════════════════
@@ -1891,15 +1897,34 @@ function toggleAI(){
     return;
   }
   aiActive=!aiActive;
-  const btn=document.getElementById('ai-btn');
+  setAIButtonState(aiActive);
+  saveAIState(aiActive); // persiste no banco
   if(aiActive){
-    btn.classList.add('on'); document.getElementById('ai-btn-txt').textContent='PARAR';
     switchTab('ai',document.querySelectorAll('.tab-btn2')[1]);
     runAI(); aiTimer=setInterval(runAI,90000);
   }else{
-    btn.classList.remove('on'); document.getElementById('ai-btn-txt').textContent='LIGAR IA';
     clearInterval(aiTimer);
   }
+}
+
+// Atualiza visual do botão
+function setAIButtonState(on){
+  const btn=document.getElementById('ai-btn');
+  const txt=document.getElementById('ai-btn-txt');
+  if(on){ btn.classList.add('on'); txt.textContent='PARAR'; }
+  else  { btn.classList.remove('on'); txt.textContent='LIGAR IA'; }
+}
+
+// Salva estado da IA no banco (debounced)
+async function saveAIState(active){
+  if(!_session) return;
+  try{
+    await supa('/rest/v1/user_settings','POST',{
+      user_id:_session.user.id,
+      ai_active: active,
+      ai_tf:     currentTF,
+    },_session.access_token);
+  }catch(e){ console.warn('saveAIState',e); }
 }
 
 // ══════════════════════════════════════════════════════
@@ -2058,8 +2083,8 @@ JSON de resposta (mantenha os números como float, sem aspas):
       // Desligar IA automaticamente (aguarda próxima sessão)
       clearInterval(aiTimer);
       aiActive=false;
-      document.getElementById('ai-btn').classList.remove('on');
-      document.getElementById('ai-btn-txt').textContent='LIGAR IA';
+      setAIButtonState(false);
+      saveAIState(false);
     }
 
   }catch(e){
@@ -2357,7 +2382,7 @@ async function doLogout(){
   document.getElementById('user-modal').style.display='none';
   document.getElementById('api-key-value','');
   // Clear AI
-  if(aiActive) toggleAI();
+  if(aiActive){ clearInterval(aiTimer); aiActive=false; setAIButtonState(false); }
   document.getElementById('ai-out').innerHTML='<div class="placeholder">🤖<br>Faça <strong style="color:var(--accent)">LOGIN</strong> para usar a IA Trader</div>';
   document.getElementById('hist-tbody').innerHTML='<tr><td colspan="7" style="text-align:center;color:var(--text2);padding:12px">Faça login para ver o histórico</td></tr>';
 }
@@ -2368,30 +2393,31 @@ async function loadApiKeyFromDB(){
   if(!_session) return;
   try{
     const rows=await supa(
-      '/rest/v1/user_settings?user_id=eq.'+_session.user.id+'&select=groq_api_key,candle_colors,inds_config',
+      '/rest/v1/user_settings?user_id=eq.'+_session.user.id+'&select=groq_api_key,candle_colors,inds_config,ai_active,ai_tf',
       'GET',null,_session.access_token);
     if(!rows||!rows.length) return;
     const row=rows[0];
+
     // API Key
     if(row.groq_api_key){
       _groqKey=row.groq_api_key;
       document.getElementById('apikey-field').value='••••••••••••••••';
     }
+
     // Cores dos candles
     if(row.candle_colors){
       const cc=JSON.parse(row.candle_colors);
       Object.assign(candleColors,cc);
-      // Atualizar os inputs de cor
       Object.entries({
         'c-bull-body':cc.bullBody,'c-bull-border':cc.bullBorder,'c-bull-wick':cc.bullWick,
         'c-bear-body':cc.bearBody,'c-bear-border':cc.bearBorder,'c-bear-wick':cc.bearWick,
       }).forEach(([id,val])=>{
         if(!val) return;
         const inp=document.getElementById(id); if(inp) inp.value=val;
-        // Update swatch
         const sw=document.getElementById('sw-'+id.replace('c-','')); if(sw) sw.style.background=val;
       });
     }
+
     // Config de indicadores
     if(row.inds_config){
       const saved=JSON.parse(row.inds_config);
@@ -2400,7 +2426,29 @@ async function loadApiKeyFromDB(){
         if(ind){ ind.enabled=s.enabled; ind.color=s.color; if(s.period) ind.period=s.period; }
       });
     }
+
     drawChart();
+
+    // ── Restaurar estado da IA ──────────────────────────
+    if(row.ai_active && _groqKey && !_openTrade){
+      // Restaurar TF que estava ativo
+      if(row.ai_tf && row.ai_tf !== currentTF){
+        currentTF = row.ai_tf;
+        // Atualizar botão TF ativo visualmente
+        document.querySelectorAll('.tf-btn').forEach(b=>{
+          b.classList.toggle('active', b.dataset.tf===currentTF);
+        });
+        await loadCandles(currentTF);
+        connectWS(currentTF);
+      }
+      // Ligar IA
+      aiActive=true;
+      setAIButtonState(true);
+      switchTab('ai',document.querySelectorAll('.tab-btn2')[1]);
+      // Pequeno delay para o gráfico carregar antes de rodar
+      setTimeout(()=>{ runAI(); aiTimer=setInterval(runAI,90000); }, 1500);
+    }
+
   }catch(e){console.warn('loadApiKey',e);}
 }
 
@@ -2411,6 +2459,8 @@ async function saveSettingsToDB(){
       user_id:_session.user.id,
       candle_colors: JSON.stringify(candleColors),
       inds_config: JSON.stringify(INDS_CONFIG.map(i=>({id:i.id,enabled:i.enabled,color:i.color,period:i.period}))),
+      ai_active: aiActive,
+      ai_tf: currentTF,
     };
     await supa('/rest/v1/user_settings','POST',payload,_session.access_token);
   }catch(e){console.warn('saveSettings',e);}
@@ -2427,6 +2477,8 @@ async function saveApiKey(){
       groq_api_key:val,
       candle_colors:JSON.stringify(candleColors),
       inds_config:JSON.stringify(INDS_CONFIG.map(i=>({id:i.id,enabled:i.enabled,color:i.color,period:i.period}))),
+      ai_active:aiActive,
+      ai_tf:currentTF,
     },_session.access_token);
     _groqKey=val;
     document.getElementById('apikey-field').value='••••••••••••••••';
@@ -2558,10 +2610,14 @@ window.addEventListener('load',async()=>{
       btn.classList.add('active');
       const tf=btn.dataset.tf;
       currentTF=tf;
-      if(aiActive){clearInterval(aiTimer);aiActive=false;
-        document.getElementById('ai-btn').classList.remove('on');
-        document.getElementById('ai-btn-txt').textContent='LIGAR IA';}
-      loadCandles(tf).then(()=>connectWS(tf));
+      if(aiActive){
+        // IA continua ligada — reinicia ciclo no novo TF
+        clearInterval(aiTimer);
+        saveAIState(true); // atualiza TF salvo
+        loadCandles(tf).then(()=>{ connectWS(tf); runAI(); aiTimer=setInterval(runAI,90000); });
+      } else {
+        loadCandles(tf).then(()=>connectWS(tf));
+      }
     });
   });
 });
