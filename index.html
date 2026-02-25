@@ -1919,12 +1919,9 @@ function setAIButtonState(on){
 async function saveAIState(active){
   if(!_session) return;
   try{
-    await supa('/rest/v1/user_settings','POST',{
-      user_id:_session.user.id,
-      ai_active: active,
-      ai_tf:     currentTF,
-    },_session.access_token);
-  }catch(e){ console.warn('saveAIState',e); }
+    await supaUpsertSettings({ai_active:active, ai_tf:currentTF});
+    console.log('[DB] AI state salvo:', active, currentTF);
+  }catch(e){ console.warn('[DB] saveAIState erro:',e.message); }
 }
 
 // ══════════════════════════════════════════════════════
@@ -2293,8 +2290,41 @@ async function supa(path, method='GET', body=null, token=null){
   const opts={method,headers:h};
   if(body) opts.body=JSON.stringify(body);
   const r=await fetch(SUPA_URL+path,opts);
-  if(!r.ok){const e=await r.json().catch(()=>({message:r.statusText}));throw new Error(e.error_description||e.message||'Erro Supabase');}
+  if(!r.ok){
+    const e=await r.json().catch(()=>({message:r.statusText}));
+    throw new Error(e.error_description||e.message||'Erro Supabase '+r.status);
+  }
   return r.status===204?null:r.json();
+}
+
+// Upsert real: PATCH se existe, POST se não existe
+async function supaUpsertSettings(data){
+  if(!_session) return;
+  const uid=_session.user.id;
+  const tok=_session.access_token;
+  const h={
+    'Content-Type':'application/json',
+    'apikey':SUPA_KEY,
+    'Authorization':'Bearer '+tok,
+    'Prefer':'return=minimal'
+  };
+  // Tenta PATCH primeiro (atualiza se existe)
+  const patch=await fetch(
+    SUPA_URL+'/rest/v1/user_settings?user_id=eq.'+uid,
+    {method:'PATCH',headers:h,body:JSON.stringify(data)}
+  );
+  if(patch.status===200||patch.status===204){
+    console.log('[DB] Settings atualizados (PATCH ok)');
+    return;
+  }
+  // Se não existia (0 rows afetadas), faz POST
+  const post=await fetch(
+    SUPA_URL+'/rest/v1/user_settings',
+    {method:'POST',headers:{...h,'Prefer':'return=minimal'},body:JSON.stringify({user_id:uid,...data})}
+  );
+  if(post.ok){ console.log('[DB] Settings criados (POST ok)'); return; }
+  const e=await post.json().catch(()=>({}));
+  throw new Error(e.message||'Erro ao salvar settings');
 }
 async function supaAuth(path,body){
   const r=await fetch(SUPA_URL+'/auth/v1'+path,{method:'POST',
@@ -2396,8 +2426,15 @@ async function loadApiKeyFromDB(){
     const rows=await supa(
       '/rest/v1/user_settings?user_id=eq.'+_session.user.id+'&select=groq_api_key,candle_colors,inds_config,ai_active,ai_tf',
       'GET',null,_session.access_token);
-    if(!rows||!rows.length) return;
+    if(!rows||!rows.length){ console.log('[DB] Nenhum registro em user_settings'); return; }
     const row=rows[0];
+    console.log('[DB] Settings carregados:', {
+      hasKey: !!row.groq_api_key,
+      hasColors: !!row.candle_colors,
+      hasInds: !!row.inds_config,
+      ai_active: row.ai_active,
+      ai_tf: row.ai_tf
+    });
 
     // API Key
     if(row.groq_api_key){
@@ -2468,8 +2505,8 @@ async function saveSettingsToDB(){
       ai_active: aiActive,
       ai_tf: currentTF,
     };
-    await supa('/rest/v1/user_settings','POST',payload,_session.access_token);
-  }catch(e){console.warn('saveSettings',e);}
+    await supaUpsertSettings(payload);
+  }catch(e){console.warn('[DB] saveSettings erro:',e.message);}
 }
 async function saveApiKey(){
   if(!_session){alert('Faça login primeiro');return;}
@@ -2478,14 +2515,13 @@ async function saveApiKey(){
   const st=document.getElementById('apikey-status');
   st.textContent='Salvando...';st.style.display='block';st.style.color='var(--text2)';
   try{
-    await supa('/rest/v1/user_settings','POST',{
-      user_id:_session.user.id,
+    await supaUpsertSettings({
       groq_api_key:val,
       candle_colors:JSON.stringify(candleColors),
       inds_config:JSON.stringify(INDS_CONFIG.map(i=>({id:i.id,enabled:i.enabled,color:i.color,period:i.period}))),
       ai_active:aiActive,
       ai_tf:currentTF,
-    },_session.access_token);
+    });
     _groqKey=val;
     document.getElementById('apikey-field').value='••••••••••••••••';
     st.textContent='✅ Salvo com sucesso!';st.style.color='var(--green)';
