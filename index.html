@@ -476,9 +476,9 @@ input[type=color]{display:none}
     <div id="hist-table-wrap" style="overflow-x:auto">
       <table class="hist-table">
         <thead><tr>
-          <th>DATA</th><th>DIR</th><th>ENTRADA</th><th>ALVO</th><th>STOP</th><th>RESULTADO</th><th>AÇÃO</th>
+          <th>DATA</th><th>DIR</th><th>ENTRADA</th><th>ALVO</th><th>STOP</th><th>R:R</th><th>RESULTADO</th><th>AÇÃO</th>
         </tr></thead>
-        <tbody id="hist-tbody"><tr><td colspan="7" style="text-align:center;color:var(--text2);padding:12px">Faça login para ver o histórico</td></tr></tbody>
+        <tbody id="hist-tbody"><tr><td colspan="8" style="text-align:center;color:var(--text2);padding:12px">Faça login para ver o histórico</td></tr></tbody>
       </table>
     </div>
   </div>
@@ -746,8 +746,14 @@ function drawChart(){
   const gridCount = Math.max(4, Math.floor(_cAreaH/55));
   ctx.fillStyle='#3a5870'; ctx.font='9px Share Tech Mono,monospace'; ctx.textAlign='left';
   for(let gi=0;gi<=gridCount;gi++){
-    const price = priceMin+(priceMax-priceMin)*(1-gi/gridCount);
-    const y = PAD.T + (1-gi/gridCount)*_cAreaH;
+    // gi=0 = topo → maior preço; gi=gridCount = fundo → menor preço
+    const frac = gi/gridCount;
+    const price = priceMax - (priceMax-priceMin)*frac;
+    const y = PAD.T + frac*_cAreaH;
+    // Linha de grid
+    ctx.strokeStyle='rgba(26,40,64,0.4)'; ctx.lineWidth=0.5; ctx.setLineDash([]);
+    ctx.beginPath(); ctx.moveTo(PAD.L, y); ctx.lineTo(w-PAD.R, y); ctx.stroke();
+    ctx.fillStyle='#3a5870';
     ctx.fillText('$'+fmtP(price), w-PAD.R+4, y+3);
   }
 
@@ -844,6 +850,9 @@ function drawChart(){
 
   // ── AI OVERLAY ──
   if(showOverlay && aiOverlayData) drawAIOverlay(start, end);
+
+  // ── TRADES FECHADOS NO GRÁFICO ──
+  drawClosedTrades(start, end);
 
 
 
@@ -1202,12 +1211,12 @@ function drawAIOverlay(start, end){
       const p1=trendPts[0], p2=trendPts[1];
       const x1=idxToX(p1.idx-start), y1=priceToY(o.direction==='COMPRA'?candles[p1.idx].low:candles[p1.idx].high);
       const x2=idxToX(p2.idx-start), y2=priceToY(o.direction==='COMPRA'?candles[p2.idx].low:candles[p2.idx].high);
-      // Extend line to right edge
-      const slope = (y2-y1)/(x2-x1||1);
-      const xEnd  = w-PAD.R;
-      const yEnd  = y2 + slope*(xEnd-x2);
-      ctx.setLineDash([]); ctx.strokeStyle='rgba(255,214,0,0.75)'; ctx.lineWidth=2;
-      ctx.beginPath(); ctx.moveTo(x1,y1); ctx.lineTo(xEnd, yEnd); ctx.stroke();
+      // Linha apenas entre os 2 pontos (sem extensão)
+      ctx.setLineDash([4,3]); ctx.strokeStyle='rgba(255,214,0,0.75)'; ctx.lineWidth=2;
+      ctx.beginPath(); ctx.moveTo(x1,y1); ctx.lineTo(x2, y2); ctx.stroke();
+      ctx.setLineDash([]);
+      // Pontinhos nos extremos
+      [x1,x2].forEach((x,i)=>{ const y=i===0?y1:y2; ctx.fillStyle='rgba(255,214,0,0.9)'; ctx.beginPath(); ctx.arc(x,y,3,0,Math.PI*2); ctx.fill(); });
       ctx.fillStyle='rgba(255,214,0,0.9)'; ctx.font='bold 8px Share Tech Mono,monospace'; ctx.textAlign='left';
       ctx.fillText('TENDÊNCIA', x1+6, y1-6);
     }
@@ -1247,7 +1256,22 @@ function drawAIOverlay(start, end){
 
   // ── SETA DO SINAL NO CANDLE ATUAL ─────────────────────
   if(o.direction && o.direction!=='AGUARDAR'){
-    const lastIdx = candles.length-1;
+    // Resolver índice do candle de origem pelo timestamp
+    let lastIdx = -1;
+    if(o.entryTime && o.entryTime > 0){
+      // Busca exata pelo timestamp
+      lastIdx = candles.findIndex(cc => cc.time === o.entryTime);
+      // Se não achou exato, pega o mais próximo
+      if(lastIdx < 0){
+        let minDiff = Infinity;
+        candles.forEach((cc,i) => {
+          const d = Math.abs(cc.time - o.entryTime);
+          if(d < minDiff){ minDiff=d; lastIdx=i; }
+        });
+      }
+    }
+    // Só cai para o último candle se não tiver timestamp salvo
+    if(lastIdx < 0) lastIdx = candles.length-1;
     if(lastIdx>=start && lastIdx<end){
       const c  = candles[lastIdx];
       const x  = idxToX(lastIdx-start);
@@ -1349,6 +1373,110 @@ function drawAIOverlay(start, end){
   ctx.restore();
 }
 
+// ── HISTÓRICO DE TRADES NO GRÁFICO ──────────────────
+function drawClosedTrades(start, end){
+  if(!_tradeHistory || !_tradeHistory.length) return;
+  const w = W(), h = H();
+  const cw2 = chartW()/viewCount;
+  const aw = Math.max(8, Math.min(18, cw2*1.0));
+
+  _tradeHistory.forEach(trade => {
+    if(trade.result === 'ABERTO') return; // só fechados
+
+    // Converter entry_time para Unix seconds
+    const entryTimeUnix = trade.entry_time
+      ? (typeof trade.entry_time === 'string'
+          ? Math.floor(new Date(trade.entry_time).getTime()/1000)
+          : trade.entry_time)
+      : 0;
+    if(!entryTimeUnix) return;
+
+    // Buscar índice do candle de entrada
+    let entryIdx = candles.findIndex(cc => cc.time === entryTimeUnix);
+    if(entryIdx < 0){
+      // Buscar mais próximo
+      let minDiff=Infinity;
+      candles.forEach((cc,i)=>{ const d=Math.abs(cc.time-entryTimeUnix); if(d<minDiff){minDiff=d;entryIdx=i;} });
+    }
+    if(entryIdx < start || entryIdx >= end) return; // fora da visão
+
+    const isBuy = trade.direction === 'COMPRA';
+    const isWin = trade.result === 'GANHO';
+    const entryCandle = candles[entryIdx];
+    const ex = idxToX(entryIdx - start);
+
+    // Cores
+    const arrowColor = isBuy ? '#00e676' : '#ff1744';
+    const resultColor = isWin ? '#00e676' : '#ff1744';
+
+    // Seta de entrada (menor, mais discreta — cinza para distinguir de aberta)
+    const entryY = isBuy
+      ? priceToY(entryCandle.low) + 4 + aw
+      : priceToY(entryCandle.high) - 4 - aw;
+    const tipY = isBuy
+      ? priceToY(entryCandle.low) + 4
+      : priceToY(entryCandle.high) - 4;
+
+    ctx.save();
+    ctx.globalAlpha = 0.65;
+
+    // Seta preenchida
+    ctx.fillStyle = arrowColor;
+    ctx.shadowColor = arrowColor;
+    ctx.shadowBlur = 6;
+    ctx.beginPath();
+    if(isBuy){
+      ctx.moveTo(ex, tipY);
+      ctx.lineTo(ex - aw/2, tipY + aw);
+      ctx.lineTo(ex + aw/2, tipY + aw);
+    } else {
+      ctx.moveTo(ex, tipY);
+      ctx.lineTo(ex - aw/2, tipY - aw);
+      ctx.lineTo(ex + aw/2, tipY - aw);
+    }
+    ctx.closePath(); ctx.fill();
+    ctx.shadowBlur = 0;
+
+    // Label pequeno do resultado acima/abaixo da seta
+    const labelY = isBuy ? tipY + aw + 11 : tipY - aw - 4;
+    ctx.fillStyle = resultColor;
+    ctx.font = 'bold 8px Share Tech Mono,monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText(isWin ? '✓WIN' : '✗LOSS', ex, labelY);
+
+    // Linha horizontal no preço de entrada (tracejada, sutil)
+    const entryPriceY = priceToY(trade.entry_price);
+    if(entryPriceY >= PAD.T && entryPriceY <= h - PAD.B){
+      ctx.strokeStyle = arrowColor;
+      ctx.lineWidth = 0.8;
+      ctx.setLineDash([3,5]);
+      ctx.beginPath();
+      ctx.moveTo(ex, entryPriceY);
+      // Desenhar até o alvo ou stop (que foi atingido)
+      const exitPrice = isWin ? trade.target_price : trade.stop_price;
+      const exitY = priceToY(exitPrice);
+      // Linha horizontal até o fim da área visível ou até ~30% da largura
+      const lineEndX = Math.min(ex + cw2 * 20, w - PAD.R);
+      ctx.lineTo(lineEndX, entryPriceY);
+      ctx.stroke();
+
+      // Linha vertical até o resultado
+      if(exitY >= PAD.T && exitY <= h - PAD.B){
+        ctx.setLineDash([2,4]);
+        ctx.strokeStyle = resultColor;
+        ctx.beginPath();
+        ctx.moveTo(lineEndX, entryPriceY);
+        ctx.lineTo(lineEndX, exitY);
+        ctx.stroke();
+      }
+      ctx.setLineDash([]);
+    }
+
+    ctx.restore();
+  });
+}
+
+
 // helper
 function roundRect(ctx,x,y,w,h,r){
   ctx.beginPath();
@@ -1416,6 +1544,7 @@ window.addEventListener('mousemove', e => {
     if(Math.abs(dy) > 1){
       priceAutoScale = false;
       const range = drag.startMax - drag.startMin;
+      // dy < 0 = mouse foi pra cima = candles sobem = janela de preço sobe = min/max aumentam
       const shift = (dy / chartH()) * range;
       priceMin = drag.startMin + shift;
       priceMax = drag.startMax + shift;
@@ -1546,6 +1675,7 @@ wrap.addEventListener('touchmove', e=>{
     if(Math.abs(dy) > 1){
       priceAutoScale = false;
       const range = tState.startMax - tState.startMin;
+      // dy < 0 = touch foi pra cima = candles sobem = janela de preço sobe = min/max aumentam
       const shift = (dy / chartH()) * range;
       priceMin = tState.startMin + shift;
       priceMax = tState.startMax + shift;
@@ -1651,6 +1781,7 @@ function hideCrosshair(){
 // STATE & DATA
 // ══════════════════════════════════════════════════════
 let currentTF='5m', aiActive=false, aiTimer=null, ws=null, livePrice=0, open24=0;
+let _autoCloseChecking=false;
 let tfCache={};
 const TF={'1m':{i:'1m',s:60},'5m':{i:'5m',s:300},'15m':{i:'15m',s:900},'1h':{i:'1h',s:3600},'4h':{i:'4h',s:14400},'1d':{i:'1d',s:86400}};
 function fmtP(v){return Number(v).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});}
@@ -1710,6 +1841,7 @@ function connectWS(tf){
   ws.onmessage=evt=>{
     const k=JSON.parse(evt.data).k;
     livePrice=+k.c; updatePrice(livePrice);
+    checkAutoClose(livePrice);
     const cnd={time:Math.floor(k.t/1000),open:+k.o,high:+k.h,low:+k.l,close:+k.c,volume:+k.v};
     const last=candles[candles.length-1];
     if(last&&last.time===cnd.time){candles[candles.length-1]=cnd;}
@@ -2071,6 +2203,8 @@ JSON de resposta (mantenha os números como float, sem aspas):
       choch:       result.choch||[],
       bos:         result.bos||[],
       liquidity:   result.liquidity||[],
+      entryCandle: candles.length-1, // índice do candle que originou o sinal
+      entryTime:   candles[candles.length-1]?.time || 0, // timestamp para referenciar mesmo após reload
     };
 
     // Show overlay button
@@ -2420,7 +2554,7 @@ async function doLogout(){
   // Clear AI
   if(aiActive){ clearInterval(aiTimer); aiActive=false; setAIButtonState(false); }
   document.getElementById('ai-out').innerHTML='<div class="placeholder">🤖<br>Faça <strong style="color:var(--accent)">LOGIN</strong> para usar a IA Trader</div>';
-  document.getElementById('hist-tbody').innerHTML='<tr><td colspan="7" style="text-align:center;color:var(--text2);padding:12px">Faça login para ver o histórico</td></tr>';
+  document.getElementById('hist-tbody').innerHTML='<tr><td colspan="8" style="text-align:center;color:var(--text2);padding:12px">Faça login para ver o histórico</td></tr>';
 }
 
 // ── API KEY ───────────────────────────────────────────
@@ -2538,6 +2672,8 @@ async function saveApiKey(){
 // TRADE HISTORY
 // ══════════════════════════════════════════════════════
 let _openTrade=null; // trade em aberto {id,...}
+let _tradeHistory=[]; // todos os trades para plotar no gráfico
+let _historyLoaded=false; // guard: só permite auto-close após histórico carregado do banco
 
 async function loadTradeHistory(){
   if(!_session) return;
@@ -2549,10 +2685,62 @@ async function loadTradeHistory(){
   }catch(e){console.warn('loadHistory',e);}
 }
 
+
+// Restaura overlay + signal card a partir de um trade salvo no banco
+function restoreOverlayFromTrade(trade){
+  if(!trade) return;
+  // Montar aiOverlayData mínimo com os dados que temos
+  aiOverlayData={
+    entrada:     trade.entry_price,
+    alvo:        trade.target_price,
+    alvo_parcial:trade.partial_target||null,
+    stop:        trade.stop_price,
+    direction:   trade.direction,
+    supports:    [],
+    resistances: [],
+    structure:   '',
+    pattern:     '',
+    choch:[], bos:[], liquidity:[],
+    entryCandle: -1,
+    // entry_time do banco pode ser ISO string ou unix timestamp
+    entryTime: trade.entry_time
+      ? (typeof trade.entry_time === 'string'
+          ? Math.floor(new Date(trade.entry_time).getTime()/1000)
+          : trade.entry_time)
+      : 0,
+  };
+  // Mostrar botão overlay
+  document.getElementById('overlay-btn').style.display='flex';
+  if(showOverlay) drawChart();
+
+  // Reconstruir signal card com os dados do banco
+  const confs = JSON.parse(trade.confluence||'[]');
+  const fake={
+    direcao:     trade.direction,
+    confianca:   trade.confidence||0,
+    entrada:     trade.entry_price,
+    alvo:        trade.target_price,
+    alvo_parcial:trade.partial_target||null,
+    stop:        trade.stop_price,
+    confluencias:confs,
+    contexto:    trade.context||'',
+    aviso:       '',
+  };
+  renderSignal(fake);
+}
 function renderHistory(rows){
+  // Salvar histórico para plotar no gráfico
+  _tradeHistory = rows || [];
+  _historyLoaded = true; // libera checkAutoClose
+  
   // Encontrar trade em aberto
   _openTrade=rows.find(r=>r.result==='ABERTO')||null;
   updateOpenBanner();
+  // Restaurar overlay e card da análise se tiver posição aberta
+  if(_openTrade) restoreOverlayFromTrade(_openTrade);
+  
+  // Redesenhar gráfico para mostrar trades fechados
+  drawChart();
   
   // Stats
   const closed=rows.filter(r=>r.result!=='ABERTO');
@@ -2565,7 +2753,7 @@ function renderHistory(rows){
 
   // Table
   const tbody=document.getElementById('hist-tbody');
-  if(!rows.length){tbody.innerHTML='<tr><td colspan="7" style="text-align:center;color:var(--text2);padding:12px">Nenhuma entrada registrada ainda</td></tr>';return;}
+  if(!rows.length){tbody.innerHTML='<tr><td colspan="8" style="text-align:center;color:var(--text2);padding:12px">Nenhuma entrada registrada ainda</td></tr>';return;}
   tbody.innerHTML=rows.map(r=>{
     const d=new Date(r.created_at);
     const dt=d.toLocaleDateString('pt-BR')+' '+d.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
@@ -2573,6 +2761,10 @@ function renderHistory(rows){
     const res=r.result==='GANHO'?'<span class="badge-win">✅ GANHO</span>':
               r.result==='PERDA'?'<span class="badge-lose">❌ PERDA</span>':
               '<span class="badge-open">🔴 ABERTO</span>';
+    const risk   = Math.abs(r.entry_price - r.stop_price);
+    const reward = Math.abs(r.target_price - r.entry_price);
+    const rr     = risk>0 ? (reward/risk).toFixed(2) : '—';
+    const rrColor= parseFloat(rr)>=1.5?'var(--green)':parseFloat(rr)>=1?'var(--yellow)':'var(--red)';
     const closeBtn=r.result==='ABERTO'?`<button class="close-trade-btn" onclick="closeTradeModal('${r.id}')">FECHAR</button>`:'—';
     return `<tr>
       <td style="color:var(--text2)">${dt}</td>
@@ -2580,6 +2772,7 @@ function renderHistory(rows){
       <td style="color:var(--accent)">$${fmtP(r.entry_price)}</td>
       <td style="color:var(--green)">$${fmtP(r.target_price)}</td>
       <td style="color:var(--red)">$${fmtP(r.stop_price)}</td>
+      <td style="color:${rrColor};font-weight:700">${rr}</td>
       <td>${res}</td>
       <td>${closeBtn}</td>
     </tr>`;
@@ -2613,6 +2806,7 @@ async function saveNewTrade(signal){
     context:signal.contexto||'',
     confidence:signal.confianca||0,
     timeframe:currentTF,
+    entry_time: candles[candles.length-1]?.time || null,
     result:'ABERTO',
   };
   try{
@@ -2641,15 +2835,73 @@ async function closeTrade(id,result){
   }catch(e){alert('Erro ao fechar: '+e.message);}
 }
 
+
+// ── Auto-fechar posição quando bate no alvo ou stop ──────────
+async function checkAutoClose(price){
+  if(!_openTrade || !_session || _autoCloseChecking || !_historyLoaded) return;
+  const tp = parseFloat(_openTrade.target_price);
+  const sl = parseFloat(_openTrade.stop_price);
+  const dir= _openTrade.direction;
+
+  let result=null;
+  if(dir==='COMPRA'){
+    if(price >= tp) result='GANHO';
+    else if(price <= sl) result='PERDA';
+  } else if(dir==='VENDA'){
+    if(price <= tp) result='GANHO';
+    else if(price >= sl) result='PERDA';
+  }
+
+  if(result){
+    _autoCloseChecking=true;
+    console.log(`[AutoClose] ${dir} fechada como ${result} @ ${price}`);
+    try{
+      await supa('/rest/v1/trade_signals?id=eq.'+_openTrade.id,'PATCH',
+        {result, closed_at: new Date().toISOString()},_session.access_token);
+      // Notificação visual
+      const msg=result==='GANHO'
+        ? '✅ ALVO ATINGIDO! Posição fechada automaticamente como GANHO.'
+        : '❌ STOP ATINGIDO! Posição fechada automaticamente como PERDA.';
+      showToast(msg, result==='GANHO'?'var(--green)':'var(--red)');
+      _openTrade=null;
+      updateOpenBanner();
+      loadTradeHistory();
+      // Limpar overlay
+      if(showOverlay){ showOverlay=false; document.getElementById('overlay-btn').classList.remove('active'); drawChart(); }
+    }catch(e){ console.warn('autoClose erro:',e.message); }
+    finally{ _autoCloseChecking=false; }
+  }
+}
+
+// Toast de notificação
+function showToast(msg, color='var(--accent)'){
+  let t=document.getElementById('toast-notif');
+  if(!t){
+    t=document.createElement('div');
+    t.id='toast-notif';
+    t.style.cssText='position:fixed;bottom:80px;left:50%;transform:translateX(-50%);'+
+      'padding:10px 18px;border-radius:8px;font-family:Exo 2,sans-serif;font-size:12px;'+
+      'font-weight:700;letter-spacing:1px;z-index:999;pointer-events:none;'+
+      'transition:opacity .4s;max-width:90vw;text-align:center';
+    document.body.appendChild(t);
+  }
+  t.textContent=msg;
+  t.style.background=color; t.style.color=color==='var(--green)'?'#000':'#fff';
+  t.style.opacity='1';
+  clearTimeout(t._timer);
+  t._timer=setTimeout(()=>{ t.style.opacity='0'; },4000);
+}
 // ══════════════════════════════════════════════════════
 // INIT
 // ══════════════════════════════════════════════════════
 window.addEventListener('load',async()=>{
   await Promise.all([loadCandles('5m'),load24h()]);
-  connectWS('5m');
   setInterval(load24h,30000);
-  // Init Supabase auth (restore session)
+  // Init Supabase auth (restore session) ANTES de conectar WS
+  // para garantir que _openTrade e _historyLoaded estejam prontos
+  // antes do checkAutoClose começar a disparar
   await initAuth();
+  connectWS('5m');
   // TF buttons
   document.querySelectorAll('.tf-btn').forEach(btn=>{
     btn.addEventListener('click',()=>{
