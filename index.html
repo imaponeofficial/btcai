@@ -2067,11 +2067,14 @@ function thinkStep(done,current){
 }
 function sleep(ms){return new Promise(r=>setTimeout(r,ms));}
 
+let _aiRunning=false; // guard contra execuções simultâneas
 async function runAI(){
+  if(_aiRunning){ console.log('[AI] Já executando, ignorando chamada dupla'); return; }
   const key=_groqKey;
   if(!key){if(aiActive)toggleAI();return;}
   // Verificar posição aberta antes de executar
   if(_openTrade){if(aiActive)toggleAI();updateOpenBanner();return;}
+  _aiRunning=true;
   document.getElementById('thinking').classList.add('vis');
   document.getElementById('ai-out').innerHTML='';
   const done=[];
@@ -2213,7 +2216,21 @@ JSON de resposta (mantenha os números como float, sem aspas):
     renderSignal(result);
     if(showOverlay) drawChart();
     // Salvar no banco apenas COMPRA/VENDA (não AGUARDAR)
-    const dir=(result.direcao||'').toUpperCase();
+    let dir=(result.direcao||'').toUpperCase();
+
+    // Validação de R:R mínimo 1.2:1 — rejeita sinal se não atingir
+    if(dir==='COMPRA'||dir==='VENDA'){
+      const risk   = Math.abs(result.entrada - result.stop);
+      const reward = Math.abs(result.alvo    - result.entrada);
+      const rr     = risk > 0 ? reward/risk : 0;
+      if(rr < 1.2){
+        console.log(`[AI] Sinal rejeitado: R:R ${rr.toFixed(2)} < 1.2 mínimo`);
+        result.direcao = 'AGUARDAR';
+        result.contexto = `[Sinal rejeitado: R:R ${rr.toFixed(2)} abaixo do mínimo 1.2:1] ` + (result.contexto||'');
+        dir = 'AGUARDAR';
+      }
+    }
+
     if(dir==='COMPRA'||dir==='VENDA'){
       if(_session) saveNewTrade(result);
       // Desligar IA automaticamente (aguarda próxima sessão)
@@ -2226,6 +2243,8 @@ JSON de resposta (mantenha os números como float, sem aspas):
   }catch(e){
     document.getElementById('thinking').classList.remove('vis');
     document.getElementById('ai-out').innerHTML=`<div class="err-box">❌ ${e.message}<br><small style="color:var(--text2)">Verifique sua API Key em console.groq.com/keys</small></div>`;
+  }finally{
+    _aiRunning=false;
   }
 }
 
@@ -2627,7 +2646,13 @@ async function loadApiKeyFromDB(){
         aiActive=true;
         setAIButtonState(true);
         switchTab('ai',document.querySelectorAll('.tab-btn2')[1]);
-        setTimeout(()=>{ runAI(); aiTimer=setInterval(runAI,90000); }, 1500);
+        setTimeout(()=>{
+          // Só ligar se não tiver outro timer já rodando
+          if(!aiTimer){
+            runAI();
+            aiTimer=setInterval(runAI,90000);
+          }
+        }, 1500);
       }
     }
 
