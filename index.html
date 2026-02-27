@@ -1376,98 +1376,140 @@ function drawAIOverlay(start, end){
 // ── HISTÓRICO DE TRADES NO GRÁFICO ──────────────────
 function drawClosedTrades(start, end){
   if(!_tradeHistory || !_tradeHistory.length) return;
-  const w = W(), h = H();
-  const cw2 = chartW()/viewCount;
-  const aw = Math.max(8, Math.min(18, cw2*1.0));
+  const h = H();
 
   _tradeHistory.forEach(trade => {
-    if(trade.result === 'ABERTO') return; // só fechados
+    if(trade.result === 'ABERTO') return;
 
-    // Converter entry_time para Unix seconds
+    const entryTimeUnix = trade.entry_time
+      ? (typeof trade.entry_time==='string'
+          ? Math.floor(new Date(trade.entry_time).getTime()/1000)
+          : trade.entry_time)
+      : 0;
+    if(!entryTimeUnix) return;
+
+    // Candle de entrada
+    let entryIdx = candles.findIndex(cc=>cc.time===entryTimeUnix);
+    if(entryIdx<0){
+      let minDiff=Infinity;
+      candles.forEach((cc,i)=>{const d=Math.abs(cc.time-entryTimeUnix);if(d<minDiff){minDiff=d;entryIdx=i;}});
+    }
+    if(entryIdx<0) return;
+
+    // Candle de saída: procurar onde TP ou SL foi atingido
+    const tp=parseFloat(trade.target_price), sl=parseFloat(trade.stop_price);
+    const isWin=trade.result==='GANHO';
+    const isBuy=trade.direction==='COMPRA';
+    let exitIdx=entryIdx;
+    for(let i=entryIdx+1;i<candles.length;i++){
+      const cc=candles[i];
+      if(isBuy){
+        if(isWin&&cc.high>=tp){exitIdx=i;break;}
+        if(!isWin&&cc.low<=sl){exitIdx=i;break;}
+      } else {
+        if(isWin&&cc.low<=tp){exitIdx=i;break;}
+        if(!isWin&&cc.high>=sl){exitIdx=i;break;}
+      }
+      exitIdx=i; // avança até último candle se não achou
+    }
+
+    // Só desenha se pelo menos um dos dois está na janela visível
+    if(exitIdx<start && entryIdx<start) return;
+    if(entryIdx>=end && exitIdx>=end) return;
+
+    const ex = idxToX(entryIdx-start);
+    const xx = idxToX(exitIdx-start);
+    const entryPrice = parseFloat(trade.entry_price);
+    const exitPrice  = isWin ? tp : sl;
+    const ey = priceToY(entryPrice);
+    const xy = priceToY(exitPrice);
+    const color = isWin ? '#00e676' : '#ff1744';
+
+    ctx.save();
+    ctx.globalAlpha = 0.75;
+    ctx.setLineDash([]);
+
+    // Linha fina do ponto de entrada até o ponto de saída
+    ctx.beginPath();
+    ctx.moveTo(ex, ey);
+    ctx.lineTo(xx, xy);
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 1.2;
+    ctx.shadowColor = color;
+    ctx.shadowBlur = 3;
+    ctx.stroke();
+    ctx.shadowBlur = 0;
+
+    // Ponto de entrada (círculo pequeno)
+    ctx.beginPath();
+    ctx.arc(ex, ey, 3, 0, Math.PI*2);
+    ctx.fillStyle = isBuy ? '#00e676' : '#ff1744';
+    ctx.fill();
+
+    // Ponto de saída (círculo cheio)
+    ctx.beginPath();
+    ctx.arc(xx, xy, 4, 0, Math.PI*2);
+    ctx.fillStyle = color;
+    ctx.fill();
+
+    // Label no ponto de saída
+    ctx.font = 'bold 9px Share Tech Mono,monospace';
+    ctx.fillStyle = color;
+    ctx.textAlign = xx > ex ? 'left' : 'right';
+    const lx = xx > ex ? xx+6 : xx-6;
+    ctx.fillText(isWin?'✓':'✗', lx, xy+3);
+
+    ctx.restore();
+  });
+}
+
+function _drawClosedTradesOLD_UNUSED(start, end){
+  // mantido apenas para referência
+  const h = H();
+  const cw2 = chartW()/viewCount;
+  const aw = Math.max(8, Math.min(18, cw2*1.0));
+  _tradeHistory.forEach(trade => {
+    if(trade.result === 'ABERTO') return;
     const entryTimeUnix = trade.entry_time
       ? (typeof trade.entry_time === 'string'
           ? Math.floor(new Date(trade.entry_time).getTime()/1000)
           : trade.entry_time)
       : 0;
     if(!entryTimeUnix) return;
-
-    // Buscar índice do candle de entrada
     let entryIdx = candles.findIndex(cc => cc.time === entryTimeUnix);
     if(entryIdx < 0){
-      // Buscar mais próximo
       let minDiff=Infinity;
       candles.forEach((cc,i)=>{ const d=Math.abs(cc.time-entryTimeUnix); if(d<minDiff){minDiff=d;entryIdx=i;} });
     }
-    if(entryIdx < start || entryIdx >= end) return; // fora da visão
-
+    if(entryIdx < start || entryIdx >= end) return;
     const isBuy = trade.direction === 'COMPRA';
     const isWin = trade.result === 'GANHO';
     const entryCandle = candles[entryIdx];
     const ex = idxToX(entryIdx - start);
-
-    // Cores
     const arrowColor = isBuy ? '#00e676' : '#ff1744';
     const resultColor = isWin ? '#00e676' : '#ff1744';
-
-    // Seta de entrada (menor, mais discreta — cinza para distinguir de aberta)
-    const entryY = isBuy
-      ? priceToY(entryCandle.low) + 4 + aw
-      : priceToY(entryCandle.high) - 4 - aw;
-    const tipY = isBuy
-      ? priceToY(entryCandle.low) + 4
-      : priceToY(entryCandle.high) - 4;
-
-    ctx.save();
-    ctx.globalAlpha = 0.65;
-
-    // Seta preenchida
-    ctx.fillStyle = arrowColor;
-    ctx.shadowColor = arrowColor;
-    ctx.shadowBlur = 6;
+    const entryY = isBuy ? priceToY(entryCandle.low) + 4 + aw : priceToY(entryCandle.high) - 4 - aw;
+    const tipY = isBuy ? priceToY(entryCandle.low) + 4 : priceToY(entryCandle.high) - 4;
+    ctx.save(); ctx.globalAlpha = 0.65;
+    ctx.fillStyle = arrowColor; ctx.shadowColor = arrowColor; ctx.shadowBlur = 6;
     ctx.beginPath();
-    if(isBuy){
-      ctx.moveTo(ex, tipY);
-      ctx.lineTo(ex - aw/2, tipY + aw);
-      ctx.lineTo(ex + aw/2, tipY + aw);
-    } else {
-      ctx.moveTo(ex, tipY);
-      ctx.lineTo(ex - aw/2, tipY - aw);
-      ctx.lineTo(ex + aw/2, tipY - aw);
-    }
-    ctx.closePath(); ctx.fill();
-    ctx.shadowBlur = 0;
-
-    // Label pequeno do resultado acima/abaixo da seta
-    const labelY = isBuy ? tipY + aw + 11 : tipY - aw - 4;
-    ctx.fillStyle = resultColor;
-    ctx.font = 'bold 8px Share Tech Mono,monospace';
-    ctx.textAlign = 'center';
-    ctx.fillText(isWin ? '✓WIN' : '✗LOSS', ex, labelY);
-
-    // Linha horizontal no preço de entrada (tracejada, sutil)
-    const entryPriceY = priceToY(trade.entry_price);
-    if(entryPriceY >= PAD.T && entryPriceY <= h - PAD.B){
-      ctx.strokeStyle = arrowColor;
-      ctx.lineWidth = 0.8;
-      ctx.setLineDash([3,5]);
-      ctx.beginPath();
-      ctx.moveTo(ex, entryPriceY);
-      // Desenhar até o alvo ou stop (que foi atingido)
-      const exitPrice = isWin ? trade.target_price : trade.stop_price;
-      const exitY = priceToY(exitPrice);
-      // Linha horizontal até o fim da área visível ou até ~30% da largura
-      const lineEndX = Math.min(ex + cw2 * 20, w - PAD.R);
-      ctx.lineTo(lineEndX, entryPriceY);
-      ctx.stroke();
-
-      // Linha vertical até o resultado
-      if(exitY >= PAD.T && exitY <= h - PAD.B){
-        ctx.setLineDash([2,4]);
-        ctx.strokeStyle = resultColor;
-        ctx.beginPath();
-        ctx.moveTo(lineEndX, entryPriceY);
-        ctx.lineTo(lineEndX, exitY);
-        ctx.stroke();
+    if(isBuy){ ctx.moveTo(ex,tipY); ctx.lineTo(ex-aw/2,tipY+aw); ctx.lineTo(ex+aw/2,tipY+aw); }
+    else { ctx.moveTo(ex,tipY); ctx.lineTo(ex-aw/2,tipY-aw); ctx.lineTo(ex+aw/2,tipY-aw); }
+    ctx.closePath(); ctx.fill(); ctx.shadowBlur=0;
+    const labelY=isBuy?tipY+aw+11:tipY-aw-4;
+    ctx.fillStyle=resultColor; ctx.font='bold 8px Share Tech Mono,monospace';
+    ctx.textAlign='center'; ctx.fillText(isWin?'✓WIN':'✗LOSS',ex,labelY);
+    const entryPriceY=priceToY(trade.entry_price);
+    if(entryPriceY>=PAD.T&&entryPriceY<=h-PAD.B){
+      ctx.strokeStyle=arrowColor; ctx.lineWidth=0.8; ctx.setLineDash([3,5]);
+      ctx.beginPath(); ctx.moveTo(ex,entryPriceY);
+      const exitPrice=isWin?trade.target_price:trade.stop_price;
+      const exitY=priceToY(exitPrice);
+      const lineEndX=Math.min(ex+cw2*20,W()-PAD.R);
+      ctx.lineTo(lineEndX,entryPriceY); ctx.stroke();
+      if(exitY>=PAD.T&&exitY<=h-PAD.B){
+        ctx.setLineDash([2,4]); ctx.strokeStyle=resultColor;
+        ctx.beginPath(); ctx.moveTo(lineEndX,entryPriceY); ctx.lineTo(lineEndX,exitY); ctx.stroke();
       }
       ctx.setLineDash([]);
     }
@@ -1841,6 +1883,7 @@ function connectWS(tf){
   ws.onmessage=evt=>{
     const k=JSON.parse(evt.data).k;
     livePrice=+k.c; updatePrice(livePrice);
+    checkAutoClose(livePrice);
     const cnd={time:Math.floor(k.t/1000),open:+k.o,high:+k.h,low:+k.l,close:+k.c,volume:+k.v};
     const last=candles[candles.length-1];
     if(last&&last.time===cnd.time){candles[candles.length-1]=cnd;}
@@ -2519,8 +2562,7 @@ async function onLogin(){
   // antes de tentar restaurar estado da IA
   await loadTradeHistory();
   await loadApiKeyFromDB(); // restaura IA só depois de saber _openTrade
-  // Verificar retroativamente se TP/SL foi atingido com navegador fechado
-  setTimeout(checkRetroactiveClose, 2000); // aguarda candles carregarem
+  setTimeout(checkRetroactiveClose,2000); // fechar posições retroativamente após candles carregarem
 }
 
 function openAuth(){document.getElementById('auth-modal').classList.add('open');}
@@ -2697,7 +2739,8 @@ async function saveApiKey(){
 // ══════════════════════════════════════════════════════
 // TRADE HISTORY
 // ══════════════════════════════════════════════════════
-let _openTrade=null; // trade em aberto {id,...}
+let _openTrade=null; // trade mais recente em aberto
+let _openTrades=[]; // todos os trades em aberto
 let _tradeHistory=[]; // todos os trades para plotar no gráfico
 let _historyLoaded=false; // guard: só permite auto-close após histórico carregado do banco
 
@@ -2760,9 +2803,11 @@ function renderHistory(rows){
   _historyLoaded = true; // libera checkAutoClose
   
   // Encontrar trade em aberto
-  _openTrade=rows.find(r=>r.result==='ABERTO')||null;
+  // Múltiplas posições abertas
+  const openTrades=rows.filter(r=>r.result==='ABERTO');
+  _openTrade=openTrades.length>0?openTrades[openTrades.length-1]:null; // mais recente para overlay
+  _openTrades=openTrades; // todas abertas
   updateOpenBanner();
-  // Restaurar overlay e card da análise se tiver posição aberta
   if(_openTrade) restoreOverlayFromTrade(_openTrade);
   
   // Redesenhar gráfico para mostrar trades fechados
@@ -2812,10 +2857,52 @@ function updateOpenBanner(){
   if(_openTrade){
     banner.classList.add('visible');
     locked.classList.add('visible');
-    info.textContent=`${_openTrade.direction} @ $${fmtP(_openTrade.entry_price)} | TP $${fmtP(_openTrade.target_price)} | SL $${fmtP(_openTrade.stop_price)}`;
+    const count=_openTrades.length;
+    info.textContent=(count>1?`${count} posições abertas | última: `:'')+`${_openTrade.direction} @ $${fmtP(_openTrade.entry_price)} | TP $${fmtP(_openTrade.target_price)} | SL $${fmtP(_openTrade.stop_price)}`;
   } else {
     banner.classList.remove('visible');
     locked.classList.remove('visible');
+  }
+}
+
+// Fecha retroativamente todas as posições abertas ao abrir o navegador
+async function checkRetroactiveClose(){
+  if(!_session||_autoCloseChecking||!_historyLoaded) return;
+  if(!candles||candles.length===0) return;
+  if(!_openTrades||_openTrades.length===0) return;
+  _autoCloseChecking=true;
+  let anyChanged=false;
+  for(const trade of [..._openTrades]){
+    const tp=parseFloat(trade.target_price),sl=parseFloat(trade.stop_price),dir=trade.direction;
+    const entryTime=trade.entry_time
+      ?(typeof trade.entry_time==='string'?Math.floor(new Date(trade.entry_time).getTime()/1000):trade.entry_time)
+      :0;
+    let startIdx=0;
+    if(entryTime>0){
+      let minDiff=Infinity;
+      candles.forEach((cc,i)=>{const d=Math.abs(cc.time-entryTime);if(d<minDiff){minDiff=d;startIdx=i;}});
+    }
+    let result=null,closeCandle=null;
+    for(let i=startIdx;i<candles.length;i++){
+      const cc=candles[i];
+      if(dir==='COMPRA'){if(cc.high>=tp){result='GANHO';closeCandle=cc;break;}if(cc.low<=sl){result='PERDA';closeCandle=cc;break;}}
+      else if(dir==='VENDA'){if(cc.low<=tp){result='GANHO';closeCandle=cc;break;}if(cc.high>=sl){result='PERDA';closeCandle=cc;break;}}
+    }
+    if(result&&closeCandle){
+      const closeTime=new Date(closeCandle.time*1000).toISOString();
+      console.log(`[RetroClose] ${dir}→${result} @ ${closeTime}`);
+      try{
+        await supa('/rest/v1/trade_signals?id=eq.'+trade.id,'PATCH',{result,closed_at:closeTime},_session.access_token);
+        anyChanged=true;
+      }catch(e){console.warn('retroClose err:',e.message);}
+    }
+  }
+  _autoCloseChecking=false;
+  if(anyChanged){
+    showToast('📊 Posições fechadas retroativamente','var(--accent)');
+    await loadTradeHistory();
+    if(showOverlay){showOverlay=false;document.getElementById('overlay-btn').classList.remove('active');}
+    drawChart();
   }
 }
 
@@ -2863,66 +2950,38 @@ async function closeTrade(id,result){
 
 
 // ── Auto-fechar posição quando bate no alvo ou stop ──────────
-// Verifica retroativamente nos candles carregados se TP ou SL foi atingido
-// Chamado ao abrir o navegador — não precisa ser em tempo real
-async function checkRetroactiveClose(){
+async function checkAutoClose(price){
   if(!_openTrade || !_session || _autoCloseChecking || !_historyLoaded) return;
-  if(!candles || candles.length === 0) return;
+  const tp = parseFloat(_openTrade.target_price);
+  const sl = parseFloat(_openTrade.stop_price);
+  const dir= _openTrade.direction;
 
-  const tp  = parseFloat(_openTrade.target_price);
-  const sl  = parseFloat(_openTrade.stop_price);
-  const dir = _openTrade.direction;
-  const entryTime = _openTrade.entry_time
-    ? (typeof _openTrade.entry_time==='string'
-        ? Math.floor(new Date(_openTrade.entry_time).getTime()/1000)
-        : _openTrade.entry_time)
-    : 0;
-
-  // Encontrar o índice do candle de entrada (ou o mais próximo)
-  let startIdx = 0;
-  if(entryTime > 0){
-    let minDiff = Infinity;
-    candles.forEach((cc,i)=>{
-      const d = Math.abs(cc.time - entryTime);
-      if(d < minDiff){ minDiff=d; startIdx=i; }
-    });
+  let result=null;
+  if(dir==='COMPRA'){
+    if(price >= tp) result='GANHO';
+    else if(price <= sl) result='PERDA';
+  } else if(dir==='VENDA'){
+    if(price <= tp) result='GANHO';
+    else if(price >= sl) result='PERDA';
   }
 
-  // Percorrer candles APÓS a entrada
-  let result = null;
-  let closeCandle = null;
-  for(let i = startIdx; i < candles.length; i++){
-    const cc = candles[i];
-    if(dir === 'COMPRA'){
-      // Num candle de alta, high é atingido antes do low
-      if(cc.high >= tp){ result='GANHO'; closeCandle=cc; break; }
-      if(cc.low  <= sl){ result='PERDA'; closeCandle=cc; break; }
-    } else if(dir === 'VENDA'){
-      // Num candle de baixa, low é atingido antes do high
-      if(cc.low  <= tp){ result='GANHO'; closeCandle=cc; break; }
-      if(cc.high >= sl){ result='PERDA'; closeCandle=cc; break; }
-    }
-  }
-
-  if(result && closeCandle){
-    _autoCloseChecking = true;
-    const closeTime = new Date(closeCandle.time * 1000).toISOString();
-    const closePrice = result==='GANHO'
-      ? (dir==='COMPRA' ? tp : tp)   // fechou no alvo
-      : (dir==='COMPRA' ? sl : sl);  // fechou no stop
-    console.log(`[RetroClose] ${dir} → ${result} no candle ${closeTime}`);
+  if(result){
+    _autoCloseChecking=true;
+    console.log(`[AutoClose] ${dir} fechada como ${result} @ ${price}`);
     try{
       await supa('/rest/v1/trade_signals?id=eq.'+_openTrade.id,'PATCH',
-        {result, closed_at: closeTime},_session.access_token);
-      const msg = result==='GANHO'
-        ? '✅ Posição fechada como GANHO (alvo atingido enquanto navegador estava fechado)'
-        : '❌ Posição fechada como PERDA (stop atingido enquanto navegador estava fechado)';
+        {result, closed_at: new Date().toISOString()},_session.access_token);
+      // Notificação visual
+      const msg=result==='GANHO'
+        ? '✅ ALVO ATINGIDO! Posição fechada automaticamente como GANHO.'
+        : '❌ STOP ATINGIDO! Posição fechada automaticamente como PERDA.';
       showToast(msg, result==='GANHO'?'var(--green)':'var(--red)');
       _openTrade=null;
       updateOpenBanner();
       loadTradeHistory();
+      // Limpar overlay
       if(showOverlay){ showOverlay=false; document.getElementById('overlay-btn').classList.remove('active'); drawChart(); }
-    }catch(e){ console.warn('retroClose erro:',e.message); }
+    }catch(e){ console.warn('autoClose erro:',e.message); }
     finally{ _autoCloseChecking=false; }
   }
 }
