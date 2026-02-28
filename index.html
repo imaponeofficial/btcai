@@ -1375,103 +1375,75 @@ function drawAIOverlay(start, end){
 
 // ── HISTÓRICO DE TRADES NO GRÁFICO ──────────────────
 function drawClosedTrades(start, end){
-  if(!_tradeHistory || !_tradeHistory.length) return;
-  const w = W(), h = H();
-  const cw2 = chartW()/viewCount;
-  const aw = Math.max(8, Math.min(18, cw2*1.0));
+  if(!_tradeHistory||!_tradeHistory.length) return;
 
-  _tradeHistory.forEach(trade => {
-    if(trade.result === 'ABERTO') return; // só fechados
-
-    // Converter entry_time para Unix seconds
+  _tradeHistory.forEach(trade=>{
+    const isOpen  = trade.result==='ABERTO';
+    const isWin   = trade.result==='GANHO';
+    const isBuy   = trade.direction==='COMPRA';
     const entryTimeUnix = trade.entry_time
-      ? (typeof trade.entry_time === 'string'
-          ? Math.floor(new Date(trade.entry_time).getTime()/1000)
-          : trade.entry_time)
-      : 0;
+      ?(typeof trade.entry_time==='string'?Math.floor(new Date(trade.entry_time).getTime()/1000):trade.entry_time):0;
     if(!entryTimeUnix) return;
 
-    // Buscar índice do candle de entrada
-    let entryIdx = candles.findIndex(cc => cc.time === entryTimeUnix);
-    if(entryIdx < 0){
-      // Buscar mais próximo
+    let entryIdx=candles.findIndex(cc=>cc.time===entryTimeUnix);
+    if(entryIdx<0){
       let minDiff=Infinity;
-      candles.forEach((cc,i)=>{ const d=Math.abs(cc.time-entryTimeUnix); if(d<minDiff){minDiff=d;entryIdx=i;} });
+      candles.forEach((cc,i)=>{const d=Math.abs(cc.time-entryTimeUnix);if(d<minDiff){minDiff=d;entryIdx=i;}});
+      const tfSec={'1m':60,'5m':300,'15m':900,'1h':3600,'4h':14400,'1d':86400};
+      const period=tfSec[currentTF]||300;
+      if(Math.abs(candles[entryIdx]?.time-entryTimeUnix)>period*3){
+        const ep=parseFloat(trade.entry_price); minDiff=Infinity; entryIdx=-1;
+        candles.forEach((cc,i)=>{const d=Math.min(Math.abs(cc.close-ep),Math.abs(cc.high-ep),Math.abs(cc.low-ep));if(d<minDiff){minDiff=d;entryIdx=i;}});
+      }
     }
-    if(entryIdx < start || entryIdx >= end) return; // fora da visão
+    if(entryIdx<0) return;
 
-    const isBuy = trade.direction === 'COMPRA';
-    const isWin = trade.result === 'GANHO';
-    const entryCandle = candles[entryIdx];
-    const ex = idxToX(entryIdx - start);
+    const tp=parseFloat(trade.target_price),sl=parseFloat(trade.stop_price);
+    let exitIdx=candles.length-1;
+    if(!isOpen){
+      for(let i=entryIdx+1;i<candles.length;i++){
+        const cc=candles[i];
+        if(isBuy){if(isWin&&cc.high>=tp){exitIdx=i;break;}if(!isWin&&cc.low<=sl){exitIdx=i;break;}}
+        else      {if(isWin&&cc.low<=tp) {exitIdx=i;break;}if(!isWin&&cc.high>=sl){exitIdx=i;break;}}
+        exitIdx=i;
+      }
+    }
 
-    // Cores
-    const arrowColor = isBuy ? '#00e676' : '#ff1744';
-    const resultColor = isWin ? '#00e676' : '#ff1744';
+    if(exitIdx<start&&entryIdx<start) return;
+    if(entryIdx>=end&&exitIdx>=end) return;
 
-    // Seta de entrada (menor, mais discreta — cinza para distinguir de aberta)
-    const entryY = isBuy
-      ? priceToY(entryCandle.low) + 4 + aw
-      : priceToY(entryCandle.high) - 4 - aw;
-    const tipY = isBuy
-      ? priceToY(entryCandle.low) + 4
-      : priceToY(entryCandle.high) - 4;
+    const ex=idxToX(Math.max(entryIdx,start)-start);
+    const xx=idxToX(Math.min(exitIdx,end-1)-start);
+    const entryPrice=parseFloat(trade.entry_price);
+    const lastClose=candles[Math.min(exitIdx,candles.length-1)].close;
+    const exitPrice=isOpen?lastClose:(isWin?tp:sl);
+    const ey=priceToY(entryPrice);
+    const xy=priceToY(exitPrice);
+    const color=isOpen
+      ?(isBuy?(lastClose>=entryPrice?'#00e676':'#ff1744'):(lastClose<=entryPrice?'#00e676':'#ff1744'))
+      :(isWin?'#00e676':'#ff1744');
 
     ctx.save();
-    ctx.globalAlpha = 0.65;
-
-    // Seta preenchida
-    ctx.fillStyle = arrowColor;
-    ctx.shadowColor = arrowColor;
-    ctx.shadowBlur = 6;
+    ctx.globalAlpha=isOpen?0.45:0.85;
+    ctx.setLineDash([]);
     ctx.beginPath();
-    if(isBuy){
-      ctx.moveTo(ex, tipY);
-      ctx.lineTo(ex - aw/2, tipY + aw);
-      ctx.lineTo(ex + aw/2, tipY + aw);
-    } else {
-      ctx.moveTo(ex, tipY);
-      ctx.lineTo(ex - aw/2, tipY - aw);
-      ctx.lineTo(ex + aw/2, tipY - aw);
+    ctx.moveTo(ex,ey);
+    ctx.lineTo(xx,xy);
+    ctx.strokeStyle=color;
+    ctx.lineWidth=isOpen?0.8:1.5;
+    ctx.shadowColor=color;
+    ctx.shadowBlur=isOpen?0:5;
+    ctx.stroke();
+    ctx.shadowBlur=0;
+    ctx.beginPath();ctx.arc(ex,ey,2.5,0,Math.PI*2);ctx.fillStyle=isBuy?'#00e676':'#ff1744';ctx.fill();
+    ctx.beginPath();ctx.arc(xx,xy,isOpen?2:3.5,0,Math.PI*2);ctx.fillStyle=color;ctx.fill();
+    if(!isOpen){
+      ctx.font='bold 9px Share Tech Mono,monospace';
+      ctx.fillStyle=color;ctx.shadowColor=color;ctx.shadowBlur=4;
+      ctx.textAlign=xx>=ex?'left':'right';
+      ctx.fillText(isWin?'✓':'✗',xx>=ex?xx+5:xx-5,xy+3);
+      ctx.shadowBlur=0;
     }
-    ctx.closePath(); ctx.fill();
-    ctx.shadowBlur = 0;
-
-    // Label pequeno do resultado acima/abaixo da seta
-    const labelY = isBuy ? tipY + aw + 11 : tipY - aw - 4;
-    ctx.fillStyle = resultColor;
-    ctx.font = 'bold 8px Share Tech Mono,monospace';
-    ctx.textAlign = 'center';
-    ctx.fillText(isWin ? '✓WIN' : '✗LOSS', ex, labelY);
-
-    // Linha horizontal no preço de entrada (tracejada, sutil)
-    const entryPriceY = priceToY(trade.entry_price);
-    if(entryPriceY >= PAD.T && entryPriceY <= h - PAD.B){
-      ctx.strokeStyle = arrowColor;
-      ctx.lineWidth = 0.8;
-      ctx.setLineDash([3,5]);
-      ctx.beginPath();
-      ctx.moveTo(ex, entryPriceY);
-      // Desenhar até o alvo ou stop (que foi atingido)
-      const exitPrice = isWin ? trade.target_price : trade.stop_price;
-      const exitY = priceToY(exitPrice);
-      // Linha horizontal até o fim da área visível ou até ~30% da largura
-      const lineEndX = Math.min(ex + cw2 * 20, w - PAD.R);
-      ctx.lineTo(lineEndX, entryPriceY);
-      ctx.stroke();
-
-      // Linha vertical até o resultado
-      if(exitY >= PAD.T && exitY <= h - PAD.B){
-        ctx.setLineDash([2,4]);
-        ctx.strokeStyle = resultColor;
-        ctx.beginPath();
-        ctx.moveTo(lineEndX, entryPriceY);
-        ctx.lineTo(lineEndX, exitY);
-        ctx.stroke();
-      }
-      ctx.setLineDash([]);
-    }
-
     ctx.restore();
   });
 }
@@ -2125,65 +2097,66 @@ async function runAI(){
     }
     const htf=tfA[htfList[htfList.length-1]]||tfA[mainTF];
 
-    const sys=`Você é um trader profissional sênior com 15 anos de experiência em Bitcoin e mercados cripto. Opera com disciplina extrema e só entra em trades de alta probabilidade. Prefere ficar de fora a forçar uma entrada ruim. Sua taxa de acerto é alta porque você espera o setup perfeito.
+    const sys=`Você é um trader profissional sênior com 15 anos de experiência em Bitcoin. Opera com disciplina extrema — prefere ficar de fora a forçar entrada ruim. Sua taxa de acerto é alta porque espera o setup perfeito.
 
-METODOLOGIA DE ANÁLISE (obrigatório seguir nesta ordem):
+METODOLOGIA (seguir obrigatoriamente nesta ordem):
 
-1. CONTEXTO HTF (4H/1D): Definir tendência macro. Identificar estrutura (HH+HL = alta, LH+LL = baixa). Localizar zonas de oferta e demanda relevantes. SEM alinhamento no HTF = AGUARDAR.
+1. CONTEXTO HTF (4H/1D): Tendência macro, estrutura (HH+HL=alta, LH+LL=baixa), zonas de oferta/demanda. SEM alinhamento HTF = AGUARDAR imediatamente.
 
-2. SMC (Smart Money Concepts): Identificar quebra de estrutura (BOS/ChoCH). Localizar blocos de ordem (Order Blocks) — últimos candles antes de movimento impulsivo. Identificar Fair Value Gaps (FVG) — desequilíbrios de preço que tendem a ser preenchidos. Verificar liquidez (equal highs/lows, stops acumulados).
+2. SMC — Smart Money Concepts:
+   - BOS/ChoCH: quebra de estrutura confirma direção
+   - Order Blocks: último candle antes de movimento impulsivo = zona de entrada
+   - Fair Value Gaps (FVG): desequilíbrios que tendem a ser preenchidos
+   - Liquidez: equal highs/lows, stops acumulados abaixo de mínimas/acima de máximas
 
-3. CONFLUÊNCIAS NECESSÁRIAS (mínimo 3 obrigatórias para sinal):
-   - HTF alinhado com direção da trade
-   - Preço em zona de S/R chave OU Order Block OU FVG
-   - Estrutura de mercado confirmando (BOS ou ChoCH no LTF)
-   - RSI em zona favorável (não sobrecomprado para COMPRA, não sobrevendido para VENDA)
-   - Volume confirmando (acima da média no ponto de entrada)
-   - Padrão de candle de reversão ou continuação no nível
+3. CONFLUÊNCIAS — mínimo 3 obrigatórias para qualquer sinal:
+   □ HTF alinhado com a direção
+   □ Preço em S/R chave OU Order Block OU FVG
+   □ BOS ou ChoCH confirmado no LTF
+   □ RSI em zona favorável (não extremo)
+   □ Volume acima da média no ponto de entrada
+   □ Padrão de candle de reversão/continuação no nível
 
-4. FILTROS OBRIGATÓRIOS (qualquer um = AGUARDAR):
-   - Preço no meio de um range sem direção clara
-   - HTF e LTF em conflito de tendência
-   - RSI acima de 70 para COMPRA ou abaixo de 30 para VENDA
-   - Stop Loss maior que 1.5x o ATR do timeframe
-   - R:R menor que 2:1
-   - Menos de 3 confluências
-   - ADX abaixo de 20 (mercado sem tendência)
-   - Candle atual muito estendido longe das EMAs (sobreextensão)
+4. FILTROS — qualquer um = AGUARDAR obrigatório:
+   ✗ Preço no meio de range sem direção clara
+   ✗ HTF e LTF em conflito de tendência
+   ✗ RSI > 70 para COMPRA ou RSI < 30 para VENDA
+   ✗ Stop > 1.5x ATR
+   ✗ R:R < 2:1
+   ✗ Menos de 3 confluências
+   ✗ ADX < 20 (sem tendência)
+   ✗ Preço muito estendido das EMAs
 
-5. GESTÃO DE RISCO:
-   - Stop Loss: atrás do Order Block ou swing high/low mais próximo. Nunca mais de 1.5x ATR.
-   - Alvo parcial (TP1): nível de S/R imediato, mínimo 1.5x o risco.
-   - Alvo final (TP2): próxima zona de S/R major. R:R mínimo 2:1.
-   - NUNCA mover stop para breakeven nesta análise — só reportar níveis técnicos.
+5. NÍVEIS:
+   - Stop: atrás do Order Block ou swing high/low. Máximo 1.5x ATR.
+   - TP1 (alvo_parcial): S/R imediato, mínimo 1.5x risco.
+   - TP2 (alvo): S/R major, mínimo 2x risco.
 
-REGRA DE OURO: Em caso de dúvida, AGUARDAR. Um trader experiente opera poucas vezes com alta precisão. Não existe obrigação de gerar sinal. A maioria das análises deve resultar em AGUARDAR.
+REGRA DE OURO: Em dúvida = AGUARDAR. A maioria das análises deve ser AGUARDAR. Só emita COMPRA/VENDA com confiança >= 70% e TODAS as condições atendidas.
 
-CONFIANÇA: Só emitir COMPRA/VENDA com confiança >= 70%. Abaixo disso = AGUARDAR.
+Responda APENAS com JSON válido. Sem markdown, sem texto extra.`;
 
-Responda APENAS com JSON válido. Sem markdown, sem texto antes ou depois.`;
+    const usr=`Analise BTC/USDT com metodologia SMC completa.
 
-    const usr=`Analise BTC/USDT agora com metodologia SMC completa.
+PREÇO: $${livePrice.toFixed(2)} | TF OPERACIONAL: ${currentTF}
 
-PREÇO ATUAL: $${livePrice.toFixed(2)} | TF OPERACIONAL: ${currentTF}
+═══ DADOS MULTI-TF ═══${tfSection}
 
-═══ DADOS MULTI-TIMEFRAME ═══${tfSection}
-
-═══ ZONAS CHAVE ═══
-Resistências: ${resistances.map(r=>'$'+f(r)).join(', ')||'nenhuma identificada'}
-Suportes: ${supports.map(s=>'$'+f(s)).join(', ')||'nenhum identificado'}
+═══ ZONAS TÉCNICAS ═══
+Resistências: ${resistances.map(r=>'$'+f(r)).join(', ')||'nenhuma'}
+Suportes: ${supports.map(s=>'$'+f(s)).join(', ')||'nenhum'}
 
 ═══ CONTEXTO HTF (${htfList[htfList.length-1]}) ═══
 Tendência: ${htf.trend} | Estrutura: ${htf.struct} | RSI: ${htf.r.toFixed(1)} | ADX: ${htf.adx.toFixed(0)}
 
-═══ CHECKLIST ANTES DE RESPONDER ═══
-1. HTF alinhado? ${htf.trend === 'LATERAL' ? 'NÃO — mercado lateral, considere AGUARDAR' : 'SIM — ' + htf.trend}
-2. Quantas confluências identifica? (mínimo 3 para sinal)
-3. R:R calculado é >= 2:1? Se não = AGUARDAR
-4. ADX > 20? ${htf.adx > 20 ? 'SIM (' + htf.adx.toFixed(0) + ')' : 'NÃO (' + htf.adx.toFixed(0) + ') — sem tendência, considere AGUARDAR'}
-5. Preço está em zona técnica relevante ou no meio do range?
+═══ CHECKLIST (responda internamente antes de decidir) ═══
+1. HTF alinhado? → ${htf.trend==='LATERAL'?'LATERAL — forte candidato a AGUARDAR':'SIM: '+htf.trend}
+2. ADX indica tendência? → ${htf.adx>20?'SIM ('+htf.adx.toFixed(0)+')':'NÃO ('+htf.adx.toFixed(0)+') — mercado sem força direcional'}
+3. Identifiquei >= 3 confluências SMC?
+4. R:R >= 2:1 com stop técnico?
+5. Preço em zona técnica ou no meio do range?
 
-Responda com JSON (sem texto extra):
+JSON (apenas isso, sem texto):
 {
   "direcao":"COMPRA ou VENDA ou AGUARDAR",
   "confianca":0-100,
@@ -2191,9 +2164,9 @@ Responda com JSON (sem texto extra):
   "alvo_parcial":numero,
   "alvo":numero,
   "stop":numero,
-  "confluencias":["confluencia1","confluencia2","confluencia3"],
-  "contexto":"análise HTF→LTF: contexto macro, zona técnica, gatilho SMC, invalidação",
-  "aviso":"risco ou string vazia",
+  "confluencias":["cf1","cf2","cf3"],
+  "contexto":"HTF→LTF: contexto macro, zona SMC, gatilho, invalidação",
+  "aviso":"risco relevante ou string vazia",
   "supports":[${supports.join(',')||'0'}],
   "resistances":[${resistances.join(',')||'0'}],
   "structure":"${htf.struct}",
@@ -2242,22 +2215,18 @@ Responda com JSON (sem texto extra):
     // Salvar no banco apenas COMPRA/VENDA (não AGUARDAR)
     let dir=(result.direcao||'').toUpperCase();
 
-    // Validação dupla: R:R >= 2.0 e confiança >= 70%
+    // Validação de R:R mínimo 1.2:1 — rejeita sinal se não atingir
     if(dir==='COMPRA'||dir==='VENDA'){
       const risk   = Math.abs(result.entrada - result.stop);
       const reward = Math.abs(result.alvo    - result.entrada);
-      const rr     = risk > 0 ? reward/risk : 0;
-      const conf   = result.confianca || 0;
+      const rr   = risk > 0 ? reward/risk : 0;
+      const conf = result.confianca||0;
       if(rr < 2.0){
-        console.log(`[AI] Sinal rejeitado: R:R ${rr.toFixed(2)} < 2.0 mínimo`);
-        result.direcao = 'AGUARDAR';
-        result.contexto = `[Rejeitado: R:R ${rr.toFixed(2)} abaixo do mínimo 2:1] ` + (result.contexto||'');
-        dir = 'AGUARDAR';
+        console.log(`[AI] Rejeitado: R:R ${rr.toFixed(2)} < 2.0`);
+        result.direcao='AGUARDAR'; result.contexto=`[Rejeitado: R:R ${rr.toFixed(2)} < 2:1] `+(result.contexto||''); dir='AGUARDAR';
       } else if(conf < 70){
-        console.log(`[AI] Sinal rejeitado: confiança ${conf}% < 70% mínimo`);
-        result.direcao = 'AGUARDAR';
-        result.contexto = `[Rejeitado: confiança ${conf}% abaixo de 70%] ` + (result.contexto||'');
-        dir = 'AGUARDAR';
+        console.log(`[AI] Rejeitado: confiança ${conf}% < 70%`);
+        result.direcao='AGUARDAR'; result.contexto=`[Rejeitado: confiança ${conf}% < 70%] `+(result.contexto||''); dir='AGUARDAR';
       }
     }
 
@@ -2549,7 +2518,8 @@ async function onLogin(){
   // Ordem importa: histórico primeiro para saber se tem posição aberta
   // antes de tentar restaurar estado da IA
   await loadTradeHistory();
-  await loadApiKeyFromDB(); // restaura IA só depois de saber _openTrade
+  await loadApiKeyFromDB();
+  setTimeout(checkRetroactiveClose,2500);
 }
 
 function openAuth(){document.getElementById('auth-modal').classList.add('open');}
@@ -2726,7 +2696,8 @@ async function saveApiKey(){
 // ══════════════════════════════════════════════════════
 // TRADE HISTORY
 // ══════════════════════════════════════════════════════
-let _openTrade=null; // trade em aberto {id,...}
+let _openTrade=null; // trade mais recente em aberto
+let _openTrades=[]; // todos os trades em aberto
 let _tradeHistory=[]; // todos os trades para plotar no gráfico
 let _historyLoaded=false; // guard: só permite auto-close após histórico carregado do banco
 
@@ -2788,10 +2759,9 @@ function renderHistory(rows){
   _tradeHistory = rows || [];
   _historyLoaded = true; // libera checkAutoClose
   
-  // Encontrar trade em aberto
-  _openTrade=rows.find(r=>r.result==='ABERTO')||null;
+  _openTrades=(rows||[]).filter(r=>r.result==='ABERTO');
+  _openTrade=_openTrades.length>0?_openTrades[_openTrades.length-1]:null;
   updateOpenBanner();
-  // Restaurar overlay e card da análise se tiver posição aberta
   if(_openTrade) restoreOverlayFromTrade(_openTrade);
   
   // Redesenhar gráfico para mostrar trades fechados
@@ -2841,10 +2811,51 @@ function updateOpenBanner(){
   if(_openTrade){
     banner.classList.add('visible');
     locked.classList.add('visible');
-    info.textContent=`${_openTrade.direction} @ $${fmtP(_openTrade.entry_price)} | TP $${fmtP(_openTrade.target_price)} | SL $${fmtP(_openTrade.stop_price)}`;
+    const count=_openTrades.length;
+    const prefix=count>1?`(${count} abertas) última: `:'';
+    info.textContent=prefix+`${_openTrade.direction} @ $${fmtP(_openTrade.entry_price)} | TP $${fmtP(_openTrade.target_price)} | SL $${fmtP(_openTrade.stop_price)}`;
   } else {
     banner.classList.remove('visible');
     locked.classList.remove('visible');
+  }
+}
+
+async function checkRetroactiveClose(){
+  if(!_session||_autoCloseChecking||!_historyLoaded) return;
+  if(!candles||candles.length===0) return;
+  if(!_openTrades||_openTrades.length===0) return;
+  _autoCloseChecking=true;
+  let anyChanged=false;
+  for(const trade of [..._openTrades]){
+    const tp=parseFloat(trade.target_price),sl=parseFloat(trade.stop_price),dir=trade.direction;
+    const entryTime=trade.entry_time
+      ?(typeof trade.entry_time==='string'?Math.floor(new Date(trade.entry_time).getTime()/1000):trade.entry_time):0;
+    let startIdx=0;
+    if(entryTime>0){
+      let minDiff=Infinity;
+      candles.forEach((cc,i)=>{const d=Math.abs(cc.time-entryTime);if(d<minDiff){minDiff=d;startIdx=i;}});
+    }
+    let result=null,closeCandle=null;
+    for(let i=startIdx;i<candles.length;i++){
+      const cc=candles[i];
+      if(dir==='COMPRA'){if(cc.high>=tp){result='GANHO';closeCandle=cc;break;}if(cc.low<=sl){result='PERDA';closeCandle=cc;break;}}
+      else if(dir==='VENDA'){if(cc.low<=tp){result='GANHO';closeCandle=cc;break;}if(cc.high>=sl){result='PERDA';closeCandle=cc;break;}}
+    }
+    if(result&&closeCandle){
+      try{
+        await supa('/rest/v1/trade_signals?id=eq.'+trade.id,'PATCH',
+          {result,closed_at:new Date(closeCandle.time*1000).toISOString()},_session.access_token);
+        anyChanged=true;
+        console.log('[RetroClose]',dir,'→',result);
+      }catch(e){console.warn('retroClose:',e.message);}
+    }
+  }
+  _autoCloseChecking=false;
+  if(anyChanged){
+    showToast('📊 Posições fechadas retroativamente','var(--accent)');
+    await loadTradeHistory();
+    if(showOverlay){showOverlay=false;document.getElementById('overlay-btn').classList.remove('active');}
+    drawChart();
   }
 }
 
