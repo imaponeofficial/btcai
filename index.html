@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<title>BTC AI Trader</title>
+<title>BTC AI Trader PRO</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Exo+2:wght@400;700;900&display=swap');
 :root{
@@ -256,7 +256,29 @@ input[type=color]{display:none}
 .sig-ts{font-size:8px;color:var(--text2);font-family:'Share Tech Mono',monospace;text-align:right;margin-top:3px}
 .placeholder{text-align:center;padding:10px 6px;color:var(--text2);font-size:10px;line-height:1.9}
 .err-box{padding:9px;background:rgba(255,23,68,.08);border:1px solid var(--red);border-radius:6px;font-size:10px;color:var(--red);line-height:1.5}
+/* ── PERFORMANCE PANEL ── */
+.perf-kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:5px;margin-bottom:8px}
+.perf-kpi{background:var(--bg3);border:1px solid var(--border);border-radius:7px;padding:7px 5px;text-align:center}
+.perf-kpi-l{font-size:7px;color:var(--text2);letter-spacing:1px;margin-bottom:3px}
+.perf-kpi-v{font-family:'Share Tech Mono',monospace;font-size:14px;font-weight:700}
+.perf-section{margin-bottom:8px}
+.perf-sec-title{font-size:8px;color:var(--text2);letter-spacing:2px;margin-bottom:5px;font-weight:700;text-transform:uppercase}
+.perf-bar-row{display:flex;align-items:center;gap:5px;margin-bottom:4px}
+.perf-bar-label{font-size:9px;color:var(--text);width:130px;flex-shrink:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.perf-bar-track{flex:1;height:8px;background:var(--bg3);border-radius:4px;overflow:hidden;position:relative}
+.perf-bar-fill{height:100%;border-radius:4px;transition:width .6s ease}
+.perf-bar-pct{font-family:'Share Tech Mono',monospace;font-size:9px;width:38px;text-align:right;flex-shrink:0}
+.perf-bar-count{font-size:8px;color:var(--text2);width:24px;text-align:right;flex-shrink:0}
+.perf-insight{background:rgba(0,212,255,.06);border:1px solid rgba(0,212,255,.2);border-radius:6px;padding:8px 10px;margin-bottom:5px;font-size:9px;color:var(--text);line-height:1.7}
+.perf-insight strong{color:var(--accent)}
+.perf-warn{background:rgba(255,214,0,.06);border:1px solid rgba(255,214,0,.2);border-radius:6px;padding:8px 10px;margin-bottom:5px;font-size:9px;color:var(--yellow);line-height:1.7}
+.perf-no-data{text-align:center;padding:16px;color:var(--text2);font-size:10px;line-height:2}
+.perf-hr{border:none;border-top:1px solid var(--border);margin:7px 0}
+.perf-refresh{display:flex;justify-content:flex-end;margin-bottom:6px}
+.perf-refresh-btn{background:transparent;border:1px solid var(--border);border-radius:5px;color:var(--text2);cursor:pointer;padding:3px 10px;font-size:9px;font-family:'Exo 2',sans-serif;font-weight:700;letter-spacing:1px;transition:all .15s}
+.perf-refresh-btn:hover{border-color:var(--accent);color:var(--accent)}
 ::-webkit-scrollbar{width:3px}::-webkit-scrollbar-track{background:var(--bg)}::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
+
 
 /* ── AUTH MODAL ── */
 #auth-modal{display:none;position:fixed;inset:0;z-index:200;background:rgba(0,0,0,.85);
@@ -420,6 +442,7 @@ input[type=color]{display:none}
     <button class="tab-btn2 active" onclick="switchTab('ind',this)">📊 INDICADORES</button>
     <button class="tab-btn2" onclick="switchTab('ai',this)">🤖 IA TRADER</button>
     <button class="tab-btn2" onclick="switchTab('hist',this)">📋 HISTÓRICO</button>
+    <button class="tab-btn2" onclick="switchTab('perf',this);renderPerformance()">🎯 PERFORMANCE</button>
   </div>
   <div id="tab-ind" class="tab-pane active">
     <div class="ind-grid">
@@ -440,8 +463,10 @@ input[type=color]{display:none}
         <span class="opb-info" id="opb-info"></span>
       </div>
       <div class="locked-notice" id="locked-notice">
-        ⚠️ Existe uma entrada em aberto. Feche a posição atual no histórico antes de gerar uma nova análise.
+        🔒 Posição aberta — aguardando Stop ou Alvo ser atingido.
       </div>
+      <div id="time-window-bar" style="margin-bottom:5px;padding:4px 8px;border-radius:5px;font-size:9px;font-weight:700;letter-spacing:1px;text-align:center;border:1px solid;display:none"></div>
+      <div id="fl-schedule-bar" style="display:none;margin-bottom:5px;padding:4px 8px;border-radius:5px;font-size:9px;font-weight:700;letter-spacing:1px;text-align:center;border:1px solid rgba(0,212,255,.25);background:rgba(0,212,255,.05);color:var(--accent)"></div>
       <div class="api-row">
         <button class="ai-tog" id="ai-btn" onclick="toggleAI()" style="width:100%;justify-content:center">
           <span class="ai-dot"></span><span id="ai-btn-txt">LIGAR IA</span>
@@ -460,8 +485,15 @@ input[type=color]{display:none}
       </div>
       <div id="ai-out">
         <div class="placeholder">🤖<br>Faça <strong style="color:var(--accent)">LOGIN</strong> para usar a IA Trader<br>
-        <span style="font-size:9px;opacity:.6">Análise multi-timeframe com SMC, Price Action,<br>Suporte/Resistência e confluências</span></div>
+        <span style="font-size:9px;opacity:.6">Monitora Follow Line PRO 05:00–17:00 UTC<br>Valida sinais com Stop + Alvo RR mínimo 1:2</span></div>
       </div>
+    </div>
+  </div>
+
+  <!-- PERFORMANCE TAB -->
+  <div id="tab-perf" class="tab-pane" style="padding:8px 10px">
+    <div id="perf-content">
+      <div class="placeholder" style="padding:16px">🎯<br>Abra a aba para ver a análise de performance</div>
     </div>
   </div>
 
@@ -476,9 +508,9 @@ input[type=color]{display:none}
     <div id="hist-table-wrap" style="overflow-x:auto">
       <table class="hist-table">
         <thead><tr>
-          <th>DATA</th><th>DIR</th><th>ENTRADA</th><th>ALVO</th><th>STOP</th><th>R:R</th><th>RESULTADO</th><th>AÇÃO</th>
+          <th>DATA</th><th>DIR</th><th>ENTRADA</th><th>CONF%</th><th>RESULTADO</th><th>AÇÃO</th>
         </tr></thead>
-        <tbody id="hist-tbody"><tr><td colspan="8" style="text-align:center;color:var(--text2);padding:12px">Faça login para ver o histórico</td></tr></tbody>
+        <tbody id="hist-tbody"><tr><td colspan="7" style="text-align:center;color:var(--text2);padding:12px">Faça login para ver o histórico</td></tr></tbody>
       </table>
     </div>
   </div>
@@ -817,8 +849,8 @@ function drawChart(){
     if(bw > 3) ctx.strokeRect(bx, by, bw, bh);
   }
 
-  // ── SMC LABELS on candles (HH/HL/LH/LL) ──
-  if(true){ // always show SMC labels
+  // ── SMC LABELS on candles (HH/HL/LH/LL) — OCULTOS
+  if(false){ // labels SMC desativados
     ctx.font = 'bold '+Math.min(10,Math.max(7,cw*0.5))+'px Share Tech Mono,monospace';
     ctx.textAlign = 'center';
     smcLabels.forEach(({idx, label, onHigh}) => {
@@ -847,6 +879,9 @@ function drawChart(){
       ctx.fillText('🕯️', x, priceToY(c.low)+22);
     }
   }
+
+  // ── FOLLOW LINE PRO no gráfico ──
+  drawFollowLineOnChart(start, end, cw);
 
   // ── AI OVERLAY ──
   if(showOverlay && aiOverlayData) drawAIOverlay(start, end);
@@ -1144,10 +1179,12 @@ function calcEMAAt(closes, period, idx){
 }
 
 // ── AI OVERLAY ──────────────────────────────────────
-let showOverlay = false;
+let showOverlay = true;
 let aiOverlayData = null;
 
 function toggleOverlay(){
+  // Se não tem posição aberta, limpa entrada para não mostrar linha azul
+  if(!_openTrade && aiOverlayData) aiOverlayData.entrada = null;
   showOverlay = !showOverlay;
   const btn = document.getElementById('overlay-btn');
   btn.classList.toggle('active', showOverlay);
@@ -1330,29 +1367,14 @@ function drawAIOverlay(start, end){
     ctx.fillStyle=textColor; ctx.font='bold 8px Share Tech Mono,monospace'; ctx.textAlign='right';
     ctx.fillText(label, w-PAD.R-4, y+4);
   }
-  if(o.alvo_parcial) drawPriceLine(o.alvo_parcial, 'TP1 $'+fmtP(o.alvo_parcial), '#4caf50','#fff');
-  if(o.alvo)         drawPriceLine(o.alvo,  'TP2 $'+fmtP(o.alvo),  '#00e676','#000');
-  if(o.entrada)      drawPriceLine(o.entrada,'ENT $'+fmtP(o.entrada),'#00d4ff','#000');
-  if(o.stop)         drawPriceLine(o.stop,  'SL  $'+fmtP(o.stop),  '#ff1744','#fff');
+  // Linhas de entrada / alvo / stop — aparecem quando há posição ABERTA
+  if(_openTrade && o.entrada) drawPriceLine(o.entrada,'ENT $'+fmtP(o.entrada),'#00d4ff','#000');
+  if(_openTrade && o.alvo)    drawPriceLine(o.alvo,   'ALVO $'+fmtP(o.alvo),  '#00e676','#000');
+  if(_openTrade && o.stop)    drawPriceLine(o.stop,   'STOP $'+fmtP(o.stop),  '#ff1744','#fff');
+  if(_openTrade && o.alvo_parcial && o.alvo_parcial !== o.alvo)
+    drawPriceLine(o.alvo_parcial,'PARC $'+fmtP(o.alvo_parcial),'#ffd600','#000');
 
-  // ── RISK ZONE (stop → entrada sombreado) ──────────────
-  if(o.entrada && o.stop){
-    const y1=priceToY(o.entrada), y2=priceToY(o.stop);
-    const grad=ctx.createLinearGradient(0,Math.min(y1,y2),0,Math.max(y1,y2));
-    grad.addColorStop(0,'rgba(255,23,68,0.0)');
-    grad.addColorStop(1,'rgba(255,23,68,0.12)');
-    ctx.fillStyle=grad;
-    ctx.fillRect(PAD.L,Math.min(y1,y2), w-PAD.R-PAD.L, Math.abs(y2-y1));
-  }
-  // ── REWARD ZONE (entrada → alvo sombreado) ────────────
-  if(o.entrada && o.alvo){
-    const y1=priceToY(o.entrada), y2=priceToY(o.alvo);
-    const grad=ctx.createLinearGradient(0,Math.min(y1,y2),0,Math.max(y1,y2));
-    grad.addColorStop(0,'rgba(0,230,118,0.12)');
-    grad.addColorStop(1,'rgba(0,230,118,0.0)');
-    ctx.fillStyle=grad;
-    ctx.fillRect(PAD.L,Math.min(y1,y2), w-PAD.R-PAD.L, Math.abs(y2-y1));
-  }
+  // Binárias não têm zona de risco/retorno (sem TP/SL)
 
   // ── INFO BOX (estrutura + padrão) ─────────────────────
   const infoLines = [];
@@ -1373,6 +1395,147 @@ function drawAIOverlay(start, end){
   ctx.restore();
 }
 
+// ══════════════════════════════════════════════════════
+// FOLLOW LINE PRO — Renderização no gráfico
+// A linha usa candles5m como fonte (M5), mapeando para o TF do gráfico atual
+// Linha sempre visível; cor+labels somente dentro do horário (05:00–17:00 UTC)
+// ══════════════════════════════════════════════════════
+function drawFollowLineOnChart(start, end, cw){
+  // Fonte: preferir candles5m (M5), fallback para candles atuais
+  const src = (candles5m && candles5m.length >= FL_BB_PERIOD + FL_ATR_PERIOD + 4)
+    ? candles5m : candles;
+  if(!src || src.length < FL_BB_PERIOD + FL_ATR_PERIOD + 4) return;
+
+  // Calcular FL sobre a fonte M5
+  const flAll = calcFollowLine(src);
+  if(!flAll || flAll.length < 2) return;
+
+  // Helper: candle M5 está dentro da janela 05:00–17:00 UTC?
+  function inWindow(srcIdx){
+    const ts = src[srcIdx] && src[srcIdx].time;
+    if(!ts) return false;
+    const d = new Date(ts * 1000);
+    const m = d.getUTCHours() * 60 + d.getUTCMinutes();
+    return m >= 300 && m < 1020;
+  }
+
+  // Mapear timestamp M5 para posição X no gráfico atual
+  // Procurar no array candles (TF do gráfico) o candle mais próximo do timestamp M5
+  const timeToX = (() => {
+    // Construir mapa rápido: timestamp → índice em candles
+    const tmap = new Map();
+    for(let i = 0; i < candles.length; i++) tmap.set(candles[i].time, i);
+    return (ts) => {
+      // Tentar match exato primeiro
+      let idx = tmap.get(ts);
+      if(idx !== undefined){
+        if(idx < start || idx >= end) return null;
+        return idxToX(idx - start);
+      }
+      // Match mais próximo dentro da janela visível
+      let best = null, bestD = Infinity;
+      for(let i = start; i < end; i++){
+        const d = Math.abs(candles[i].time - ts);
+        if(d < bestD){ bestD = d; best = i; }
+      }
+      if(best === null || bestD > 600) return null; // máx 10min de diferença
+      return idxToX(best - start);
+    };
+  })();
+
+  ctx.save();
+
+  // ── 1. Linha da TrendLine ──
+  ctx.lineWidth = 2;
+  ctx.setLineDash([]);
+
+  let prevX = null, prevY = null;
+
+  for(let i = 1; i < flAll.length; i++){
+    const fl  = flAll[i];
+    const flP = flAll[i - 1];
+    if(!fl || !flP || fl.trendLine === null || flP.trendLine === null) continue;
+
+    const x0 = timeToX(src[i - 1].time);
+    const x1 = timeToX(src[i].time);
+    if(x0 === null || x1 === null) continue;
+
+    const y0 = priceToY(flP.trendLine);
+    const y1 = priceToY(fl.trendLine);
+    const inW = inWindow(i);
+
+    ctx.beginPath();
+    ctx.moveTo(x0, y0);
+    ctx.lineTo(x1, y1);
+    ctx.strokeStyle = !inW ? 'rgba(90,110,130,0.45)' : (fl.iTrend >= 0 ? '#00d4ff' : '#ff4466');
+    ctx.globalAlpha  = inW ? 0.95 : 0.55;
+    ctx.stroke();
+  }
+  ctx.globalAlpha = 1;
+
+  // ── 2. Labels históricos (💣/🔨) — só dentro do horário ──
+  for(let i = 1; i < flAll.length; i++){
+    const fl  = flAll[i];
+    const flP = flAll[i - 1];
+    if(!fl || !flP || fl.trendLine === null) continue;
+    if(!inWindow(i)) continue;
+
+    const isBuySignal  = flP.iTrend !== 1  && fl.iTrend === 1;
+    const isSellSignal = flP.iTrend !== -1 && fl.iTrend === -1;
+    if(!isBuySignal && !isSellSignal) continue;
+
+    const x = timeToX(src[i].time);
+    if(x === null) continue;
+
+    const ty = priceToY(fl.trendLine);
+    const c  = src[i];
+    const atr = fl.atr || 0;
+    const pad = Math.max(atr * 1.5, (priceMax - priceMin) * 0.015);
+    const padPx = Math.max(Math.abs(priceToY(c.low) - priceToY(c.low + pad)), 14);
+
+    const lw = cw > 10 ? 24 : 16;
+    const lh = cw > 10 ? 17 : 12;
+    const fs = cw > 10 ? 11 : 8;
+
+    if(isBuySignal){
+      const labelY = priceToY(c.low) + padPx;
+      ctx.globalAlpha = 0.93;
+      ctx.fillStyle = '#003388';
+      ctx.beginPath();
+      if(ctx.roundRect) ctx.roundRect(x-lw/2, labelY-lh/2, lw, lh, 3);
+      else ctx.rect(x-lw/2, labelY-lh/2, lw, lh);
+      ctx.fill();
+      ctx.strokeStyle='#00aaff'; ctx.lineWidth=0.8; ctx.stroke();
+      ctx.font=`bold ${fs}px Share Tech Mono,monospace`;
+      ctx.fillStyle='#fff'; ctx.textAlign='center';
+      ctx.fillText('💣', x, labelY + fs*0.38);
+      ctx.globalAlpha=0.3; ctx.strokeStyle='#00d4ff'; ctx.lineWidth=0.8;
+      ctx.setLineDash([2,3]);
+      ctx.beginPath(); ctx.moveTo(x,ty); ctx.lineTo(x,labelY-lh/2); ctx.stroke();
+      ctx.setLineDash([]);
+    } else {
+      const labelY = priceToY(c.high) - padPx;
+      ctx.globalAlpha = 0.93;
+      ctx.fillStyle = '#660011';
+      ctx.beginPath();
+      if(ctx.roundRect) ctx.roundRect(x-lw/2, labelY-lh/2, lw, lh, 3);
+      else ctx.rect(x-lw/2, labelY-lh/2, lw, lh);
+      ctx.fill();
+      ctx.strokeStyle='#ff4466'; ctx.lineWidth=0.8; ctx.stroke();
+      ctx.font=`bold ${fs}px Share Tech Mono,monospace`;
+      ctx.fillStyle='#fff'; ctx.textAlign='center';
+      ctx.fillText('🔨', x, labelY + fs*0.38);
+      ctx.globalAlpha=0.3; ctx.strokeStyle='#ff4466'; ctx.lineWidth=0.8;
+      ctx.setLineDash([2,3]);
+      ctx.beginPath(); ctx.moveTo(x,ty); ctx.lineTo(x,labelY+lh/2); ctx.stroke();
+      ctx.setLineDash([]);
+    }
+  }
+
+  ctx.globalAlpha = 1;
+  ctx.restore();
+}
+
 // ── HISTÓRICO DE TRADES NO GRÁFICO ──────────────────
 function drawClosedTrades(start, end){
   if(!_tradeHistory||!_tradeHistory.length) return;
@@ -1381,69 +1544,121 @@ function drawClosedTrades(start, end){
     const isOpen  = trade.result==='ABERTO';
     const isWin   = trade.result==='GANHO';
     const isBuy   = trade.direction==='COMPRA';
-    const entryTimeUnix = trade.entry_time
-      ?(typeof trade.entry_time==='string'?Math.floor(new Date(trade.entry_time).getTime()/1000):trade.entry_time):0;
-    if(!entryTimeUnix) return;
 
-    let entryIdx=candles.findIndex(cc=>cc.time===entryTimeUnix);
+    const entryPrice = parseFloat(trade.entry_price);
+    const stopPrice  = parseFloat(trade.stop_price)  || 0;
+    const alvoPrice  = parseFloat(trade.target_price) || 0;
+    if(!entryPrice) return;
+
+    // Encontrar candle de entrada pelo timestamp
+    const entryTs = trade.entry_time
+      ?(typeof trade.entry_time==='string'?Math.floor(new Date(trade.entry_time).getTime()/1000):trade.entry_time):0;
+    if(!entryTs) return;
+
+    let entryIdx = candles.findIndex(cc=>cc.time===entryTs);
     if(entryIdx<0){
       let minDiff=Infinity;
-      candles.forEach((cc,i)=>{const d=Math.abs(cc.time-entryTimeUnix);if(d<minDiff){minDiff=d;entryIdx=i;}});
-      const tfSec={'1m':60,'5m':300,'15m':900,'1h':3600,'4h':14400,'1d':86400};
-      const period=tfSec[currentTF]||300;
-      if(Math.abs(candles[entryIdx]?.time-entryTimeUnix)>period*3){
-        const ep=parseFloat(trade.entry_price); minDiff=Infinity; entryIdx=-1;
-        candles.forEach((cc,i)=>{const d=Math.min(Math.abs(cc.close-ep),Math.abs(cc.high-ep),Math.abs(cc.low-ep));if(d<minDiff){minDiff=d;entryIdx=i;}});
-      }
+      candles.forEach((cc,i)=>{const d=Math.abs(cc.time-entryTs);if(d<minDiff){minDiff=d;entryIdx=i;}});
     }
     if(entryIdx<0) return;
 
-    const tp=parseFloat(trade.target_price),sl=parseFloat(trade.stop_price);
-    let exitIdx=candles.length-1;
-    if(!isOpen){
-      for(let i=entryIdx+1;i<candles.length;i++){
-        const cc=candles[i];
-        if(isBuy){if(isWin&&cc.high>=tp){exitIdx=i;break;}if(!isWin&&cc.low<=sl){exitIdx=i;break;}}
-        else      {if(isWin&&cc.low<=tp) {exitIdx=i;break;}if(!isWin&&cc.high>=sl){exitIdx=i;break;}}
-        exitIdx=i;
+    // Para trade fechado: encontrar onde stop/alvo foi tocado
+    let exitIdx = candles.length - 1;
+    if(!isOpen && (stopPrice||alvoPrice)){
+      for(let i=entryIdx; i<candles.length; i++){
+        const c = candles[i];
+        if(isBuy){
+          if(stopPrice && c.low  <= stopPrice){ exitIdx=i; break; }
+          if(alvoPrice && c.high >= alvoPrice){ exitIdx=i; break; }
+        } else {
+          if(stopPrice && c.high >= stopPrice){ exitIdx=i; break; }
+          if(alvoPrice && c.low  <= alvoPrice){ exitIdx=i; break; }
+        }
       }
     }
 
-    if(exitIdx<start&&entryIdx<start) return;
-    if(entryIdx>=end&&exitIdx>=end) return;
+    if(exitIdx < start && entryIdx < start) return;
+    if(entryIdx >= end) return;
 
-    const ex=idxToX(Math.max(entryIdx,start)-start);
-    const xx=idxToX(Math.min(exitIdx,end-1)-start);
-    const entryPrice=parseFloat(trade.entry_price);
-    const lastClose=candles[Math.min(exitIdx,candles.length-1)].close;
-    const exitPrice=isOpen?lastClose:(isWin?tp:sl);
-    const ey=priceToY(entryPrice);
-    const xy=priceToY(exitPrice);
-    const color=isOpen
-      ?(isBuy?(lastClose>=entryPrice?'#00e676':'#ff1744'):(lastClose<=entryPrice?'#00e676':'#ff1744'))
-      :(isWin?'#00e676':'#ff1744');
+    const ex = idxToX(Math.max(entryIdx, start) - start);
+    const xx = idxToX(Math.min(exitIdx, end - 1) - start);
+    const ey = priceToY(entryPrice);
+    const exitPrice = isWin ? (alvoPrice||entryPrice) : (stopPrice||entryPrice);
+    const xy = priceToY(isOpen ? entryPrice : exitPrice);
+    const color = isOpen ? (isBuy?'#00e676':'#ff1744') : (isWin?'#00e676':'#ff1744');
 
     ctx.save();
-    ctx.globalAlpha=isOpen?0.45:0.85;
+
+    // Linhas de Stop e Alvo para trade aberto ou recentemente plotado
+    if((isOpen||!isOpen) && stopPrice && alvoPrice){
+      const sy = priceToY(stopPrice);
+      const ay = priceToY(alvoPrice);
+      const ex2 = Math.min(xx + 60, chartW());
+
+      // Linha de Stop (vermelha tracejada)
+      ctx.setLineDash([4,3]);
+      ctx.globalAlpha=isOpen?0.7:0.35;
+      ctx.beginPath();ctx.moveTo(ex,sy);ctx.lineTo(ex2,sy);
+      ctx.strokeStyle='#ff1744';ctx.lineWidth=1;ctx.stroke();
+
+      // Linha de Alvo (verde tracejada)
+      ctx.beginPath();ctx.moveTo(ex,ay);ctx.lineTo(ex2,ay);
+      ctx.strokeStyle='#00e676';ctx.lineWidth=1;ctx.stroke();
+
+      // Labels Stop/Alvo (apenas se visível)
+      ctx.setLineDash([]);
+      ctx.globalAlpha=isOpen?0.9:0.5;
+      ctx.font='bold 8px Share Tech Mono,monospace';
+      if(isOpen){
+        ctx.fillStyle='#ff1744';ctx.textAlign='right';
+        ctx.fillText('SL $'+fmtP(stopPrice), ex2-2, sy-2);
+        ctx.fillStyle='#00e676';
+        ctx.fillText('TP $'+fmtP(alvoPrice), ex2-2, ay-2);
+      }
+    }
+
+    // Linha de entrada (horizontal)
+    ctx.setLineDash([2,3]);
+    ctx.globalAlpha=isOpen?0.5:0.4;
+    ctx.beginPath();ctx.moveTo(ex,ey);ctx.lineTo(Math.min(xx+20,chartW()-PAD.R),ey);
+    ctx.strokeStyle=isBuy?'#00e676':'#ff1744';ctx.lineWidth=0.8;ctx.stroke();
+
+    // Linha entry→exit
     ctx.setLineDash([]);
-    ctx.beginPath();
-    ctx.moveTo(ex,ey);
-    ctx.lineTo(xx,xy);
-    ctx.strokeStyle=color;
-    ctx.lineWidth=isOpen?0.8:1.5;
-    ctx.shadowColor=color;
-    ctx.shadowBlur=isOpen?0:5;
-    ctx.stroke();
+    ctx.globalAlpha=isOpen?0.45:0.85;
+    ctx.beginPath();ctx.moveTo(ex,ey);ctx.lineTo(xx,xy);
+    ctx.strokeStyle=color;ctx.lineWidth=isOpen?0.8:1.5;
+    ctx.shadowColor=color;ctx.shadowBlur=isOpen?0:5;ctx.stroke();
     ctx.shadowBlur=0;
-    ctx.beginPath();ctx.arc(ex,ey,2.5,0,Math.PI*2);ctx.fillStyle=isBuy?'#00e676':'#ff1744';ctx.fill();
-    ctx.beginPath();ctx.arc(xx,xy,isOpen?2:3.5,0,Math.PI*2);ctx.fillStyle=color;ctx.fill();
+
+    // Ponto de entrada (seta)
+    ctx.globalAlpha=0.95;
+    const arrowSize = 5;
+    ctx.beginPath();
+    if(isBuy){
+      ctx.moveTo(ex,ey+arrowSize*2);ctx.lineTo(ex-arrowSize,ey+arrowSize*3.5);ctx.lineTo(ex+arrowSize,ey+arrowSize*3.5);
+    } else {
+      ctx.moveTo(ex,ey-arrowSize*2);ctx.lineTo(ex-arrowSize,ey-arrowSize*3.5);ctx.lineTo(ex+arrowSize,ey-arrowSize*3.5);
+    }
+    ctx.closePath();ctx.fillStyle=isBuy?'#00e676':'#ff1744';ctx.fill();
+
+    // Label de direção
+    ctx.font='bold 8px Share Tech Mono,monospace';
+    ctx.fillStyle=isBuy?'#00e676':'#ff1744';
+    ctx.textAlign='center';ctx.shadowColor=isBuy?'#00e676':'#ff1744';ctx.shadowBlur=4;
+    ctx.fillText(isBuy?'💣':'🔨', ex, isBuy?ey+arrowSize*5+2:ey-arrowSize*5-2);
+    ctx.shadowBlur=0;
+
+    // Ponto de saída com resultado
     if(!isOpen){
+      ctx.beginPath();ctx.arc(xx,xy,3.5,0,Math.PI*2);ctx.fillStyle=color;ctx.fill();
       ctx.font='bold 9px Share Tech Mono,monospace';
       ctx.fillStyle=color;ctx.shadowColor=color;ctx.shadowBlur=4;
       ctx.textAlign=xx>=ex?'left':'right';
-      ctx.fillText(isWin?'✓':'✗',xx>=ex?xx+5:xx-5,xy+3);
+      ctx.fillText(isWin?'✓TP':'✗SL', xx>=ex?xx+5:xx-5, xy+3);
       ctx.shadowBlur=0;
     }
+
     ctx.restore();
   });
 }
@@ -1752,20 +1967,248 @@ function hideCrosshair(){
 // ══════════════════════════════════════════════════════
 // STATE & DATA
 // ══════════════════════════════════════════════════════
-let currentTF='5m', aiActive=false, aiTimer=null, ws=null, livePrice=0, open24=0;
+// ══════════════════════════════════════════════════════
+// AI SCHEDULER — dispara sempre no segundo :50 de cada minuto
+// ══════════════════════════════════════════════════════
+let aiTimer = null;
+
+// ══════════════════════════════════════════════════════
+// JANELA DE HORÁRIO — Follow Line PRO: 05:00–17:00 UTC
+// ══════════════════════════════════════════════════════
+function isInTradingWindow(){
+  const now = new Date();
+  const h = now.getUTCHours();
+  const m = now.getUTCMinutes();
+  const totalMin = h * 60 + m;
+  // 05:00 UTC = 300 min, 17:00 UTC = 1020 min
+  return totalMin >= 300 && totalMin < 1020;
+}
+
+// ══════════════════════════════════════════════════════
+// FOLLOW LINE PRO — Cálculo da Trend Line
+// BB Period=9, BB Dev=1, ATR Period=5 (valores configurados)
+// ══════════════════════════════════════════════════════
+const FL_BB_PERIOD = 9;
+const FL_BB_DEV    = 1.0;
+const FL_ATR_PERIOD= 5;
+
+function calcSMA(arr, p){
+  if(arr.length < p) return arr[arr.length-1]||0;
+  const sl = arr.slice(-p);
+  return sl.reduce((a,b)=>a+b,0)/p;
+}
+function calcStdev(arr, p){
+  if(arr.length < p) return 0;
+  const sl = arr.slice(-p);
+  const m = sl.reduce((a,b)=>a+b,0)/p;
+  return Math.sqrt(sl.reduce((a,b)=>a+(b-m)**2,0)/p);
+}
+
+// Retorna array de {trendLine, iTrend} para cada candle
+function calcFollowLine(candles){
+  if(candles.length < FL_BB_PERIOD + FL_ATR_PERIOD + 2) return [];
+  const results = [];
+  let trendLine = null;
+  let iTrend = 0;
+
+  for(let i = 0; i < candles.length; i++){
+    const slice = candles.slice(Math.max(0, i - FL_BB_PERIOD + 1), i + 1);
+    const closes = slice.map(c=>c.close);
+    const sma = closes.reduce((a,b)=>a+b,0)/closes.length;
+    const std = Math.sqrt(closes.reduce((a,b)=>a+(b-sma)**2,0)/closes.length);
+    const bbUpper = sma + std * FL_BB_DEV;
+    const bbLower = sma - std * FL_BB_DEV;
+
+    // ATR
+    let atrSum = 0, atrCnt = 0;
+    for(let j = Math.max(1, i - FL_ATR_PERIOD + 1); j <= i; j++){
+      const tr = Math.max(
+        candles[j].high - candles[j].low,
+        Math.abs(candles[j].high - candles[j-1].close),
+        Math.abs(candles[j].low  - candles[j-1].close)
+      );
+      atrSum += tr; atrCnt++;
+    }
+    const atr = atrCnt > 0 ? atrSum / atrCnt : 0;
+
+    const close = candles[i].close;
+    const bbSignal = close > bbUpper ? 1 : close < bbLower ? -1 : 0;
+
+    let newTL = trendLine;
+    if(bbSignal === 1){
+      const nl = candles[i].low - atr;
+      newTL = (trendLine === null) ? nl : Math.max(nl, trendLine);
+    } else if(bbSignal === -1){
+      const nl = candles[i].high + atr;
+      newTL = (trendLine === null) ? nl : Math.min(nl, trendLine);
+    }
+    trendLine = newTL;
+
+    const prevTL = results.length > 0 ? results[results.length-1].trendLine : null;
+    let newITrend = iTrend;
+    if(prevTL !== null && trendLine !== null){
+      if(trendLine > prevTL)       newITrend = 1;
+      else if(trendLine < prevTL)  newITrend = -1;
+    }
+    iTrend = newITrend;
+    results.push({ trendLine, iTrend, bbSignal, atr });
+  }
+  return results;
+}
+
+// Detecta se houve sinal novo no último candle FECHADO
+// Retorna 'COMPRA', 'VENDA' ou null
+// REGRA: o label ocorre quando iTrend muda no candle fechado (penúltimo = slice[-2])
+// Comparamos penúltimo vs antepenúltimo — o candle atual [-1] está ainda em formação
+function detectFollowLineSignal(candles){
+  if(candles.length < FL_BB_PERIOD + FL_ATR_PERIOD + 4) return null;
+  // Usar os últimos 100 candles para calcular (eficiência)
+  const slice = candles.slice(-100);
+  const fl = calcFollowLine(slice);
+  if(fl.length < 3) return null;
+  // fl[-1] = candle atual em formação (não fechado, ignorar para label)
+  // fl[-2] = último candle FECHADO  ← label gerado aqui (cor muda aqui)
+  // fl[-3] = candle anterior fechado ← referência de comparação
+  const prev = fl[fl.length - 3]; // antepenúltimo (fechado)
+  const curr = fl[fl.length - 2]; // penúltimo (último fechado = onde o label aparece)
+  if(prev.iTrend === -1 && curr.iTrend === 1) return 'COMPRA';  // 💣 virou azul
+  if(prev.iTrend === 1  && curr.iTrend === -1) return 'VENDA';  // 🔨 virou vermelho
+  return null;
+}
+
+// ══════════════════════════════════════════════════════
+// SISTEMA DE LABEL FL — Entrada apenas na vela do novo label
+// Regras:
+//  1. A direção é definida PELO LABEL (troca de iTrend do Follow Line)
+//  2. A cada horário fixo M5 (xx:00, xx:05, xx:10...) a IA verifica se
+//     apareceu um NOVO LABEL desde a última checagem
+//  3. Se há novo label → IA analisa NESSA vela e, se confirmado, entra
+//  4. Após entrada (ou descarte) → bloqueia até surgir PRÓXIMO label (nova troca)
+//  5. Se posição aberta ao reabrir → checa retroativamente e aguarda próximo label
+// ══════════════════════════════════════════════════════
+
+// Último sinal Follow Line detectado (evita re-trigger na mesma vela)
+let _lastFLSignalCandle = -1;  // índice da vela onde surgiu o último label
+let _lastFLSignalDir = null;   // direção do último label detectado
+let _lastFLSignalTime = 0;     // timestamp da vela do último label
+
+// Controle: se já foi analisado o label atual (confirmado ou descartado)
+// Só reseta quando surgir novo label (troca de direção)
+let _labelAnalyzed = false;
+
+let _pendingFLSignal = null; // direção do sinal Follow Line pendente para runAI
+
+// Calcula ms até o próximo fechamento de candle M5 (horário fixo: 00, 05, 10, 15... minutos)
+// Dispara 3 segundos APÓS o fechamento para garantir que o candle está fechado na Binance
+function msToNextM5Close(){
+  const now   = new Date();
+  const nowMs = now.getTime();
+  // Próximo fechamento M5: múltiplo exato de 5min em UTC
+  // Ex: agora 10:44:30 → próximo M5 fecha às 10:45:00 UTC
+  const epochMin = Math.floor(nowMs / 60000); // minutos desde epoch
+  const nextM5epochMin = Math.ceil((epochMin + 0.0001) / 5) * 5; // próximo múltiplo de 5
+  const nextCloseMs = nextM5epochMin * 60000; // timestamp exato do fechamento
+  const diffMs = nextCloseMs - nowMs + 3000; // +3s buffer após o fechamento
+  return Math.max(1000, diffMs);
+}
+
+// Verifica se há sinal novo do Follow Line para disparar a IA
+// Chamado nos horários fixos M5
+// REGRA: só dispara se for um NOVO LABEL (troca de direção) e ainda não analisado
+function checkFollowLineSignal(){
+  if(!aiActive) return;
+  if(!isInTradingWindow()) return;
+  const src = candles5m && candles5m.length >= 20 ? candles5m : candles;
+  if(!src || src.length < 20) return;
+
+  // Se tem posição aberta, só verifica se stop/alvo foi atingido (checkAutoClose já faz isso)
+  // Não entra em nova posição enquanto há aberta
+  if(_openTrade){
+    console.log('[FL Scheduler] Posição aberta — aguardando fechamento para nova análise');
+    return;
+  }
+
+  const sigDir = detectFollowLineSignal(src);
+  // O label está no ÚLTIMO CANDLE FECHADO = src[src.length-2]
+  // (src[src.length-1] é o candle em formação, que não usamos para label)
+  const labelCandle = src.length - 2; // índice do último candle fechado
+  const labelTime = src[labelCandle]?.time || 0;
+
+  // Novo label = direção mudou OU ocorreu em vela diferente
+  const isNewLabel = sigDir && (
+    labelTime !== _lastFLSignalTime ||
+    sigDir !== _lastFLSignalDir
+  );
+
+  if(isNewLabel){
+    // Novo label detectado — resetar flag de análise
+    _lastFLSignalCandle = labelCandle;
+    _lastFLSignalDir = sigDir;
+    _lastFLSignalTime = labelTime;
+    _labelAnalyzed = false;
+    console.log(`[FL Label] NOVO LABEL: ${sigDir} | vela idx=${labelCandle} | time=${new Date(labelTime*1000).toISOString()}`);
+  }
+
+  // Disparar IA APENAS se:
+  //  - Há label ativo (sigDir detectado)
+  //  - Ainda não foi analisado este label
+  //  - Estamos na vela do label (src.length-2 === _lastFLSignalCandle)
+  if(sigDir && !_labelAnalyzed && _lastFLSignalCandle === labelCandle && _lastFLSignalDir === sigDir){
+    _labelAnalyzed = true; // marcar como analisado — não repetir nesta vela
+    _pendingFLSignal = sigDir;
+    console.log(`[FL Label] Disparando IA para analisar label ${sigDir}`);
+    if(!_aiRunning) runAI();
+  } else if(!sigDir){
+    // Sem label ativo no momento — aguardar próximo
+    console.log('[FL Scheduler] Nenhum label ativo no momento — aguardando');
+  } else if(_labelAnalyzed){
+    console.log(`[FL Scheduler] Label ${_lastFLSignalDir} já analisado — aguardando próxima troca`);
+  }
+}
+
+function scheduleAI(){
+  clearTimeout(aiTimer);
+  if(!aiActive) return;
+  // Agenda para o próximo fechamento de candle M5 (horários fixos: :00, :05, :10...)
+  const delay = msToNextM5Close();
+  const fireAt = new Date(Date.now() + delay);
+  console.log(`[FL Scheduler] Próxima verificação em ${(delay/1000).toFixed(0)}s — ${fireAt.toUTCString().slice(17,25)} UTC`);
+  aiTimer = setTimeout(async ()=>{
+    if(!aiActive) return;
+    checkFollowLineSignal();
+    updateScheduleBar(); // atualizar display do próximo M5
+    if(aiActive) scheduleAI(); // reagenda para o próximo M5
+  }, delay);
+}
+
+function stopAIScheduler(){
+  clearTimeout(aiTimer);
+  aiTimer = null;
+}
 let _autoCloseChecking=false;
+let currentTF='5m', aiActive=false, ws=null, livePrice=0, open24=0;
+let candles5m = []; // candles M5 dedicados para o Follow Line PRO (independente do TF do gráfico)
 let tfCache={};
 const TF={'1m':{i:'1m',s:60},'5m':{i:'5m',s:300},'15m':{i:'15m',s:900},'1h':{i:'1h',s:3600},'4h':{i:'4h',s:14400},'1d':{i:'1d',s:86400}};
 function fmtP(v){return Number(v).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});}
 function f(v){return fmtP(v);}
 
 let isLoadingMore=false;
+// Converte interval style Binance → Bybit V5
+function bybitInterval(interval){
+  const m={'1m':'1','5m':'5','15m':'15','30m':'30','1h':'60','4h':'240','1d':'D'};
+  return m[interval]||interval;
+}
 async function fetchKlines(interval,limit=1000,endTime=null){
-  let url=`https://api.binance.com/api/v3/klines?symbol=BTCUSDT&interval=${interval}&limit=${limit}`;
-  if(endTime) url+=`&endTime=${endTime}`;
-  const r=await fetch(url);
-  const d=await r.json();
-  return d.map(k=>({time:Math.floor(k[0]/1000),open:+k[1],high:+k[2],low:+k[3],close:+k[4],volume:+k[5]}));
+  const bvInterval=bybitInterval(interval);
+  let url=`https://api.bybit.com/v5/market/kline?category=linear&symbol=BTCUSDT&interval=${bvInterval}&limit=${Math.min(limit,1000)}`;
+  if(endTime) url+=`&end=${endTime}`; // Bybit usa &end= em ms
+  const r=await fetch(url,{headers:{'Accept':'application/json'}});
+  const json=await r.json();
+  if(json.retCode!==0) throw new Error('Bybit: '+json.retMsg);
+  // Bybit retorna ordem DECRESCENTE — inverter
+  const list=json.result?.list||[];
+  return list.reverse().map(k=>({time:Math.floor(+k[0]/1000),open:+k[1],high:+k[2],low:+k[3],close:+k[4],volume:+k[5]}));
 }
 
 async function loadMoreHistory(){
@@ -1795,40 +2238,97 @@ async function loadCandles(tf){
     priceAutoScale=true;
     resizeCanvas(); calcInds();
   }catch(e){console.error(e);}
+  // Sempre manter candles5m sincronizados para o Follow Line PRO
+  if(tf !== '5m'){
+    try{
+      candles5m = await fetchKlines('5m', 1000);
+      tfCache['5m'] = {data: candles5m, ts: Date.now()};
+    }catch(e){ console.warn('candles5m load error', e); }
+  } else {
+    candles5m = candles; // mesmos dados
+  }
 }
 
 async function load24h(){
   try{
-    const d=await(await fetch('https://api.binance.com/api/v3/ticker/24hr?symbol=BTCUSDT')).json();
-    open24=+d.openPrice;
-    document.getElementById('s-hi').textContent=f(+d.highPrice);
-    document.getElementById('s-lo').textContent=f(+d.lowPrice);
+    const d=await(await fetch('https://api.bybit.com/v5/market/tickers?category=linear&symbol=BTCUSDT')).json();
+    const t=d.result?.list?.[0];
+    if(t){
+      open24=+t.prevPrice24h||+t.openPrice;
+      document.getElementById('s-hi').textContent=f(+t.highPrice24h);
+      document.getElementById('s-lo').textContent=f(+t.lowPrice24h);
+    }
   }catch(e){}
 }
 
+let ws5m = null; // WebSocket dedicado para candles M5 (Follow Line PRO)
+
 function connectWS(tf){
   if(ws){try{ws.close(1000);}catch(_){}ws=null;}
-  ws=new WebSocket(`wss://stream.binance.com:9443/ws/btcusdt@kline_${TF[tf].i}`);
+  const bvInt=bybitInterval(TF[tf].i);
+  ws=new WebSocket('wss://stream.bybit.com/v5/public/linear');
+  ws.onopen=()=>{ ws.send(JSON.stringify({op:'subscribe',args:[`kline.${bvInt}.BTCUSDT`]})); };
   ws.onclose=e=>{if(e.code!==1000)setTimeout(()=>connectWS(currentTF),3000);};
   ws.onmessage=evt=>{
-    const k=JSON.parse(evt.data).k;
-    livePrice=+k.c; updatePrice(livePrice);
+    const msg=JSON.parse(evt.data);
+    if(!msg.data||!msg.topic?.startsWith('kline.')) return;
+    const k=msg.data[0];
+    livePrice=+k.close; updatePrice(livePrice);
     checkAutoClose(livePrice);
-    const cnd={time:Math.floor(k.t/1000),open:+k.o,high:+k.h,low:+k.l,close:+k.c,volume:+k.v};
+    const cnd={time:Math.floor(+k.start/1000),open:+k.open,high:+k.high,low:+k.low,close:+k.close,volume:+k.volume};
     const last=candles[candles.length-1];
     if(last&&last.time===cnd.time){candles[candles.length-1]=cnd;}
     else if(cnd.time>(last?.time||0)){
       candles.push(cnd); if(candles.length>600)candles.shift();
       viewStart=Math.max(0,candles.length-viewCount);
     }
+    if(tf==='5m') candles5m = candles;
     drawChart();
     document.getElementById('co').textContent=f(cnd.open);
     document.getElementById('ch').textContent=f(cnd.high);
     document.getElementById('cl').textContent=f(cnd.low);
     document.getElementById('cc').textContent=f(cnd.close);
-    const rem=Math.max(0,Math.floor((k.T-Date.now())/1000));
+    const endMs=+k.end; const rem=Math.max(0,Math.floor((endMs-Date.now())/1000));
     document.getElementById('cd').textContent=String(Math.floor(rem/60)).padStart(2,'0')+':'+String(rem%60).padStart(2,'0');
-    if(k.x){ Object.keys(_emaCache).forEach(k=>delete _emaCache[k]); calcInds(); }
+    if(k.confirm){ Object.keys(_emaCache).forEach(k=>delete _emaCache[k]); calcInds(); }
+  };
+
+  // WS secundário para M5 (Follow Line) quando gráfico está em outro TF
+  if(tf !== '5m'){
+    if(ws5m){try{ws5m.close(1000);}catch(_){}ws5m=null;}
+    ws5m = new WebSocket('wss://stream.bybit.com/v5/public/linear');
+    ws5m.onopen=()=>{ ws5m.send(JSON.stringify({op:'subscribe',args:['kline.5.BTCUSDT']})); };
+    ws5m.onclose=e=>{if(e.code!==1000)setTimeout(()=>{ if(currentTF!=='5m') connectWS5m(); },3000);};
+    ws5m.onmessage=evt=>{
+      const msg=JSON.parse(evt.data);
+      if(!msg.data||!msg.topic?.startsWith('kline.')) return;
+      const k=msg.data[0];
+      const cnd5={time:Math.floor(+k.start/1000),open:+k.open,high:+k.high,low:+k.low,close:+k.close,volume:+k.volume};
+      if(!candles5m.length){ candles5m=[cnd5]; return; }
+      const last5=candles5m[candles5m.length-1];
+      if(last5.time===cnd5.time){ candles5m[candles5m.length-1]=cnd5; }
+      else if(cnd5.time>last5.time){ candles5m.push(cnd5); if(candles5m.length>600)candles5m.shift(); }
+    };
+  } else {
+    if(ws5m){try{ws5m.close(1000);}catch(_){}ws5m=null;}
+  }
+}
+
+function connectWS5m(){
+  if(currentTF==='5m') return;
+  if(ws5m){try{ws5m.close(1000);}catch(_){}ws5m=null;}
+  ws5m = new WebSocket('wss://stream.bybit.com/v5/public/linear');
+  ws5m.onopen=()=>{ ws5m.send(JSON.stringify({op:'subscribe',args:['kline.5.BTCUSDT']})); };
+  ws5m.onclose=e=>{if(e.code!==1000)setTimeout(connectWS5m,3000);};
+  ws5m.onmessage=evt=>{
+    const msg=JSON.parse(evt.data);
+    if(!msg.data||!msg.topic?.startsWith('kline.')) return;
+    const k=msg.data[0];
+    const cnd5={time:Math.floor(+k.start/1000),open:+k.open,high:+k.high,low:+k.low,close:+k.close,volume:+k.volume};
+    if(!candles5m.length) return;
+    const last5=candles5m[candles5m.length-1];
+    if(last5.time===cnd5.time){ candles5m[candles5m.length-1]=cnd5; }
+    else if(cnd5.time>last5.time){ candles5m.push(cnd5); if(candles5m.length>600)candles5m.shift(); }
   };
 }
 
@@ -1974,9 +2474,9 @@ document.querySelectorAll('.tf-btn').forEach(b=>b.addEventListener('click',async
   await loadCandles(currentTF);
   connectWS(currentTF);
   if(aiActive){
-    clearInterval(aiTimer);
+    stopAIScheduler();
     saveAIState(true);
-    runAI(); aiTimer=setInterval(runAI,90000);
+    scheduleAI(); // apenas reagenda para próximo M5 no novo TF
   }
 }));
 
@@ -1991,23 +2491,26 @@ function toggleAI(){
   if(!_groqKey){
     openUserModal();
     document.getElementById('apikey-field').focus();
-    alert('Configure sua API Key Groq nas configurações da conta.');
-    return;
-  }
-  // Se vai LIGAR e tem posição aberta — bloquear
-  if(!aiActive && _openTrade){
-    switchTab('hist',document.querySelectorAll('.tab-btn2')[2]);
-    alert('⚠️ Existe uma posição em aberto. Feche-a no Histórico antes de gerar uma nova análise.');
+    showToast('⚠️ Configure sua API Key Groq nas configurações da conta','var(--red)');
     return;
   }
   aiActive=!aiActive;
   setAIButtonState(aiActive);
-  saveAIState(aiActive); // persiste no banco
+  saveAIState(aiActive);
   if(aiActive){
     switchTab('ai',document.querySelectorAll('.tab-btn2')[1]);
-    runAI(); aiTimer=setInterval(runAI,90000);
+    const inWindow = isInTradingWindow();
+    if(inWindow){
+      const delay = msToNextM5Close();
+      const fireAt = new Date(Date.now() + delay);
+      const hhmm = fireAt.toUTCString().slice(17,22);
+      showToast(`🟢 IA ligada — próxima checagem ${hhmm} UTC (horários fixos M5)`, 'var(--green)');
+    } else {
+      showToast('🟡 IA ligada — fora da janela (05:00–17:00 UTC). Aguardando abertura.','var(--yellow)');
+    }
+    scheduleAI();
   }else{
-    clearInterval(aiTimer);
+    stopAIScheduler();
   }
 }
 
@@ -2017,6 +2520,48 @@ function setAIButtonState(on){
   const txt=document.getElementById('ai-btn-txt');
   if(on){ btn.classList.add('on'); txt.textContent='PARAR'; }
   else  { btn.classList.remove('on'); txt.textContent='LIGAR IA'; }
+  updateTimeWindowBar();
+  updateScheduleBar();
+}
+
+function updateScheduleBar(){
+  const bar = document.getElementById('fl-schedule-bar');
+  if(!bar) return;
+  if(!aiActive){ bar.style.display='none'; return; }
+  bar.style.display='block';
+  const delay = msToNextM5Close();
+  const fireAt = new Date(Date.now() + delay);
+  const hhmm = fireAt.toUTCString().slice(17,22);
+  const labelStatus = _labelAnalyzed
+    ? `Label ${_lastFLSignalDir||'FL'} analisado — aguardando troca`
+    : (_lastFLSignalDir ? `Label ${_lastFLSignalDir} pendente` : 'Aguardando novo label FL');
+  bar.textContent = `⏱ Próxima checagem: ${hhmm} UTC | ${labelStatus}`;
+}
+
+// Atualiza barra de schedule a cada minuto também
+setInterval(updateScheduleBar, 60000);
+
+function updateTimeWindowBar(){
+  const bar = document.getElementById('time-window-bar');
+  if(!bar) return;
+  if(!aiActive){ bar.style.display='none'; return; }
+  const inWindow = isInTradingWindow();
+  const now = new Date();
+  const utcH = now.getUTCHours().toString().padStart(2,'0');
+  const utcM = now.getUTCMinutes().toString().padStart(2,'0');
+  bar.style.display = 'block';
+  if(inWindow){
+    bar.style.background = 'rgba(0,230,118,.1)';
+    bar.style.borderColor = 'var(--green)';
+    bar.style.color = 'var(--green)';
+    bar.textContent = `🟢 JANELA ATIVA — ${utcH}:${utcM} UTC | 05:00–17:00`;
+  } else {
+    bar.style.background = 'rgba(255,214,0,.07)';
+    bar.style.borderColor = 'rgba(255,214,0,.4)';
+    bar.style.color = 'var(--yellow)';
+    const nextOpen = utcH >= '17' ? '05:00 UTC amanhã' : '05:00 UTC';
+    bar.textContent = `🟡 JANELA FECHADA — ${utcH}:${utcM} UTC | Abre às ${nextOpen}`;
+  }
 }
 
 // Salva estado da IA no banco (debounced)
@@ -2039,32 +2584,161 @@ function thinkStep(done,current){
 }
 function sleep(ms){return new Promise(r=>setTimeout(r,ms));}
 
-let _aiRunning=false; // guard contra execuções simultâneas
+let _aiRunning=false;
+
+// ══════════════════════════════════════════════════════
+// PRÉ-FILTRO LOCAL — Score de alta probabilidade
+// Roda ANTES de chamar a API. Se não há setup claro,
+// retorna AGUARDAR sem desperdiçar a chamada.
+// ══════════════════════════════════════════════════════
+function calcLocalScore(tfA, tfData, supports, resistances){
+  const m1   = tfA['1m'];
+  const m5   = tfA['5m'];
+  const m15  = tfA['15m'];
+  const h1   = tfA['1h'];
+  const kl1m = tfData['1m'];
+  const price = m1.last.close;
+  const atr   = m1.atr || 1;
+
+  let bullScore = 0, bearScore = 0;
+  const bullReasons = [], bearReasons = [];
+
+  // ── 1. ALINHAMENTO MULTI-TF (peso alto)
+  // Só entra na direção que a maioria dos TFs apoia
+  const bullTFs = [m5,m15,h1].filter(t=>t.trend==='alta').length;
+  const bearTFs = [m5,m15,h1].filter(t=>t.trend==='baixa').length;
+  if(bullTFs >= 2){ bullScore += 25; bullReasons.push(`${bullTFs}/3 TFs em alta`); }
+  if(bearTFs >= 2){ bearScore += 25; bearReasons.push(`${bearTFs}/3 TFs em baixa`); }
+  // Se HTFs conflitantes — penalidade para ambos
+  if(bullTFs < 2 && bearTFs < 2){ bullScore -= 15; bearScore -= 15; }
+
+  // ── 2. RSI M1 + M5 — não entrar contra extremo
+  // RSI M1 sobrevendido = compra favorável; sobrecomprado = venda favorável
+  if(m1.r < 35){  bullScore += 18; bullReasons.push(`RSI M1 sobrevendido (${m1.r.toFixed(0)})`); }
+  if(m1.r > 65){  bearScore += 18; bearReasons.push(`RSI M1 sobrecomprado (${m1.r.toFixed(0)})`); }
+  if(m1.r > 75){  bullScore -= 20; } // bloquear compra em sobrecompra extrema
+  if(m1.r < 25){  bearScore -= 20; } // bloquear venda em sobrevenda extrema
+  if(m5.r < 40 && m5.r > 20){ bullScore += 8; bullReasons.push(`RSI M5 apoio (${m5.r.toFixed(0)})`); }
+  if(m5.r > 60 && m5.r < 80){ bearScore += 8; bearReasons.push(`RSI M5 resistência (${m5.r.toFixed(0)})`); }
+
+  // ── 3. MACD M1 + M5 — momentum e cruzamento
+  if(m1.macd > 0 && m5.macd > 0){ bullScore += 12; bullReasons.push('MACD M1+M5 positivo'); }
+  if(m1.macd < 0 && m5.macd < 0){ bearScore += 12; bearReasons.push('MACD M1+M5 negativo'); }
+  if(m1.macd > 0 && m5.macd < 0){ bullScore += 5; }  // M1 virou — momentum nascente
+  if(m1.macd < 0 && m5.macd > 0){ bearScore += 5; }
+
+  // ── 4. BOLLINGER BANDS — posição dentro das bandas
+  if(m1.bbPct < 20){ bullScore += 15; bullReasons.push(`BB% baixo (${m1.bbPct.toFixed(0)}%) — oversold`); }
+  if(m1.bbPct > 80){ bearScore += 15; bearReasons.push(`BB% alto (${m1.bbPct.toFixed(0)}%) — overbought`); }
+  if(m1.bbPct < 10 || m1.bbPct > 90){ // extremo absoluto — reversão muito provável
+    if(m1.bbPct < 10) bullScore += 8;
+    else bearScore += 8;
+  }
+
+  // ── 5. PADRÃO DO CANDLE M1 (peso alto)
+  const pat = m1.pattern;
+  const bullPatterns = ['Martelo','Engolfo de Alta','Marubozu Alta','Doji']; // doji em suporte = bullish
+  const bearPatterns = ['Shooting Star','Engolfo de Baixa','Marubozu Baixa'];
+  if(bullPatterns.some(p=>pat.includes(p))){ bullScore += 20; bullReasons.push(`Candle: ${pat}`); }
+  if(bearPatterns.some(p=>pat.includes(p))){ bearScore += 20; bearReasons.push(`Candle: ${pat}`); }
+  if(pat === 'Candle Alta'){ bullScore += 6; }
+  if(pat === 'Candle Baixa'){ bearScore += 6; }
+
+  // ── 6. POSIÇÃO EM RELAÇÃO ÀS EMAs M1
+  const aboveEMA20 = price > m1.e20, aboveEMA50 = price > m1.e50;
+  if(aboveEMA20 && aboveEMA50){ bullScore += 10; bullReasons.push('Preço acima EMA20+50'); }
+  if(!aboveEMA20 && !aboveEMA50){ bearScore += 10; bearReasons.push('Preço abaixo EMA20+50'); }
+  // Toque/rejeição de EMA — gatilho forte
+  const distEMA20 = Math.abs(price - m1.e20) / atr;
+  if(distEMA20 < 0.3){
+    if(aboveEMA20){ bullScore += 10; bullReasons.push('Rejeição EMA20 (suporte)'); }
+    else          { bearScore += 10; bearReasons.push('Rejeição EMA20 (resistência)'); }
+  }
+
+  // ── 7. SUPORTE / RESISTÊNCIA PRÓXIMOS
+  const nearSup = supports.find(s => Math.abs(price - s) / atr < 1.5);
+  const nearRes = resistances.find(r => Math.abs(price - r) / atr < 1.5);
+  if(nearSup){ bullScore += 18; bullReasons.push(`Próximo de Suporte $${f(nearSup)}`); }
+  if(nearRes){ bearScore += 18; bearReasons.push(`Próximo de Resistência $${f(nearRes)}`); }
+
+  // ── 8. VOLUME — confirmação ou falta de
+  if(m1.volR > 1.4){ // volume acima da média confirma direção
+    if(m1.last.close > m1.last.open){ bullScore += 10; bullReasons.push(`Volume alto (${m1.volR.toFixed(1)}x) bullish`); }
+    else                             { bearScore += 10; bearReasons.push(`Volume alto (${m1.volR.toFixed(1)}x) bearish`); }
+  }
+  if(m1.volR < 0.6){ bullScore -= 8; bearScore -= 8; } // volume muito baixo = sem convicção
+
+  // ── 9. ADX — força direcional
+  if(m1.adx > 25){ // mercado com força — confirma tendência atual
+    if(bullTFs >= 2){ bullScore += 8; bullReasons.push(`ADX forte (${m1.adx.toFixed(0)})`); }
+    if(bearTFs >= 2){ bearScore += 8; bearReasons.push(`ADX forte (${m1.adx.toFixed(0)})`); }
+  }
+  if(m1.adx < 15){ bullScore -= 10; bearScore -= 10; } // choppy — sem setup
+
+  // ── 10. VELAS CONSECUTIVAS — exaustão de movimento
+  let consecBull = 0, consecBear = 0;
+  for(let i = kl1m.length - 1; i >= Math.max(0, kl1m.length - 8); i--){
+    const cc = kl1m[i];
+    if(cc.close > cc.open){ if(consecBear > 0) break; consecBull++; }
+    else if(cc.close < cc.open){ if(consecBull > 0) break; consecBear++; }
+    else break;
+  }
+  // 2 velas na mesma direção = momentum; 4+ = exaustão/reversão
+  if(consecBull === 2){ bullScore += 8; bullReasons.push('2 velas consecutivas de alta — momentum'); }
+  if(consecBear === 2){ bearScore += 8; bearReasons.push('2 velas consecutivas de baixa — momentum'); }
+  if(consecBull >= 4){ bullScore -= 20; bearScore += 15; bearReasons.push(`${consecBull} velas alta consecutivas — exaustão`); }
+  if(consecBear >= 4){ bearScore -= 20; bullScore += 15; bullReasons.push(`${consecBear} velas baixa consecutivas — exaustão`); }
+
+  // ── 11. CANDLE MUITO ESTENDIDO — não entrar no meio do movimento
+  const lastBody = Math.abs(m1.last.close - m1.last.open);
+  if(lastBody > atr * 1.5){ bullScore -= 15; bearScore -= 15; } // candle gigante = risco alto
+
+  // ── 12. ESTRUTURA M15/1H — bias macro
+  if(m15.struct.includes('Alta') && h1.struct.includes('Alta')){ bullScore += 12; bullReasons.push('Estrutura macro bullish (M15+H1)'); }
+  if(m15.struct.includes('Baixa') && h1.struct.includes('Baixa')){ bearScore += 12; bearReasons.push('Estrutura macro bearish (M15+H1)'); }
+
+  const direction = bullScore > bearScore ? 'COMPRA' : 'VENDA';
+  const topScore  = Math.max(bullScore, bearScore);
+  const gap       = Math.abs(bullScore - bearScore);
+  const reasons   = direction === 'COMPRA' ? bullReasons : bearReasons;
+
+  // Score normalizado 0-100 para confiança
+  const confidence = Math.min(99, Math.max(0, Math.round(50 + (gap / 2))));
+
+  // VETO: gap muito pequeno (< 15) = sem edge claro = AGUARDAR
+  const hasEdge = gap >= 15 && topScore >= 30;
+
+  return { direction, confidence, bullScore, bearScore, gap, reasons, hasEdge, consecBull, consecBear, pat };
+}
+
 async function runAI(){
   if(_aiRunning){ console.log('[AI] Já executando, ignorando chamada dupla'); return; }
   const key=_groqKey;
-  if(!key){if(aiActive)toggleAI();return;}
-  // Verificar posição aberta antes de executar
-  if(_openTrade){if(aiActive)toggleAI();updateOpenBanner();return;}
+  if(!key){ showToast('⚠️ Configure sua API Key Groq nas configurações','var(--red)'); return; }
+  if(_openTrade){ console.log('[AI] Posição aberta, aguardando fechar antes de analisar'); updateOpenBanner(); return; }
+
+  // Verificar janela de horário ANTES de qualquer processamento
+  if(!isInTradingWindow()){
+    console.log('[AI] Fora da janela 05:00–17:00 UTC — análise ignorada');
+    return;
+  }
   _aiRunning=true;
   document.getElementById('thinking').classList.add('vis');
   document.getElementById('ai-out').innerHTML='';
   const done=[];
   try{
-    thinkStep(done,'Coletando dados de múltiplos timeframes...');
-    await sleep(150);
-    const htfList=currentTF==='1d'?['1d']:currentTF==='4h'?['4h','1d']:
-      currentTF==='1h'?['1h','4h','1d']:currentTF==='15m'?['15m','1h','4h']:
-      currentTF==='5m'?['5m','15m','1h','4h']:['1m','5m','15m','1h'];
+    thinkStep(done,'Coletando dados multi-timeframe...');
+    await sleep(100);
+    const htfList=['1m','5m','15m','1h'];
     const tfData={};
     for(const tf of htfList){
-      if(tfCache[tf]&&Date.now()-tfCache[tf].ts<120000){tfData[tf]=tfCache[tf].data;}
-      else{const kl=await fetchKlines(tf,120);tfData[tf]=kl;tfCache[tf]={data:kl,ts:Date.now()};}
+      if(tfCache[tf]&&Date.now()-tfCache[tf].ts<60000){tfData[tf]=tfCache[tf].data;}
+      else{const kl=await fetchKlines(tf,200);tfData[tf]=kl;tfCache[tf]={data:kl,ts:Date.now()};}
     }
-    done.push('Dados coletados ('+htfList.join(', ')+')');
+    done.push('Dados coletados: '+htfList.join(', '));
 
-    thinkStep(done,'Calculando indicadores técnicos em cada timeframe...');
-    await sleep(200);
+    thinkStep(done,'Calculando indicadores técnicos...');
+    await sleep(150);
     const tfA={};
     for(const [tf,kl] of Object.entries(tfData)){
       const cls=kl.map(c=>c.close);
@@ -2074,99 +2748,153 @@ async function runAI(){
       const atr=calcATR(kl),adx=calcADX(kl);
       const trend=detectTrend(cls),struct=detectStructure(kl),pattern=detectCandlePattern(kl);
       const vols=kl.map(c=>c.volume);
-      const volR=vols[vols.length-1]/(vols.slice(-10).reduce((a,b)=>a+b)/10);
+      const volR=vols[vols.length-1]/(vols.slice(-20).reduce((a,b)=>a+b)/20||1);
       const last=kl[kl.length-1];
       tfA[tf]={r,e20,e50,macd,bbPct,atr,adx,trend,struct,pattern,volR,last,upper,lower,mid};
     }
-    done.push('RSI/MACD/BB/ADX/ATR calculados por TF');
+    done.push('RSI/MACD/BB/ADX/ATR/EMA calculados');
 
     thinkStep(done,'Mapeando suportes e resistências...');
+    await sleep(150);
+    const mainTF='1m';
+    const{resistances,supports}=findSR(tfData[mainTF],100);
+    done.push(`S/R: ${supports.length} sup, ${resistances.length} res`);
+
+    thinkStep(done,'Analisando setup — pré-filtro de probabilidade...');
     await sleep(200);
-    const mainTF=htfList[0];
-    const{resistances,supports}=findSR(tfData[mainTF],80);
-    done.push('Suporte/Resistência: '+supports.length+' sup, '+resistances.length+' res');
 
-    thinkStep(done,'Analisando estrutura SMC, Price Action, tendência...');
-    await sleep(300);
-    done.push('SMC/Price Action/Estrutura analisados');
+    // ── PRÉ-FILTRO LOCAL ─────────────────────────────────────
+    const localScore = calcLocalScore(tfA, tfData, supports, resistances);
 
-    thinkStep(done,'Enviando análise completa para LLaMA 3.3 70B...');
+    // Se há sinal pendente do Follow Line, forçar direção
+    if(_pendingFLSignal){
+      console.log(`[FollowLine] Sobrepondo direção do score local com sinal: ${_pendingFLSignal}`);
+      localScore.direction = _pendingFLSignal;
+      // Garantir edge suficiente para não bloquear na próxima etapa
+      if(!localScore.hasEdge){
+        localScore.hasEdge = true; // Follow Line já filtrou — não bloquear
+        localScore.gap = Math.max(localScore.gap, 15);
+      }
+    }
+
+    console.log(`[AI] Score local: BULL=${localScore.bullScore} BEAR=${localScore.bearScore} GAP=${localScore.gap} EDGE=${localScore.hasEdge} FLSignal=${_pendingFLSignal||'none'}`);
+
+    if(!localScore.hasEdge){
+      // Sem edge claro — AGUARDAR sem chamar API
+      done.push('Pré-filtro: sem edge claro → AGUARDAR');
+      thinkStep(done,'⚠️ Sem setup de alta probabilidade');
+      await sleep(200);
+      document.getElementById('thinking').classList.remove('vis');
+      const htf=tfA['1h'];
+      const result={
+        direcao:'AGUARDAR', confianca: localScore.confidence,
+        entrada: livePrice, confluencias:[],
+        contexto:`Pré-filtro local: sem edge suficiente para confirmar o sinal Follow Line. BULL=${localScore.bullScore} vs BEAR=${localScore.bearScore} (gap=${localScore.gap} — mínimo 15 requerido). ${tfA['1m'].trend==='lateral'?'Mercado lateral/choppy.':'TFs em conflito ou sem padrão definido.'}`,
+        aviso:'Aguardando setup de alta probabilidade',
+        supports, resistances,
+        structure: htf.struct, pattern: tfA['1m'].pattern,
+      };
+      aiOverlayData={
+        supports, resistances, entrada:null, alvo:null, alvo_parcial:null, stop:null,
+        direction:'AGUARDAR', structure:htf.struct, pattern:tfA['1m'].pattern,
+        choch:[], bos:[], liquidity:[], entryCandle:candles.length-1,
+        entryTime:candles[candles.length-1]?.time||0,
+      };
+      const oBtn=document.getElementById('overlay-btn');
+      oBtn.style.display='flex'; oBtn.classList.add('active');
+      document.getElementById('overlay-btn-txt').textContent='OCULTAR ANÁLISE DO GRÁFICO';
+      renderSignal(result);
+      if(showOverlay) drawChart();
+      return;
+    }
+
+    done.push(`Setup ${localScore.direction}: score ${Math.max(localScore.bullScore,localScore.bearScore)} (gap ${localScore.gap})`);
+
+    thinkStep(done,'Validando sinal com IA LLaMA 3.3 70B...');
+
+    // Monta contexto rico das últimas 10 velas M1
+    const last10 = tfData['1m'].slice(-10).map((c,i)=>{
+      const body=Math.abs(c.close-c.open), range=c.high-c.low||0.001;
+      const dir=c.close>c.open?'▲':'▼';
+      return `V${i+1}${dir} O:${f(c.open)} H:${f(c.high)} L:${f(c.low)} C:${f(c.close)} body:${(body/range*100).toFixed(0)}%`;
+    }).join('\n');
+
+    // Distância do preço às EMAs
+    const m1=tfA['1m'];
+    const distEMA20pct = ((livePrice - m1.e20)/m1.e20*100).toFixed(3);
+    const distEMA50pct = ((livePrice - m1.e50)/m1.e50*100).toFixed(3);
+
+    // Distância ao S/R mais próximo
+    const nearSup = supports.reduce((best,s)=>Math.abs(livePrice-s)<Math.abs(livePrice-best)?s:best, supports[0]||0);
+    const nearRes = resistances.reduce((best,r)=>Math.abs(livePrice-r)<Math.abs(livePrice-best)?r:best, resistances[0]||0);
+    const distSup = nearSup ? ((livePrice-nearSup)/m1.atr).toFixed(2)+' ATR' : 'N/A';
+    const distRes = nearRes ? ((nearRes-livePrice)/m1.atr).toFixed(2)+' ATR' : 'N/A';
+
     let tfSection='';
     for(const [tf,a] of Object.entries(tfA)){
-      tfSection+=`\n[${tf.toUpperCase()}] ${f(a.last.close)} | Tend:${a.trend} | Struct:${a.struct} | RSI:${a.r.toFixed(1)} | MACD:${a.macd.toFixed(0)} | BB%:${a.bbPct.toFixed(0)} | ADX:${a.adx.toFixed(0)} | ATR:${a.atr.toFixed(0)} | EMA20:${f(a.e20)} | EMA50:${f(a.e50)} | Vol:${a.volR.toFixed(2)}x | Candle:${a.pattern}`;
+      const emaPos = a.last.close > a.e20 ? 'acima EMA20' : 'abaixo EMA20';
+      const emaStack = a.e20 > a.e50 ? 'EMA20>EMA50(bull)' : 'EMA20<EMA50(bear)';
+      tfSection+=`\n[${tf.toUpperCase()}] Preço:${f(a.last.close)} | Tend:${a.trend} | Struct:${a.struct} | RSI:${a.r.toFixed(1)} | MACD:${a.macd>0?'+':''}${a.macd.toFixed(0)} | BB%:${a.bbPct.toFixed(0)} | ADX:${a.adx.toFixed(0)} | ATR:${a.atr.toFixed(0)} | ${emaPos} | ${emaStack} | Vol:${a.volR.toFixed(2)}x | Candle:${a.pattern}`;
     }
-    const htf=tfA[htfList[htfList.length-1]]||tfA[mainTF];
+    const htf=tfA['1h'];
+    const consec = localScore.consecBull > 0 ? `${localScore.consecBull} velas consecutivas de ALTA` : localScore.consecBear > 0 ? `${localScore.consecBear} velas consecutivas de BAIXA` : 'sem sequência';
 
-    const sys=`Você é um trader profissional sênior com 15 anos de experiência em Bitcoin. Opera com disciplina extrema — prefere ficar de fora a forçar entrada ruim. Sua taxa de acerto é alta porque espera o setup perfeito.
+    const sys=`Você é um trader quantitativo especialista em TRADING REAL de Bitcoin (spot/futuros), timeframe M5. Sua função é confirmar ou rejeitar o sinal gerado pelo Follow Line PRO e, SE confirmado, definir Stop Loss e Take Profit com RR mínimo de 1:2.
 
-METODOLOGIA (seguir obrigatoriamente nesta ordem):
+CONTEXTO DO SINAL:
+O indicador Follow Line PRO gerou um sinal de entrada (💣 COMPRA ou 🔨 VENDA) baseado em cruzamento da Trend Line + BB + ATR. Dentro da janela 05:00–17:00 UTC. Sua função é validar se este sinal tem edge real.
 
-1. CONTEXTO HTF (4H/1D): Tendência macro, estrutura (HH+HL=alta, LH+LL=baixa), zonas de oferta/demanda. SEM alinhamento HTF = AGUARDAR imediatamente.
+REGRAS ABSOLUTAS:
+1. Só confirme COMPRA/VENDA se tiver CONVICÇÃO REAL (confiança >= 72%). Qualquer dúvida = AGUARDAR.
+2. O sinal do Follow Line é o gatilho. Você valida o CONTEXTO e define os níveis.
+3. SEMPRE forneça stop e alvo quando confirmar — o RR mínimo é 1:2 (alvo = 2x o stop).
+4. Stop para COMPRA: abaixo do último suporte ou mínima recente. Stop para VENDA: acima da última resistência ou máxima recente.
+5. Alvo: próxima resistência (COMPRA) ou próximo suporte (VENDA) — mínimo 2x o stop.
+6. Se os indicadores conflitarem com o sinal do Follow Line = AGUARDAR.
 
-2. SMC — Smart Money Concepts:
-   - BOS/ChoCH: quebra de estrutura confirma direção
-   - Order Blocks: último candle antes de movimento impulsivo = zona de entrada
-   - Fair Value Gaps (FVG): desequilíbrios que tendem a ser preenchidos
-   - Liquidez: equal highs/lows, stops acumulados abaixo de mínimas/acima de máximas
+CRITÉRIOS PARA CONFIRMAR O SINAL:
+COMPRA (Follow Line virou azul 💣): Tendência M5/M15 favorável, RSI não sobrecomprado (<70), MACD positivo ou cruzando, preço acima EMA ou tocando como suporte, sem resistência forte imediata acima.
+VENDA (Follow Line virou vermelho 🔨): Tendência M5/M15 favorável, RSI não sobrevendido (>30), MACD negativo ou cruzando, preço abaixo EMA ou tocando como resistência, sem suporte forte imediato abaixo.
 
-3. CONFLUÊNCIAS — mínimo 3 obrigatórias para qualquer sinal:
-   □ HTF alinhado com a direção
-   □ Preço em S/R chave OU Order Block OU FVG
-   □ BOS ou ChoCH confirmado no LTF
-   □ RSI em zona favorável (não extremo)
-   □ Volume acima da média no ponto de entrada
-   □ Padrão de candle de reversão/continuação no nível
+Responda APENAS com JSON. Sem markdown. Sem texto fora do JSON.`;
 
-4. FILTROS — qualquer um = AGUARDAR obrigatório:
-   ✗ Preço no meio de range sem direção clara
-   ✗ HTF e LTF em conflito de tendência
-   ✗ RSI > 70 para COMPRA ou RSI < 30 para VENDA
-   ✗ Stop > 1.5x ATR
-   ✗ R:R < 2:1
-   ✗ Menos de 3 confluências
-   ✗ ADX < 20 (sem tendência)
-   ✗ Preço muito estendido das EMAs
+    const usr=`SINAL DO FOLLOW LINE PRO: ${localScore.direction} (BullScore:${localScore.bullScore} BearScore:${localScore.bearScore} Gap:${localScore.gap})
+Razões do score local: ${localScore.reasons.join(' | ')}
+ATR atual (M5): ${tfA['5m']?tfA['5m'].atr.toFixed(0):tfA['1m'].atr.toFixed(0)}
 
-5. NÍVEIS:
-   - Stop: atrás do Order Block ou swing high/low. Máximo 1.5x ATR.
-   - TP1 (alvo_parcial): S/R imediato, mínimo 1.5x risco.
-   - TP2 (alvo): S/R major, mínimo 2x risco.
+VALIDE este sinal e defina Stop + Alvo com base nos dados abaixo.
 
-REGRA DE OURO: Em dúvida = AGUARDAR. A maioria das análises deve ser AGUARDAR. Só emita COMPRA/VENDA com confiança >= 70% e TODAS as condições atendidas.
+PREÇO ATUAL: $${livePrice.toFixed(2)}
 
-Responda APENAS com JSON válido. Sem markdown, sem texto extra.`;
+═══ ÚLTIMAS 10 VELAS M1 ═══
+${last10}
+Sequência atual: ${consec}
 
-    const usr=`Analise BTC/USDT com metodologia SMC completa.
-
-PREÇO: $${livePrice.toFixed(2)} | TF OPERACIONAL: ${currentTF}
-
-═══ DADOS MULTI-TF ═══${tfSection}
+═══ INDICADORES MULTI-TF ═══${tfSection}
 
 ═══ ZONAS TÉCNICAS ═══
-Resistências: ${resistances.map(r=>'$'+f(r)).join(', ')||'nenhuma'}
-Suportes: ${supports.map(s=>'$'+f(s)).join(', ')||'nenhum'}
+Suportes: ${supports.map(s=>'$'+f(s)).join(', ')||'nenhum'} | Mais próximo: ${distSup}
+Resistências: ${resistances.map(r=>'$'+f(r)).join(', ')||'nenhuma'} | Mais próxima: ${distRes}
+Distância EMA20: ${distEMA20pct}% | Distância EMA50: ${distEMA50pct}%
 
-═══ CONTEXTO HTF (${htfList[htfList.length-1]}) ═══
-Tendência: ${htf.trend} | Estrutura: ${htf.struct} | RSI: ${htf.r.toFixed(1)} | ADX: ${htf.adx.toFixed(0)}
+═══ CONTEXTO MACRO ═══
+H1: Tend=${htf.trend} Struct=${htf.struct} RSI=${htf.r.toFixed(1)} ADX=${htf.adx.toFixed(0)}
+M15: Tend=${tfA['15m'].trend} Struct=${tfA['15m'].struct} RSI=${tfA['15m'].r.toFixed(1)}
+M5: Tend=${tfA['5m'].trend} RSI=${tfA['5m'].r.toFixed(1)} MACD=${tfA['5m'].macd>0?'+':''}${tfA['5m'].macd.toFixed(0)}
 
-═══ CHECKLIST (responda internamente antes de decidir) ═══
-1. HTF alinhado? → ${htf.trend==='LATERAL'?'LATERAL — forte candidato a AGUARDAR':'SIM: '+htf.trend}
-2. ADX indica tendência? → ${htf.adx>20?'SIM ('+htf.adx.toFixed(0)+')':'NÃO ('+htf.adx.toFixed(0)+') — mercado sem força direcional'}
-3. Identifiquei >= 3 confluências SMC?
-4. R:R >= 2:1 com stop técnico?
-5. Preço em zona técnica ou no meio do range?
+PERGUNTA: O sinal Follow Line de ${localScore.direction} está confirmado pelo contexto atual? Responda com confiança real (não inflada). Defina stop e alvo usando os S/R disponíveis e o ATR como referência.
 
-JSON (apenas isso, sem texto):
+JSON:
 {
-  "direcao":"COMPRA ou VENDA ou AGUARDAR",
+  "direcao":"${localScore.direction} ou AGUARDAR",
   "confianca":0-100,
-  "entrada":numero,
-  "alvo_parcial":numero,
-  "alvo":numero,
-  "stop":numero,
-  "confluencias":["cf1","cf2","cf3"],
-  "contexto":"HTF→LTF: contexto macro, zona SMC, gatilho, invalidação",
-  "aviso":"risco relevante ou string vazia",
+  "entrada":${livePrice.toFixed(2)},
+  "stop": <preço do stop loss — para COMPRA abaixo do suporte; para VENDA acima da resistência>,
+  "alvo": <preço do take profit — mínimo RR 1:2>,
+  "alvo_parcial": <alvo parcial opcional em RR 1:1, ou null>,
+  "confluencias":["razão 1","razão 2","razão 3"],
+  "contexto":"análise objetiva: por que o sinal Follow Line está correto ou incorreto neste contexto, e como o preço deve se mover",
+  "aviso":"risco ou string vazia",
   "supports":[${supports.join(',')||'0'}],
   "resistances":[${resistances.join(',')||'0'}],
   "structure":"${htf.struct}",
@@ -2176,7 +2904,12 @@ JSON (apenas isso, sem texto):
     const res=await fetch('https://api.groq.com/openai/v1/chat/completions',{
       method:'POST',
       headers:{'Content-Type':'application/json','Authorization':'Bearer '+key},
-      body:JSON.stringify({model:'llama-3.3-70b-versatile',messages:[{role:'system',content:sys},{role:'user',content:usr}],temperature:0.1,max_tokens:900})
+      body:JSON.stringify({
+        model:'llama-3.3-70b-versatile',
+        messages:[{role:'system',content:sys},{role:'user',content:usr}],
+        temperature:0.05,  // temperatura mínima = máxima consistência
+        max_tokens:700
+      })
     });
     const data=await res.json();
     if(data.error)throw new Error(data.error.message||JSON.stringify(data.error));
@@ -2184,61 +2917,83 @@ JSON (apenas isso, sem texto):
     const m=txt.match(/\{[\s\S]*\}/);
     if(!m)throw new Error('Resposta inválida da IA');
     const result=JSON.parse(m[0]);
-    done.push('Análise IA concluída');
-    thinkStep(done,'✅ Pronto!');
+    done.push('Validação IA concluída');
+    thinkStep(done,'✅ Análise completa!');
     await sleep(200);
     document.getElementById('thinking').classList.remove('vis');
 
-    // Store overlay data
+    // Overlay data
     aiOverlayData={
       supports:    result.supports?.filter(v=>v>0)||supports,
       resistances: result.resistances?.filter(v=>v>0)||resistances,
       entrada:     result.entrada,
-      alvo:        result.alvo,
+      alvo:        result.alvo||null,
       alvo_parcial:result.alvo_parcial||null,
-      stop:        result.stop,
+      stop:        result.stop||null,
       direction:   (result.direcao||'AGUARDAR').toUpperCase(),
       structure:   result.structure||htf.struct,
       pattern:     result.pattern||tfA[mainTF].pattern,
-      choch:       result.choch||[],
-      bos:         result.bos||[],
-      liquidity:   result.liquidity||[],
-      entryCandle: candles.length-1, // índice do candle que originou o sinal
-      entryTime:   candles[candles.length-1]?.time || 0, // timestamp para referenciar mesmo após reload
+      choch:[], bos:[], liquidity:[],
+      entryCandle: candles.length-1,
+      entryTime:   candles[candles.length-1]?.time||0,
     };
 
-    // Show overlay button
-    document.getElementById('overlay-btn').style.display='flex';
+    const oBtn=document.getElementById('overlay-btn');
+    oBtn.style.display='flex'; oBtn.classList.add('active');
+    document.getElementById('overlay-btn-txt').textContent='OCULTAR ANÁLISE DO GRÁFICO';
 
     renderSignal(result);
     if(showOverlay) drawChart();
-    // Salvar no banco apenas COMPRA/VENDA (não AGUARDAR)
+
     let dir=(result.direcao||'').toUpperCase();
 
-    // Validação de R:R mínimo 1.2:1 — rejeita sinal se não atingir
+    // Dupla validação: confiança mínima 72% e score local >= 55%
     if(dir==='COMPRA'||dir==='VENDA'){
-      const risk   = Math.abs(result.entrada - result.stop);
-      const reward = Math.abs(result.alvo    - result.entrada);
-      const rr   = risk > 0 ? reward/risk : 0;
       const conf = result.confianca||0;
-      if(rr < 2.0){
-        console.log(`[AI] Rejeitado: R:R ${rr.toFixed(2)} < 2.0`);
-        result.direcao='AGUARDAR'; result.contexto=`[Rejeitado: R:R ${rr.toFixed(2)} < 2:1] `+(result.contexto||''); dir='AGUARDAR';
-      } else if(conf < 70){
-        console.log(`[AI] Rejeitado: confiança ${conf}% < 70%`);
-        result.direcao='AGUARDAR'; result.contexto=`[Rejeitado: confiança ${conf}% < 70%] `+(result.contexto||''); dir='AGUARDAR';
+      const localConf = localScore.confidence;
+      if(conf < 72){
+        console.log(`[AI] Rejeitado: confiança IA ${conf}% < 72%`);
+        result.direcao='AGUARDAR'; dir='AGUARDAR';
+        result.contexto=`[Rejeitado: confiança ${conf}% abaixo do mínimo 72%] `+(result.contexto||'');
+      } else if(localConf < 55){
+        console.log(`[AI] Rejeitado: score local ${localConf}% insuficiente`);
+        result.direcao='AGUARDAR'; dir='AGUARDAR';
+        result.contexto=`[Rejeitado: score local insuficiente (${localConf}%)] `+(result.contexto||'');
       }
     }
 
     if(dir==='COMPRA'||dir==='VENDA'){
-      if(_session) saveNewTrade(result);
-      // Desligar IA automaticamente (aguarda próxima sessão)
-      clearInterval(aiTimer);
-      aiActive=false;
-      setAIButtonState(false);
-      saveAIState(false);
+      // Verificar janela de horário UTC
+      if(!isInTradingWindow()){
+        console.log('[AI] Fora da janela 05:00–17:00 UTC — descartando entrada');
+        result.direcao='AGUARDAR'; dir='AGUARDAR';
+        result.contexto=`[Fora da janela de operação 05:00–17:00 UTC] `+(result.contexto||'');
+        showToast('🕐 Fora da janela de operação (05:00–17:00 UTC)','var(--yellow)');
+      } else {
+        console.log(`[AI] ✅ Entrada CONFIRMADA — ${dir} | Stop:${result.stop} | Alvo:${result.alvo}`);
+        showToast(`✅ SINAL: ${dir} | Stop: $${result.stop?.toFixed(0)||'?'} | Alvo: $${result.alvo?.toFixed(0)||'?'}`, dir==='COMPRA'?'var(--green)':'var(--red)');
+        result._localScore = localScore;
+        result._rsi_m1 = parseFloat(tfA['1m'].r.toFixed(1));
+        result._rsi_m5 = parseFloat(tfA['5m'].r.toFixed(1));
+        result._macd_m1 = parseFloat(tfA['1m'].macd.toFixed(2));
+        result._bb_pct = parseFloat(tfA['1m'].bbPct.toFixed(1));
+        result._adx = parseFloat(tfA['1m'].adx.toFixed(1));
+        result._vol_ratio = parseFloat(tfA['1m'].volR.toFixed(2));
+        result._tf_alignment = [tfA['5m'],tfA['15m'],tfA['1h']].filter(t=>t.trend==='alta').length + '/' + 3;
+        result._near_support = supports.length > 0 ? Math.min(...supports.map(s=>Math.abs(livePrice-s)/tfA['1m'].atr)) : 99;
+        result._near_resistance = resistances.length > 0 ? Math.min(...resistances.map(r=>Math.abs(livePrice-r)/tfA['1m'].atr)) : 99;
+        if(_session) saveNewTrade(result);
+        // Entrada feita — bloquear até próxima troca de label
+        _pendingFLSignal = null;
+        _labelAnalyzed = true; // já marcado no checkFollowLineSignal, mas reforçar aqui
+        console.log('[AI] Label consumido — próxima entrada só com novo label FL');
+      }
+    } else {
+      // AGUARDAR: label descartado — também bloquear até próxima troca
+      _pendingFLSignal = null;
+      _labelAnalyzed = true;
+      console.log('[AI] Label DESCARTADO — aguardando próxima troca de direção FL');
     }
-
   }catch(e){
     document.getElementById('thinking').classList.remove('vis');
     document.getElementById('ai-out').innerHTML=`<div class="err-box">❌ ${e.message}<br><small style="color:var(--text2)">Verifique sua API Key em console.groq.com/keys</small></div>`;
@@ -2251,31 +3006,60 @@ function renderSignal(a){
   const dir=(a.direcao||'AGUARDAR').toUpperCase();
   const cls=dir==='COMPRA'?'sig-buy':dir==='VENDA'?'sig-sell':'sig-wait';
   const ico=dir==='COMPRA'?'▲ ':dir==='VENDA'?'▼ ':'◆ ';
-  let rr='';
-  if(dir!=='AGUARDAR'&&a.entrada&&a.alvo&&a.stop){
-    const risk=Math.abs(a.entrada-a.stop),reward=Math.abs(a.alvo-a.entrada);
-    rr=risk>0?(reward/risk).toFixed(2):'—';
-  }
   const confs=Array.isArray(a.confluencias)?a.confluencias:[];
-  document.getElementById('ai-out').innerHTML=`
-    <div class="signal-card ${cls}">
-      <div class="sig-head">
-        <div class="sig-dir">${ico}${dir}</div>
-        <div class="sig-conf">Confiança: <strong style="color:${a.confianca>=65?'var(--green)':a.confianca>=45?'var(--yellow)':'var(--red)'}">${a.confianca}%</strong></div>
-      </div>
-      ${dir!=='AGUARDAR'?`<div class="sig-levels">
-        <div class="lv"><div class="lv-l">ENTRADA</div><div class="lv-v le">$${Number(a.entrada).toLocaleString('en-US',{maximumFractionDigits:2})}</div></div>
-        <div class="lv"><div class="lv-l">ALVO</div>  <div class="lv-v lt">$${Number(a.alvo).toLocaleString('en-US',{maximumFractionDigits:2})}</div></div>
-        <div class="lv"><div class="lv-l">STOP</div>  <div class="lv-v ls">$${Number(a.stop).toLocaleString('en-US',{maximumFractionDigits:2})}</div></div>
-      </div>
-      ${a.alvo_parcial ? `<div style="text-align:center; font-size:9px; color:var(--text2); margin-top:2px;">Alvo Parcial: <strong style="color:var(--green)">$${Number(a.alvo_parcial).toLocaleString('en-US',{maximumFractionDigits:2})}</strong></div>` : ''}
-      `:''}
-      ${confs.length?`<div class="sig-confluence"><div class="conf-title">CONFLUÊNCIAS</div><div class="conf-list">${confs.map((c,i)=>`${['①','②','③','④','⑤'][i]||'•'} ${c}`).join('<br>')}</div></div>`:''}
-      <div class="sig-ctx">${a.contexto||''}</div>
-      ${rr?`<div class="sig-rr"><span>Risco / Retorno</span><span class="rr-v">1 : ${rr}</span></div>`:''}
-      ${a.aviso?`<div style="margin-top:5px;padding:4px 7px;background:rgba(255,214,0,.07);border:1px solid rgba(255,214,0,.2);border-radius:4px;font-size:9px;color:var(--yellow)">⚠️ ${a.aviso}</div>`:''}
+  const confColor = a.confianca>=75?'var(--green)':a.confianca>=60?'var(--yellow)':'var(--red)';
+
+  // Calcular RR
+  let rrText='—', rrColor='var(--text2)';
+  if(dir!=='AGUARDAR' && a.entrada && a.stop && a.alvo){
+    const risk  = Math.abs(a.entrada - a.stop);
+    const reward= Math.abs(a.alvo    - a.entrada);
+    if(risk>0){
+      const rr=(reward/risk).toFixed(2);
+      rrText='1:'+rr;
+      rrColor=parseFloat(rr)>=2?'var(--green)':parseFloat(rr)>=1.5?'var(--yellow)':'var(--red)';
+    }
+  }
+
+  // Bloco de níveis
+  const levelsHtml = dir!=='AGUARDAR' ? `
+    <div class="sig-levels" style="grid-template-columns:1fr 1fr 1fr 1fr">
+      <div class="lv"><div class="lv-l">ENTRADA</div><div class="lv-v le">$${Number(a.entrada).toLocaleString('en-US',{maximumFractionDigits:2})}</div></div>
+      <div class="lv"><div class="lv-l">STOP</div><div class="lv-v" style="color:var(--red)">${a.stop?'$'+Number(a.stop).toLocaleString('en-US',{maximumFractionDigits:2}):'—'}</div></div>
+      <div class="lv"><div class="lv-l">ALVO</div><div class="lv-v lt">${a.alvo?'$'+Number(a.alvo).toLocaleString('en-US',{maximumFractionDigits:2}):'—'}</div></div>
+      <div class="lv"><div class="lv-l">RR</div><div class="lv-v" style="color:${rrColor}">${rrText}</div></div>
     </div>
-    <div class="sig-ts">Análise: ${new Date().toLocaleTimeString('pt-BR')} · Próxima em 90s</div>`;
+    ${a.alvo_parcial?`<div style="text-align:center;margin-bottom:4px;font-size:9px;color:var(--text2)">Alvo parcial (1:1): <span style="color:var(--yellow);font-family:'Share Tech Mono',monospace">$${Number(a.alvo_parcial).toLocaleString('en-US',{maximumFractionDigits:2})}</span></div>`:''}
+    <div style="text-align:center;margin:4px 0;padding:5px;background:rgba(255,255,255,.04);border-radius:5px;border:1px solid var(--border)">
+      <div style="font-size:8px;color:var(--text2);letter-spacing:1px;margin-bottom:2px">SINAL</div>
+      <div style="font-family:'Share Tech Mono',monospace;font-size:11px;color:var(--yellow);font-weight:700">⚡ FOLLOW LINE PRO</div>
+      <div style="font-size:9px;color:var(--text2);margin-top:2px">${dir==='COMPRA'?'💣 Trend Line virou AZUL — entrada LONG':'🔨 Trend Line virou VERMELHA — entrada SHORT'}</div>
+    </div>` : '';
+
+  // Barra de confiança visual
+  const confBar = `<div style="margin:4px 0 6px">
+    <div style="display:flex;justify-content:space-between;margin-bottom:2px">
+      <span style="font-size:8px;color:var(--text2);letter-spacing:1px">CONFIANÇA IA</span>
+      <span style="font-family:'Share Tech Mono',monospace;font-size:10px;font-weight:700;color:${confColor}">${a.confianca}%</span>
+    </div>
+    <div style="height:5px;background:var(--bg3);border-radius:3px;overflow:hidden">
+      <div style="height:100%;width:${a.confianca}%;background:${confColor};border-radius:3px;transition:width .5s"></div>
+    </div>
+  </div>`;
+
+  document.getElementById('ai-out').innerHTML=`
+  <div class="signal-card ${cls}">
+    <div class="sig-head">
+      <div class="sig-dir">${ico}${dir}</div>
+      <div style="font-size:9px;color:var(--text2)">Follow Line PRO</div>
+    </div>
+    ${confBar}
+    ${levelsHtml}
+    ${confs.length?`<div class="sig-confluence"><div class="conf-title">CONFLUÊNCIAS</div><div class="conf-list">${confs.map((c,i)=>`${['①','②','③','④','⑤'][i]||'•'} ${c}`).join('<br>')}</div></div>`:''}
+    <div class="sig-ctx">${a.contexto||''}</div>
+    ${a.aviso?`<div style="margin-top:5px;padding:4px 7px;background:rgba(255,214,0,.07);border:1px solid rgba(255,214,0,.2);border-radius:4px;font-size:9px;color:var(--yellow)">⚠️ ${a.aviso}</div>`:''}
+  </div>
+  <div class="sig-ts">Análise: ${new Date().toLocaleTimeString('pt-BR')}</div>`;
 }
 
 
@@ -2438,8 +3222,8 @@ document.addEventListener('fullscreenchange',()=>{
 // ══════════════════════════════════════════════════════
 // SUPABASE CONFIG
 // ══════════════════════════════════════════════════════
-const SUPA_URL = 'https://uzvykstafpywdzkucyvd.supabase.co';
-const SUPA_KEY = 'sb_publishable_pdxQE48Sc_i-i3RZRYuKzg_xT4bjGUe';
+const SUPA_URL = 'https://uxiowjqicihksyakerys.supabase.co';
+const SUPA_KEY = 'sb_publishable_9vGwq2rg2MLyEo67OE_rvA_Gbj8j_nb';
 
 async function supa(path, method='GET', body=null, token=null){
   const h={'Content-Type':'application/json','apikey':SUPA_KEY,'Prefer':'return=representation'};
@@ -2505,7 +3289,30 @@ async function initAuth(){
     _session={access_token:d.access_token,refresh_token:d.refresh_token,user:d.user};
     localStorage.setItem('btcai_session',JSON.stringify(_session));
     await onLogin(); // await garante que tudo carrega antes de restaurar IA
+    startTokenRefresh(); // inicia renovação automática do JWT
   }catch(e){localStorage.removeItem('btcai_session');}
+}
+
+let _tokenRefreshTimer=null;
+function startTokenRefresh(){
+  if(_tokenRefreshTimer) clearInterval(_tokenRefreshTimer);
+  // Renovar token a cada 45 minutos (expira em 1h no Supabase)
+  _tokenRefreshTimer = setInterval(async()=>{
+    if(!_session?.refresh_token) return;
+    try{
+      const d=await supaAuth('/token?grant_type=refresh_token',{refresh_token:_session.refresh_token});
+      _session={access_token:d.access_token,refresh_token:d.refresh_token,user:d.user};
+      localStorage.setItem('btcai_session',JSON.stringify(_session));
+      console.log('[Auth] Token renovado automaticamente');
+    }catch(e){
+      console.warn('[Auth] Falha ao renovar token:',e.message);
+      // Se falhou, limpa sessão e pede login
+      _session=null; localStorage.removeItem('btcai_session');
+      clearInterval(_tokenRefreshTimer);
+      showToast('⚠️ Sessão expirada. Faça login novamente.','var(--red)');
+      openAuth();
+    }
+  }, 45*60*1000); // 45 minutos
 }
 
 async function onLogin(){
@@ -2556,6 +3363,7 @@ async function doAuth(){
     _session={access_token:d.access_token,refresh_token:d.refresh_token,user:d.user};
     localStorage.setItem('btcai_session',JSON.stringify(_session));
     await onLogin();
+    startTokenRefresh(); // inicia renovação automática do JWT
   }catch(e){err.textContent=e.message;err.style.display='block';}
   btn.disabled=false;btn.textContent=_authMode==='login'?'ENTRAR':'CRIAR CONTA';
 }
@@ -2565,13 +3373,14 @@ async function doAuth(){
 async function doLogout(){
   try{await supaAuth('/logout',{});} catch(_){}
   _session=null;localStorage.removeItem('btcai_session');
+  if(_tokenRefreshTimer){ clearInterval(_tokenRefreshTimer); _tokenRefreshTimer=null; }
   document.getElementById('login-btn').style.display='';
   document.getElementById('user-avatar').classList.remove('visible');
   document.getElementById('ai-login-hint').style.display='';
   document.getElementById('user-modal').style.display='none';
   document.getElementById('api-key-value','');
   // Clear AI
-  if(aiActive){ clearInterval(aiTimer); aiActive=false; setAIButtonState(false); }
+  if(aiActive){ stopAIScheduler(); aiActive=false; setAIButtonState(false); }
   document.getElementById('ai-out').innerHTML='<div class="placeholder">🤖<br>Faça <strong style="color:var(--accent)">LOGIN</strong> para usar a IA Trader</div>';
   document.getElementById('hist-tbody').innerHTML='<tr><td colspan="8" style="text-align:center;color:var(--text2);padding:12px">Faça login para ver o histórico</td></tr>';
 }
@@ -2629,8 +3438,19 @@ async function loadApiKeyFromDB(){
     if(row.ai_active && _groqKey){
       if(_openTrade){
         // Tem posição aberta — mantém IA desligada, só mostra banner
-        console.log('[AI] Posição aberta detectada — IA não restaurada automaticamente');
+        // Reset do label para aguardar novo sinal após posição fechar
+        _lastFLSignalCandle = -1;
+        _lastFLSignalTime = 0;
+        _lastFLSignalDir = null;
+        _labelAnalyzed = false;
+        _pendingFLSignal = null;
+        console.log('[AI] Posição aberta detectada — aguardando fechar para novo label');
         updateOpenBanner();
+        // Ligar IA mesmo assim para monitorar o auto-close
+        aiActive=true;
+        setAIButtonState(true);
+        switchTab('ai',document.querySelectorAll('.tab-btn2')[1]);
+        setTimeout(scheduleAI, 1500); // agenda próximo M5 (só monitoramento, sem entrar)
       } else {
         // Restaurar TF se diferente
         if(row.ai_tf && row.ai_tf !== currentTF){
@@ -2647,11 +3467,10 @@ async function loadApiKeyFromDB(){
         setAIButtonState(true);
         switchTab('ai',document.querySelectorAll('.tab-btn2')[1]);
         setTimeout(()=>{
-          // Só ligar se não tiver outro timer já rodando
-          if(!aiTimer){
-            runAI();
-            aiTimer=setInterval(runAI,90000);
-          }
+          // Não forçar runAI imediatamente — só agendar para o próximo M5
+          // A análise só ocorre quando surgir novo label na próxima janela
+          scheduleAI();
+          console.log('[AI] Aguardando próximo fechamento M5 para verificar label FL');
         }, 1500);
       }
     }
@@ -2705,7 +3524,7 @@ async function loadTradeHistory(){
   if(!_session) return;
   try{
     const rows=await supa(
-      '/rest/v1/trade_signals?user_id=eq.'+_session.user.id+'&order=created_at.desc&limit=50',
+      '/rest/v1/trade_signals?user_id=eq.'+_session.user.id+'&order=created_at.desc&limit=100&select=*',
       'GET',null,_session.access_token);
     renderHistory(rows||[]);
   }catch(e){console.warn('loadHistory',e);}
@@ -2715,12 +3534,11 @@ async function loadTradeHistory(){
 // Restaura overlay + signal card a partir de um trade salvo no banco
 function restoreOverlayFromTrade(trade){
   if(!trade) return;
-  // Montar aiOverlayData mínimo com os dados que temos
   aiOverlayData={
     entrada:     trade.entry_price,
-    alvo:        trade.target_price,
+    alvo:        trade.target_price||null,
     alvo_parcial:trade.partial_target||null,
-    stop:        trade.stop_price,
+    stop:        trade.stop_price||null,
     direction:   trade.direction,
     supports:    [],
     resistances: [],
@@ -2728,26 +3546,23 @@ function restoreOverlayFromTrade(trade){
     pattern:     '',
     choch:[], bos:[], liquidity:[],
     entryCandle: -1,
-    // entry_time do banco pode ser ISO string ou unix timestamp
     entryTime: trade.entry_time
       ? (typeof trade.entry_time === 'string'
           ? Math.floor(new Date(trade.entry_time).getTime()/1000)
           : trade.entry_time)
       : 0,
   };
-  // Mostrar botão overlay
   document.getElementById('overlay-btn').style.display='flex';
   if(showOverlay) drawChart();
 
-  // Reconstruir signal card com os dados do banco
   const confs = JSON.parse(trade.confluence||'[]');
   const fake={
     direcao:     trade.direction,
     confianca:   trade.confidence||0,
     entrada:     trade.entry_price,
-    alvo:        trade.target_price,
-    alvo_parcial:trade.partial_target||null,
-    stop:        trade.stop_price,
+    alvo:        null,
+    alvo_parcial:null,
+    stop:        null,
     confluencias:confs,
     contexto:    trade.context||'',
     aviso:       '',
@@ -2778,26 +3593,21 @@ function renderHistory(rows){
 
   // Table
   const tbody=document.getElementById('hist-tbody');
-  if(!rows.length){tbody.innerHTML='<tr><td colspan="8" style="text-align:center;color:var(--text2);padding:12px">Nenhuma entrada registrada ainda</td></tr>';return;}
+  if(!rows.length){tbody.innerHTML='<tr><td colspan="5" style="text-align:center;color:var(--text2);padding:12px">Nenhuma entrada registrada ainda</td></tr>';return;}
   tbody.innerHTML=rows.map(r=>{
     const d=new Date(r.created_at);
     const dt=d.toLocaleDateString('pt-BR')+' '+d.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
-    const dir=r.direction==='COMPRA'?'<span class="badge-buy">▲ COMPRA</span>':'<span class="badge-sell">▼ VENDA</span>';
+    const dir=r.direction==='COMPRA'?'<span class="badge-buy">▲ C</span>':'<span class="badge-sell">▼ V</span>';
     const res=r.result==='GANHO'?'<span class="badge-win">✅ GANHO</span>':
               r.result==='PERDA'?'<span class="badge-lose">❌ PERDA</span>':
               '<span class="badge-open">🔴 ABERTO</span>';
-    const risk   = Math.abs(r.entry_price - r.stop_price);
-    const reward = Math.abs(r.target_price - r.entry_price);
-    const rr     = risk>0 ? (reward/risk).toFixed(2) : '—';
-    const rrColor= parseFloat(rr)>=1.5?'var(--green)':parseFloat(rr)>=1?'var(--yellow)':'var(--red)';
+    const conf=r.confidence?`<span style="color:${r.confidence>=75?'var(--green)':r.confidence>=60?'var(--yellow)':'var(--red)'};font-family:Share Tech Mono,monospace">${r.confidence}%</span>`:'—';
     const closeBtn=r.result==='ABERTO'?`<button class="close-trade-btn" onclick="closeTradeModal('${r.id}')">FECHAR</button>`:'—';
     return `<tr>
       <td style="color:var(--text2)">${dt}</td>
       <td>${dir}</td>
       <td style="color:var(--accent)">$${fmtP(r.entry_price)}</td>
-      <td style="color:var(--green)">$${fmtP(r.target_price)}</td>
-      <td style="color:var(--red)">$${fmtP(r.stop_price)}</td>
-      <td style="color:${rrColor};font-weight:700">${rr}</td>
+      <td>${conf}</td>
       <td>${res}</td>
       <td>${closeBtn}</td>
     </tr>`;
@@ -2813,8 +3623,17 @@ function updateOpenBanner(){
     locked.classList.add('visible');
     const count=_openTrades.length;
     const prefix=count>1?`(${count} abertas) última: `:'';
-    info.textContent=prefix+`${_openTrade.direction} @ $${fmtP(_openTrade.entry_price)} | TP $${fmtP(_openTrade.target_price)} | SL $${fmtP(_openTrade.stop_price)}`;
+    const stop  = parseFloat(_openTrade.stop_price);
+    const alvo  = parseFloat(_openTrade.target_price);
+    const entry = parseFloat(_openTrade.entry_price);
+    const risk   = Math.abs(entry - stop);
+    const reward = Math.abs(alvo - entry);
+    const rr     = risk > 0 ? (reward/risk).toFixed(1) : '?';
+    info.textContent = prefix +
+      `${_openTrade.direction} @ $${fmtP(entry)} | Stop: $${fmtP(stop)} | Alvo: $${fmtP(alvo)} | RR ${rr}:1`;
+    if(banner._cdTimer){ clearInterval(banner._cdTimer); banner._cdTimer=null; }
   } else {
+    if(banner._cdTimer){ clearInterval(banner._cdTimer); banner._cdTimer=null; }
     banner.classList.remove('visible');
     locked.classList.remove('visible');
   }
@@ -2826,60 +3645,111 @@ async function checkRetroactiveClose(){
   if(!_openTrades||_openTrades.length===0) return;
   _autoCloseChecking=true;
   let anyChanged=false;
+  const now=Math.floor(Date.now()/1000);
   for(const trade of [..._openTrades]){
-    const tp=parseFloat(trade.target_price),sl=parseFloat(trade.stop_price),dir=trade.direction;
-    const entryTime=trade.entry_time
+    const dir=trade.direction;
+    const stop=parseFloat(trade.stop_price);
+    const alvo=parseFloat(trade.target_price);
+    const entry=parseFloat(trade.entry_price);
+    if(!stop||!alvo||(stop===entry&&alvo===entry)) continue;
+
+    // Verificar se algum candle tocou stop ou alvo
+    const entryTs=trade.entry_time
       ?(typeof trade.entry_time==='string'?Math.floor(new Date(trade.entry_time).getTime()/1000):trade.entry_time):0;
-    let startIdx=0;
-    if(entryTime>0){
-      let minDiff=Infinity;
-      candles.forEach((cc,i)=>{const d=Math.abs(cc.time-entryTime);if(d<minDiff){minDiff=d;startIdx=i;}});
+    const relevantCandles=candles.filter(c=>c.time>=entryTs);
+    let result=null;
+    for(const c of relevantCandles){
+      if(dir==='COMPRA'){
+        if(c.low<=stop){result='PERDA';break;}
+        if(c.high>=alvo){result='GANHO';break;}
+      } else if(dir==='VENDA'){
+        if(c.high>=stop){result='PERDA';break;}
+        if(c.low<=alvo){result='GANHO';break;}
+      }
     }
-    let result=null,closeCandle=null;
-    for(let i=startIdx;i<candles.length;i++){
-      const cc=candles[i];
-      if(dir==='COMPRA'){if(cc.high>=tp){result='GANHO';closeCandle=cc;break;}if(cc.low<=sl){result='PERDA';closeCandle=cc;break;}}
-      else if(dir==='VENDA'){if(cc.low<=tp){result='GANHO';closeCandle=cc;break;}if(cc.high>=sl){result='PERDA';closeCandle=cc;break;}}
-    }
-    if(result&&closeCandle){
+
+    if(result){
       try{
         await supa('/rest/v1/trade_signals?id=eq.'+trade.id,'PATCH',
-          {result,closed_at:new Date(closeCandle.time*1000).toISOString()},_session.access_token);
+          {result,closed_at:new Date().toISOString()},_session.access_token);
         anyChanged=true;
-        console.log('[RetroClose]',dir,'→',result);
+        console.log('[RetroClose]',dir,'Stop:'+stop,'Alvo:'+alvo,'→',result);
       }catch(e){console.warn('retroClose:',e.message);}
     }
   }
   _autoCloseChecking=false;
   if(anyChanged){
-    showToast('📊 Posições fechadas retroativamente','var(--accent)');
+    showToast('📊 Trades fechados retroativamente','var(--accent)');
+    if(aiOverlayData) aiOverlayData.entrada = null;
+    showOverlay=false;
+    document.getElementById('overlay-btn').classList.remove('active');
+    document.getElementById('overlay-btn-txt').textContent='MOSTRAR ANÁLISE NO GRÁFICO';
     await loadTradeHistory();
-    if(showOverlay){showOverlay=false;document.getElementById('overlay-btn').classList.remove('active');}
     drawChart();
+    // Resetar estado do label — pronto para próximo sinal
+    _lastFLSignalCandle = -1;
+    _lastFLSignalTime = 0;
+    _lastFLSignalDir = null;
+    _labelAnalyzed = false;
+    _pendingFLSignal = null;
+    console.log('[RetroClose] Posição fechada retroativamente — aguardando próximo label FL');
+    if(aiActive){ stopAIScheduler(); scheduleAI(); }
   }
 }
 
 async function saveNewTrade(signal){
   if(!_session) return;
+  const entryPrice = parseFloat(signal.entrada) || livePrice;
+  const stopPrice  = parseFloat(signal.stop)    || entryPrice;
+  const targetPrice= parseFloat(signal.alvo)    || entryPrice;
+  const partialTarget = parseFloat(signal.alvo_parcial) || null;
+
+  const risk   = Math.abs(entryPrice - stopPrice);
+  const reward = Math.abs(targetPrice - entryPrice);
+  const rr     = risk > 0 ? parseFloat((reward / risk).toFixed(2)) : 0;
+
+  // Capturar snapshot dos indicadores no momento da entrada
+  const snap = signal._localScore ? {
+    bullScore: signal._localScore.bullScore,
+    bearScore: signal._localScore.bearScore,
+    gap: signal._localScore.gap,
+    rsi_m1: signal._rsi_m1,
+    rsi_m5: signal._rsi_m5,
+    macd_m1: signal._macd_m1,
+    bb_pct: signal._bb_pct,
+    adx: signal._adx,
+    vol_ratio: signal._vol_ratio,
+    pattern: signal._localScore.pat,
+    consec_bull: signal._localScore.consecBull,
+    consec_bear: signal._localScore.consecBear,
+    tf_alignment: signal._tf_alignment,
+    near_support: signal._near_support,
+    near_resistance: signal._near_resistance,
+    follow_line_signal: _lastFLSignalDir,
+    rr: rr,
+  } : {};
+
   const row={
     user_id:_session.user.id,
     direction:signal.direcao,
-    entry_price:signal.entrada,
-    target_price:signal.alvo,
-    stop_price:signal.stop,
-    partial_target:signal.alvo_parcial||null,
+    entry_price:entryPrice,
+    target_price:targetPrice,
+    stop_price:stopPrice,
+    partial_target:partialTarget||entryPrice,
     confluence:JSON.stringify(signal.confluencias||[]),
     context:signal.contexto||'',
     confidence:signal.confianca||0,
     timeframe:currentTF,
-    entry_time: candles[candles.length-1]?.time || null,
+    entry_time: Math.floor(Date.now()/1000),
     result:'ABERTO',
+    indicators_snapshot: JSON.stringify(snap),
   };
   try{
     const saved=await supa('/rest/v1/trade_signals','POST',row,_session.access_token);
     _openTrade=Array.isArray(saved)?saved[0]:saved;
     updateOpenBanner();
-    loadTradeHistory();
+    await loadTradeHistory();
+    console.log(`[Trade] Entrada salva. Dir:${signal.direcao} Stop:${stopPrice} Alvo:${targetPrice} RR:${rr}`);
   }catch(e){console.warn('saveNewTrade',e);}
 }
 
@@ -2898,47 +3768,58 @@ async function closeTrade(id,result){
     _openTrade=null;
     updateOpenBanner();
     loadTradeHistory();
-  }catch(e){alert('Erro ao fechar: '+e.message);}
+  }catch(e){showToast('❌ Erro ao fechar: '+e.message,'var(--red)');}
 }
 
 
-// ── Auto-fechar posição quando bate no alvo ou stop ──────────
+// Auto-fechar trade quando preço atinge Stop ou Alvo
 async function checkAutoClose(price){
   if(!_openTrade || !_session || _autoCloseChecking || !_historyLoaded) return;
-  const tp = parseFloat(_openTrade.target_price);
-  const sl = parseFloat(_openTrade.stop_price);
-  const dir= _openTrade.direction;
+  const dir   = _openTrade.direction;
+  const stop  = parseFloat(_openTrade.stop_price);
+  const alvo  = parseFloat(_openTrade.target_price);
+  const entry = parseFloat(_openTrade.entry_price);
+  if(!stop || !alvo || (stop === entry && alvo === entry)) return;
 
-  let result=null;
+  let result = null;
   if(dir==='COMPRA'){
-    if(price >= tp) result='GANHO';
-    else if(price <= sl) result='PERDA';
+    if(price <= stop)       result = 'PERDA';
+    else if(price >= alvo)  result = 'GANHO';
   } else if(dir==='VENDA'){
-    if(price <= tp) result='GANHO';
-    else if(price >= sl) result='PERDA';
+    if(price >= stop)       result = 'PERDA';
+    else if(price <= alvo)  result = 'GANHO';
   }
 
   if(result){
-    _autoCloseChecking=true;
-    console.log(`[AutoClose] ${dir} fechada como ${result} @ ${price}`);
+    _autoCloseChecking = true;
+    const rr = Math.abs(alvo-entry) / (Math.abs(stop-entry)||1);
+    console.log(`[AutoClose] ${dir} | Preço:${price} Stop:${stop} Alvo:${alvo} → ${result}`);
     try{
       await supa('/rest/v1/trade_signals?id=eq.'+_openTrade.id,'PATCH',
         {result, closed_at: new Date().toISOString()},_session.access_token);
-      // Notificação visual
-      const msg=result==='GANHO'
-        ? '✅ ALVO ATINGIDO! Posição fechada automaticamente como GANHO.'
-        : '❌ STOP ATINGIDO! Posição fechada automaticamente como PERDA.';
+      const msg = result==='GANHO'
+        ? `✅ GANHO! Alvo atingido — RR ${rr.toFixed(1)}:1`
+        : `❌ STOP atingido ($${stop.toFixed(0)})`;
       showToast(msg, result==='GANHO'?'var(--green)':'var(--red)');
-      _openTrade=null;
+      _openTrade=null; _openTrades=[];
+      if(aiOverlayData) aiOverlayData.entrada = null;
       updateOpenBanner();
-      loadTradeHistory();
-      // Limpar overlay
-      if(showOverlay){ showOverlay=false; document.getElementById('overlay-btn').classList.remove('active'); drawChart(); }
+      await loadTradeHistory();
+      showOverlay=false;
+      document.getElementById('overlay-btn').classList.remove('active');
+      document.getElementById('overlay-btn-txt').textContent='MOSTRAR ANÁLISE NO GRÁFICO';
+      drawChart();
+      // Resetar estado do label para aguardar PRÓXIMA troca de direção
+      _lastFLSignalCandle = -1;
+      _lastFLSignalTime = 0;
+      _lastFLSignalDir = null;
+      _labelAnalyzed = false;
+      _pendingFLSignal = null;
+      console.log('[AutoClose] Posição fechada — aguardando próximo label FL para nova entrada');
     }catch(e){ console.warn('autoClose erro:',e.message); }
     finally{ _autoCloseChecking=false; }
   }
 }
-
 // Toast de notificação
 function showToast(msg, color='var(--accent)'){
   let t=document.getElementById('toast-notif');
@@ -2958,33 +3839,415 @@ function showToast(msg, color='var(--accent)'){
   t._timer=setTimeout(()=>{ t.style.opacity='0'; },4000);
 }
 // ══════════════════════════════════════════════════════
-// INIT
+// PERFORMANCE ANALYSIS PANEL — Trading Real / Follow Line PRO
 // ══════════════════════════════════════════════════════
+function renderPerformance(){
+  const el = document.getElementById('perf-content');
+  if(!_session){ el.innerHTML='<div class="perf-no-data">🔒<br>Faça login para ver a análise de performance</div>'; return; }
+
+  const closed = _tradeHistory.filter(r => r.result === 'GANHO' || r.result === 'PERDA');
+  if(closed.length < 1){
+    el.innerHTML=`<div class="perf-no-data">📊<br>Nenhuma entrada fechada ainda.<br><br>
+    <span style="font-size:10px;opacity:.6">O sistema registra automaticamente quando<br>Follow Line PRO gerar sinal confirmado pela IA<br>dentro da janela 05:00–17:00 UTC</span></div>`;
+    return;
+  }
+
+  const wins   = closed.filter(r=>r.result==='GANHO');
+  const losses = closed.filter(r=>r.result==='PERDA');
+  const winRate = (wins.length / closed.length * 100);
+
+  // RR real de cada trade
+  function getRR(t){
+    const e=parseFloat(t.entry_price), s=parseFloat(t.stop_price), a=parseFloat(t.target_price);
+    if(!e||!s||!a||Math.abs(s-e)<0.01) return null;
+    return Math.abs(a-e)/Math.abs(s-e);
+  }
+
+  // ROI em "R" (unidades de risco): cada ganho = +RR, cada perda = -1
+  let totalROI = 0;
+  closed.forEach(t=>{ const rr=getRR(t)||2; totalROI += t.result==='GANHO' ? rr : -1; });
+
+  // RR médio
+  const rrList = closed.map(getRR).filter(r=>r!==null);
+  const avgRR  = rrList.length ? rrList.reduce((a,b)=>a+b,0)/rrList.length : 2;
+
+  // Break-even teórico: WR% = 1/(1+avgRR)
+  const breakEven = 100 / (1 + avgRR);
+  const isProfit  = winRate >= breakEven;
+
+  const kpiWrColor = winRate >= 60 ? 'var(--green)' : winRate >= breakEven ? 'var(--yellow)' : 'var(--red)';
+  const roiColor   = totalROI >= 0 ? 'var(--green)' : 'var(--red)';
+  const roiStr     = (totalROI >= 0 ? '+' : '') + totalROI.toFixed(2) + 'R';
+
+  let html = `
+  <div class="perf-refresh"><button class="perf-refresh-btn" onclick="renderPerformance()">↻ ATUALIZAR</button></div>
+  <div class="perf-kpi-grid">
+    <div class="perf-kpi"><div class="perf-kpi-l">ENTRADAS</div><div class="perf-kpi-v" style="color:var(--text)">${closed.length}</div></div>
+    <div class="perf-kpi"><div class="perf-kpi-l">WIN RATE</div><div class="perf-kpi-v" style="color:${kpiWrColor}">${winRate.toFixed(1)}%</div></div>
+    <div class="perf-kpi"><div class="perf-kpi-l">ROI TOTAL</div><div class="perf-kpi-v" style="color:${roiColor}">${roiStr}</div></div>
+    <div class="perf-kpi"><div class="perf-kpi-l">RR MÉDIO</div><div class="perf-kpi-v" style="color:var(--yellow)">${avgRR.toFixed(1)}:1</div></div>
+  </div>
+  <div style="text-align:center;font-size:9px;color:var(--text2);margin:-4px 0 8px">
+    Break-even com RR ${avgRR.toFixed(1)}:1 = <span style="color:var(--accent)">${breakEven.toFixed(1)}% win rate</span>
+    &nbsp;·&nbsp; <span style="color:${isProfit?'var(--green)':'var(--red)'}">● ${isProfit?'SISTEMA LUCRATIVO':'SISTEMA EM PREJUÍZO'}</span>
+  </div>`;
+
+  // Insight geral
+  if(closed.length < 5){
+    html += `<div class="perf-warn">⚠️ Apenas ${closed.length} entrada(s) fechada(s). Dados insuficientes para análise estatística confiável — continue operando.</div>`;
+  } else if(isProfit && winRate >= 60){
+    html += `<div class="perf-insight">✅ <strong>Boa performance!</strong> Win rate de ${winRate.toFixed(1)}% supera o break-even de ${breakEven.toFixed(1)}%. ROI acumulado: ${roiStr}.</div>`;
+  } else if(isProfit){
+    html += `<div class="perf-warn">⚠️ Win rate de ${winRate.toFixed(1)}% está marginalmente acima do break-even (${breakEven.toFixed(1)}%). Margem pequena — monitore de perto.</div>`;
+  } else {
+    html += `<div class="perf-warn">❌ Win rate de ${winRate.toFixed(1)}% está <strong>abaixo do break-even (${breakEven.toFixed(1)}%)</strong> para seu RR médio de ${avgRR.toFixed(1)}:1. Revise os critérios abaixo.</div>`;
+  }
+
+  html += '<hr class="perf-hr">';
+
+  // ── Por Direção (Follow Line: 💣 COMPRA / 🔨 VENDA)
+  const buyT  = closed.filter(r=>r.direction==='COMPRA');
+  const sellT = closed.filter(r=>r.direction==='VENDA');
+  if(buyT.length || sellT.length){
+    html += `<div class="perf-section"><div class="perf-sec-title">💣🔨 Win Rate por Sinal Follow Line</div>`;
+    [{label:'💣 COMPRA', arr:buyT},{label:'🔨 VENDA', arr:sellT}].filter(g=>g.arr.length>0).forEach(g=>{
+      const gw   = g.arr.filter(r=>r.result==='GANHO').length;
+      const rate = g.arr.length ? gw/g.arr.length*100 : 0;
+      const rrs2 = g.arr.map(getRR).filter(r=>r!==null);
+      const rrAvg2 = rrs2.length ? rrs2.reduce((a,b)=>a+b,0)/rrs2.length : 2;
+      const be2  = 100/(1+rrAvg2);
+      const col  = rate>=be2+5?'var(--green)':rate>=be2-5?'var(--yellow)':'var(--red)';
+      const isBuy= g.label.includes('COMPRA');
+      html += `<div class="perf-bar-row">
+        <div class="perf-bar-label" style="color:${isBuy?'var(--green)':'var(--red)'}">${g.label}</div>
+        <div class="perf-bar-track"><div class="perf-bar-fill" style="width:${Math.min(rate,100)}%;background:${col}"></div></div>
+        <div class="perf-bar-pct" style="color:${col}">${rate.toFixed(0)}%</div>
+        <div class="perf-bar-count">${gw}/${g.arr.length} · RR${rrAvg2.toFixed(1)}</div>
+      </div>`;
+    });
+    const buyWR  = buyT.length  ? buyT.filter(r=>r.result==='GANHO').length/buyT.length*100 : 0;
+    const sellWR = sellT.length ? sellT.filter(r=>r.result==='GANHO').length/sellT.length*100 : 0;
+    if(buyT.length>=3 && sellT.length>=3 && Math.abs(buyWR-sellWR)>15){
+      const better=buyWR>sellWR?'💣 COMPRA':'🔨 VENDA', worse=buyWR>sellWR?'🔨 VENDA':'💣 COMPRA';
+      html += `<div class="perf-insight" style="margin-top:5px">💡 <strong>${better}</strong> está performando muito melhor. Seja mais seletivo ou desative <strong>${worse}</strong> temporariamente.</div>`;
+    }
+    html += `</div>`;
+  }
+
+  // ── Por RR (faixas)
+  const rrGroups = [
+    {label:'RR < 1.5', fn:t=>{const r=getRR(t);return r!==null&&r<1.5;}},
+    {label:'RR 1.5–2.5',fn:t=>{const r=getRR(t);return r!==null&&r>=1.5&&r<=2.5;}},
+    {label:'RR > 2.5',  fn:t=>{const r=getRR(t);return r!==null&&r>2.5;}},
+  ].map(g=>({...g,arr:closed.filter(g.fn)})).filter(g=>g.arr.length>=2);
+  if(rrGroups.length>1){
+    html += `<div class="perf-section"><div class="perf-sec-title">📐 Win Rate por Faixa de RR</div>`;
+    rrGroups.forEach(g=>{
+      const gw=g.arr.filter(r=>r.result==='GANHO').length;
+      const rate=gw/g.arr.length*100;
+      const col=rate>=45?'var(--green)':rate>=33?'var(--yellow)':'var(--red)';
+      html += `<div class="perf-bar-row">
+        <div class="perf-bar-label">${g.label}</div>
+        <div class="perf-bar-track"><div class="perf-bar-fill" style="width:${Math.min(rate,100)}%;background:${col}"></div></div>
+        <div class="perf-bar-pct" style="color:${col}">${rate.toFixed(0)}%</div>
+        <div class="perf-bar-count">(${g.arr.length})</div>
+      </div>`;
+    });
+    html += `</div>`;
+  }
+
+  // ── Por Confiança da IA
+  const confGroups = [
+    {label:'≥ 85%', arr:closed.filter(r=>r.confidence>=85)},
+    {label:'75–84%',arr:closed.filter(r=>r.confidence>=75&&r.confidence<85)},
+    {label:'< 75%', arr:closed.filter(r=>r.confidence<75)},
+  ].filter(g=>g.arr.length>=2);
+  if(confGroups.length>1){
+    html += `<div class="perf-section"><div class="perf-sec-title">🤖 Win Rate por Confiança da IA</div>`;
+    confGroups.forEach(g=>{
+      const gw=g.arr.filter(r=>r.result==='GANHO').length;
+      const rate=gw/g.arr.length*100;
+      const col=rate>=45?'var(--green)':rate>=33?'var(--yellow)':'var(--red)';
+      html += `<div class="perf-bar-row">
+        <div class="perf-bar-label">Conf ${g.label}</div>
+        <div class="perf-bar-track"><div class="perf-bar-fill" style="width:${Math.min(rate,100)}%;background:${col}"></div></div>
+        <div class="perf-bar-pct" style="color:${col}">${rate.toFixed(0)}%</div>
+        <div class="perf-bar-count">(${g.arr.length})</div>
+      </div>`;
+    });
+    const best=confGroups.reduce((a,b)=>{
+      const ra=a.arr.filter(r=>r.result==='GANHO').length/a.arr.length;
+      const rb=b.arr.filter(r=>r.result==='GANHO').length/b.arr.length;
+      return ra>=rb?a:b;
+    });
+    const bestRate=(best.arr.filter(r=>r.result==='GANHO').length/best.arr.length*100).toFixed(0);
+    if(parseFloat(bestRate)>winRate+8)
+      html += `<div class="perf-insight" style="margin-top:5px">💡 Confiança <strong>${best.label}</strong> tem ${bestRate}% de win rate. Considere elevar o threshold mínimo da IA.</div>`;
+    html += `</div>`;
+  }
+
+  // ── Por Horário UTC
+  const byHour={};
+  closed.forEach(r=>{
+    const hh=new Date(r.created_at).getUTCHours();
+    if(!byHour[hh]) byHour[hh]={w:0,t:0,roi:0};
+    byHour[hh].t++;
+    const rr2=getRR(r)||2;
+    if(r.result==='GANHO'){byHour[hh].w++;byHour[hh].roi+=rr2;}else byHour[hh].roi-=1;
+  });
+  const hourArr=Object.entries(byHour).filter(([,v])=>v.t>=2).sort((a,b)=>+a[0]-+b[0]);
+  if(hourArr.length>=2){
+    html += `<div class="perf-section"><div class="perf-sec-title">🕐 Win Rate por Horário (UTC)</div>`;
+    hourArr.forEach(([hh,v])=>{
+      const rate=v.w/v.t*100;
+      const col=rate>=45?'var(--green)':rate>=33?'var(--yellow)':'var(--red)';
+      const roiTag=v.roi>=0?`+${v.roi.toFixed(1)}R`:`${v.roi.toFixed(1)}R`;
+      html += `<div class="perf-bar-row">
+        <div class="perf-bar-label">${String(hh).padStart(2,'0')}h UTC</div>
+        <div class="perf-bar-track"><div class="perf-bar-fill" style="width:${Math.min(rate,100)}%;background:${col}"></div></div>
+        <div class="perf-bar-pct" style="color:${col}">${rate.toFixed(0)}%</div>
+        <div class="perf-bar-count" style="color:${v.roi>=0?'var(--green)':'var(--red)'}">${roiTag}</div>
+      </div>`;
+    });
+    html += `</div>`;
+  }
+
+  // ── Análise de snapshot (ADX, RSI, padrão de candle)
+  const withSnap=closed.filter(r=>{try{const s=JSON.parse(r.indicators_snapshot||'{}');return s&&(s.rsi_m1!==undefined||s.adx!==undefined);}catch(e){return false;}});
+  if(withSnap.length>=3){
+    html += `<hr class="perf-hr"><div class="perf-section"><div class="perf-sec-title">🔬 Indicadores no Momento da Entrada</div>`;
+    // ADX
+    [{label:'ADX < 15 (lateral)',fn:s=>s.adx<15},{label:'ADX 15–25',fn:s=>s.adx>=15&&s.adx<=25},{label:'ADX > 25 (tendência)',fn:s=>s.adx>25}].forEach(g=>{
+      const grp=withSnap.filter(r=>{try{return g.fn(JSON.parse(r.indicators_snapshot));}catch(e){return false;}});
+      if(grp.length<2) return;
+      const gw=grp.filter(r=>r.result==='GANHO').length;
+      const rate=gw/grp.length*100;
+      const col=rate>=45?'var(--green)':rate>=33?'var(--yellow)':'var(--red)';
+      html += `<div class="perf-bar-row">
+        <div class="perf-bar-label">${g.label}</div>
+        <div class="perf-bar-track"><div class="perf-bar-fill" style="width:${Math.min(rate,100)}%;background:${col}"></div></div>
+        <div class="perf-bar-pct" style="color:${col}">${rate.toFixed(0)}%</div>
+        <div class="perf-bar-count">(${grp.length})</div>
+      </div>`;
+    });
+    // Padrão de candle
+    const patMap={};
+    withSnap.forEach(r=>{try{const s=JSON.parse(r.indicators_snapshot);const p=s.pattern||'Sem padrão';if(!patMap[p])patMap[p]={w:0,t:0};patMap[p].t++;if(r.result==='GANHO')patMap[p].w++;}catch(e){}});
+    const patArr=Object.entries(patMap).filter(([,v])=>v.t>=2).sort((a,b)=>(b[1].w/b[1].t)-(a[1].w/a[1].t));
+    if(patArr.length>0){
+      html += `<div class="perf-sec-title" style="margin-top:8px">🕯️ Win Rate por Padrão de Candle</div>`;
+      patArr.slice(0,5).forEach(([pat,v])=>{
+        const rate=v.w/v.t*100;
+        const col=rate>=45?'var(--green)':rate>=33?'var(--yellow)':'var(--red)';
+        html += `<div class="perf-bar-row">
+          <div class="perf-bar-label">${pat}</div>
+          <div class="perf-bar-track"><div class="perf-bar-fill" style="width:${Math.min(rate,100)}%;background:${col}"></div></div>
+          <div class="perf-bar-pct" style="color:${col}">${rate.toFixed(0)}%</div>
+          <div class="perf-bar-count">(${v.t})</div>
+        </div>`;
+      });
+    }
+    html += `</div>`;
+  }
+
+  // ── Diagnóstico IA
+  html += `<hr class="perf-hr">
+  <div class="perf-section">
+    <div class="perf-sec-title">🤖 Diagnóstico Macro da IA</div>
+    <div style="font-size:9px;color:var(--text2);margin-bottom:6px;line-height:1.6">
+      A IA analisa <strong style="color:var(--text)">todo o histórico</strong> — direção FL, RR, confiança, ADX, horário — e gera um diagnóstico com o que está funcionando e o que precisa mudar.
+    </div>
+    <button class="perf-refresh-btn" id="perf-ai-btn" onclick="runPerfAI()" style="width:100%;margin-bottom:8px;padding:8px;font-size:10px;border-color:var(--accent);color:var(--accent)">
+      ✨ GERAR DIAGNÓSTICO COMPLETO
+    </button>
+    <div id="perf-ai-out"></div>
+  </div>`;
+
+  el.innerHTML = html;
+}
+
+
+async function runPerfAI(){
+  if(!_groqKey){ showToast('⚠️ Configure sua API Key Groq','var(--red)'); return; }
+  const btn = document.getElementById('perf-ai-btn');
+  const out = document.getElementById('perf-ai-out');
+  if(!btn||!out) return;
+  btn.disabled=true; btn.textContent='⏳ Analisando tudo...';
+  out.innerHTML='<div style="color:var(--text2);font-size:9px;text-align:center;padding:12px;border:1px solid var(--border);border-radius:6px;background:var(--bg3)">🤖 A IA está lendo todo o seu histórico...<br><span style="opacity:.6">Isso pode levar alguns segundos</span></div>';
+
+  const closed = _tradeHistory.filter(r=>r.result==='GANHO'||r.result==='PERDA');
+  const wins   = closed.filter(r=>r.result==='GANHO');
+  const losses = closed.filter(r=>r.result==='PERDA');
+  const winRate= (wins.length/closed.length*100).toFixed(1);
+
+  function getRR(t){
+    const e=parseFloat(t.entry_price),s=parseFloat(t.stop_price),a=parseFloat(t.target_price);
+    if(!e||!s||!a||Math.abs(s-e)<0.01) return null;
+    return Math.abs(a-e)/Math.abs(s-e);
+  }
+  let totalROI=0;
+  const rrList=[];
+  closed.forEach(t=>{const rr=getRR(t)||2;rrList.push(rr);totalROI+=t.result==='GANHO'?rr:-1;});
+  const avgRR=rrList.length?rrList.reduce((a,b)=>a+b,0)/rrList.length:2;
+  const breakEven=(100/(1+avgRR)).toFixed(1);
+  const roiStr=(totalROI>=0?'+':'')+totalROI.toFixed(2)+'R';
+
+  // Estatísticas por horário UTC
+  const byHour={};
+  closed.forEach(r=>{
+    const hh=new Date(r.created_at).getUTCHours();
+    if(!byHour[hh])byHour[hh]={w:0,t:0};
+    byHour[hh].t++;if(r.result==='GANHO')byHour[hh].w++;
+  });
+  const hourStats=Object.entries(byHour).map(([h,v])=>
+    `${String(h).padStart(2,'0')}h UTC: ${v.w}/${v.t} (${(v.w/v.t*100).toFixed(0)}%)`
+  ).join(', ');
+
+  // Por direção (sinal Follow Line)
+  const buyT=closed.filter(r=>r.direction==='COMPRA');
+  const sellT=closed.filter(r=>r.direction==='VENDA');
+  const buyRate=buyT.length?(buyT.filter(r=>r.result==='GANHO').length/buyT.length*100).toFixed(0):'N/A';
+  const sellRate=sellT.length?(sellT.filter(r=>r.result==='GANHO').length/sellT.length*100).toFixed(0):'N/A';
+
+  // Por confiança
+  const c85=closed.filter(r=>r.confidence>=85);
+  const c75=closed.filter(r=>r.confidence>=75&&r.confidence<85);
+  const c60=closed.filter(r=>r.confidence>=60&&r.confidence<75);
+  const confStats=[
+    c85.length?`≥85%: ${c85.filter(r=>r.result==='GANHO').length}/${c85.length} (${(c85.filter(r=>r.result==='GANHO').length/c85.length*100).toFixed(0)}%)`:'',
+    c75.length?`75-84%: ${c75.filter(r=>r.result==='GANHO').length}/${c75.length} (${(c75.filter(r=>r.result==='GANHO').length/c75.length*100).toFixed(0)}%)`:'',
+    c60.length?`60-74%: ${c60.filter(r=>r.result==='GANHO').length}/${c60.length} (${(c60.filter(r=>r.result==='GANHO').length/c60.length*100).toFixed(0)}%)`:'',
+  ].filter(Boolean).join(' | ');
+
+  // RR por faixa
+  const rrLow=closed.filter(t=>{const r=getRR(t);return r!==null&&r<1.5;});
+  const rrMid=closed.filter(t=>{const r=getRR(t);return r!==null&&r>=1.5&&r<=2.5;});
+  const rrHigh=closed.filter(t=>{const r=getRR(t);return r!==null&&r>2.5;});
+  const rrStats=[
+    rrLow.length?`RR<1.5: ${rrLow.filter(r=>r.result==='GANHO').length}/${rrLow.length}`:'',
+    rrMid.length?`RR1.5-2.5: ${rrMid.filter(r=>r.result==='GANHO').length}/${rrMid.length}`:'',
+    rrHigh.length?`RR>2.5: ${rrHigh.filter(r=>r.result==='GANHO').length}/${rrHigh.length}`:'',
+  ].filter(Boolean).join(' | ');
+
+  // Padrões de candle
+  const patMap={};
+  closed.forEach(r=>{try{const s=JSON.parse(r.indicators_snapshot||'{}');const p=s.pattern||'N/A';if(!patMap[p])patMap[p]={w:0,t:0};patMap[p].t++;if(r.result==='GANHO')patMap[p].w++;}catch(e){}});
+  const patStats=Object.entries(patMap).filter(([,v])=>v.t>=2).map(([p,v])=>`${p}: ${v.w}/${v.t} (${(v.w/v.t*100).toFixed(0)}%)`).join(', ');
+
+  // Histórico detalhado (últimas 50)
+  const detail=closed.slice(0,50).map(r=>{
+    let snap={};try{snap=JSON.parse(r.indicators_snapshot||'{}');}catch(e){}
+    const hh=new Date(r.created_at).getUTCHours();
+    const rr=getRR(r);
+    return `[${r.result}] ${r.direction} conf:${r.confidence}% RR:${rr?rr.toFixed(1):'?'} horaUTC:${hh}h RSI:${snap.rsi_m1||'?'} ADX:${snap.adx||'?'} padrão:${snap.pattern||'?'}`;
+  }).join('\n');
+
+  const prompt = `Você é um analista quantitativo especialista em trading de Bitcoin com o indicador Follow Line PRO (sistema de trading real com Stop Loss + Take Profit, RR mínimo 1:2). Faça um diagnóstico MACRO completo e honesto.
+
+═══ RESUMO GERAL ═══
+Total de entradas: ${closed.length}
+Ganhos: ${wins.length} | Perdas: ${losses.length}
+Win Rate: ${winRate}% (break-even com RR ${avgRR.toFixed(1)}:1 = ${breakEven}%)
+ROI acumulado: ${roiStr} (unidades de risco)
+RR médio dos trades: ${avgRR.toFixed(2)}:1
+Status: ${totalROI>=0?'LUCRATIVO':'PREJUÍZO'}
+
+═══ POR SINAL FOLLOW LINE ═══
+💣 COMPRA: ${buyRate}% win rate (${buyT.length} entradas)
+🔨 VENDA: ${sellRate}% win rate (${sellT.length} entradas)
+
+═══ POR CONFIANÇA DA IA ═══
+${confStats||'Dados insuficientes'}
+
+═══ POR FAIXA DE RR ═══
+${rrStats||'Dados insuficientes'}
+
+═══ POR HORÁRIO (UTC — janela operacional 05h–17h UTC) ═══
+${hourStats||'Dados insuficientes'}
+
+═══ POR PADRÃO DE CANDLE ═══
+${patStats||'Dados insuficientes'}
+
+═══ HISTÓRICO DETALHADO ═══
+${detail}
+
+Com base em TUDO acima, escreva um diagnóstico macro em PORTUGUÊS. Seja direto, específico, use os dados reais. Não invente dados.
+
+Responda APENAS com texto corrido (sem JSON, sem markdown), organizado assim:
+
+DIAGNÓSTICO GERAL:
+[performance atual, se o sistema é lucrativo, ROI real em R]
+
+O QUE ESTÁ FUNCIONANDO:
+[dados que mostram resultados positivos — direção, horário, RR, confiança]
+
+O QUE ESTÁ FALHANDO:
+[dados que mostram resultados negativos ou reduzem o win rate]
+
+HORÁRIOS E PADRÕES MAIS ASSERTIVOS:
+[baseado nos dados de hora UTC e padrão de candle]
+
+AJUSTES RECOMENDADOS:
+[ações concretas: ex. priorizar 💣 COMPRA, evitar horário Xh UTC, exigir RR mínimo de X, elevar confiança para X%]
+
+PROGNÓSTICO:
+[tendência se continuar assim; o que mais impacta o resultado]`;
+
+  try{
+    const res=await fetch('https://api.groq.com/openai/v1/chat/completions',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+_groqKey},
+      body:JSON.stringify({model:'llama-3.3-70b-versatile',messages:[{role:'user',content:prompt}],temperature:0.15,max_tokens:1200})
+    });
+    const data=await res.json();
+    if(data.error) throw new Error(data.error.message);
+    const txt=(data.choices?.[0]?.message?.content||'').trim();
+    const formatted=txt
+      .replace(/^(DIAGNÓSTICO GERAL:|O QUE ESTÁ FUNCIONANDO:|O QUE ESTÁ FALHANDO:|HORÁRIOS E PADRÕES MAIS ASSERTIVOS:|AJUSTES RECOMENDADOS:|PROGNÓSTICO:)/gm,
+        s=>`<div style="font-size:8px;color:var(--accent);letter-spacing:2px;font-weight:700;margin-top:10px;margin-bottom:3px">${s}</div>`)
+      .replace(/\n/g,'<br>');
+    const ts=new Date().toLocaleString('pt-BR');
+    out.innerHTML=`
+      <div style="position:relative">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+          <span style="font-size:8px;color:var(--text2)">Gerado em: ${ts} · ${closed.length} entradas analisadas</span>
+          <button onclick="copyDiagnostico()" style="background:transparent;border:1px solid var(--border);border-radius:4px;color:var(--text2);cursor:pointer;padding:3px 8px;font-size:9px;font-family:Exo 2,sans-serif;font-weight:700;letter-spacing:1px;transition:all .15s" onmouseover="this.style.borderColor='var(--accent)';this.style.color='var(--accent)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text2)'" id="copy-diag-btn">📋 COPIAR</button>
+        </div>
+        <div id="diag-text-box" style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:12px 14px;font-size:10px;color:var(--text);line-height:1.8;max-height:320px;overflow-y:auto;white-space:pre-wrap">${formatted}</div>
+      </div>`;
+    window._lastDiagText=txt;
+  }catch(e){
+    out.innerHTML=`<div class="perf-warn">❌ Erro: ${e.message}</div>`;
+  }finally{
+    btn.disabled=false;btn.textContent='✨ GERAR DIAGNÓSTICO COMPLETO';
+  }
+}
+
+function copyDiagnostico(){
+  const txt = window._lastDiagText || '';
+  if(!txt) return;
+  navigator.clipboard.writeText(txt).then(()=>{
+    const btn = document.getElementById('copy-diag-btn');
+    if(btn){ btn.textContent='✅ COPIADO!'; setTimeout(()=>{ btn.textContent='📋 COPIAR'; },2000); }
+  }).catch(()=>{
+    // Fallback para mobile
+    const ta = document.createElement('textarea');
+    ta.value = txt; ta.style.position='fixed'; ta.style.opacity='0';
+    document.body.appendChild(ta); ta.select(); document.execCommand('copy');
+    document.body.removeChild(ta);
+    const btn = document.getElementById('copy-diag-btn');
+    if(btn){ btn.textContent='✅ COPIADO!'; setTimeout(()=>{ btn.textContent='📋 COPIAR'; },2000); }
+  });
+}
+
 window.addEventListener('load',async()=>{
   await Promise.all([loadCandles('5m'),load24h()]);
   setInterval(load24h,30000);
-  // Init Supabase auth (restore session) ANTES de conectar WS
-  // para garantir que _openTrade e _historyLoaded estejam prontos
-  // antes do checkAutoClose começar a disparar
+  setInterval(updateTimeWindowBar, 60000); // atualiza barra de horário a cada minuto
   await initAuth();
   connectWS('5m');
   // TF buttons
-  document.querySelectorAll('.tf-btn').forEach(btn=>{
-    btn.addEventListener('click',()=>{
-      document.querySelectorAll('.tf-btn').forEach(b=>b.classList.remove('active'));
-      btn.classList.add('active');
-      const tf=btn.dataset.tf;
-      currentTF=tf;
-      if(aiActive){
-        // IA continua ligada — reinicia ciclo no novo TF
-        clearInterval(aiTimer);
-        saveAIState(true); // atualiza TF salvo
-        loadCandles(tf).then(()=>{ connectWS(tf); runAI(); aiTimer=setInterval(runAI,90000); });
-      } else {
-        loadCandles(tf).then(()=>connectWS(tf));
-      }
-    });
-  });
+  // Listeners de TF já registrados fora do load — não duplicar aqui
 });
 </script>
 </body>
