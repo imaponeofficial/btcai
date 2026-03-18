@@ -402,6 +402,10 @@ input[type=color]{display:none}
     <button class="tf-btn" data-tf="4h">4H</button>
     <button class="tf-btn" data-tf="1d">1D</button>
   </div>
+  <div class="chart-style-btns" style="display:flex;gap:2px;flex-shrink:0;margin-left:4px">
+    <button class="tf-btn active" id="cs-candle" onclick="setChartStyle('candle')" title="Candles">🕯️</button>
+    <button class="tf-btn" id="cs-bookmap" onclick="setChartStyle('bookmap')" title="Bookmap">🔵</button>
+  </div>
   <div class="ohlc-row">
     <span class="oc">O:<span id="co">-</span></span>
     <span class="hcc">H:<span id="ch">-</span></span>
@@ -628,6 +632,16 @@ let candleColors = {
   bearBody:'#ff1744', bearBorder:'#ff1744', bearWick:'#ff1744',
 };
 
+// ── CHART STYLE ────────────────────────────────────────
+let chartStyle = 'candle'; // 'candle' | 'bookmap'
+
+function setChartStyle(style){
+  chartStyle = style;
+  document.getElementById('cs-candle').classList.toggle('active', style==='candle');
+  document.getElementById('cs-bookmap').classList.toggle('active', style==='bookmap');
+  drawChart();
+}
+
 function buildIndSettings(){
   const el = document.getElementById('ind-settings-list');
   const overlays = INDS_CONFIG.filter(i=>['line','bb','vwap'].includes(i.type));
@@ -811,42 +825,11 @@ function drawChart(){
   // Pattern candle index (last candle with a special pattern)
   const patternIdx = detectPatternIdx(start, end);
 
-  // ── CANDLES ──
-  for(let i=start;i<end;i++){
-    const c   = candles[i];
-    const x   = idxToX(i-start);
-    const isUp = c.close >= c.open;
-    const isPattern = (i === patternIdx);
-
-    // Pattern candle gets a special highlight color
-    let bodyColor  = isUp ? candleColors.bullBody   : candleColors.bearBody;
-    let borderColor= isUp ? candleColors.bullBorder : candleColors.bearBorder;
-    let wickColor  = isUp ? candleColors.bullWick   : candleColors.bearWick;
-    if(isPattern){
-      bodyColor   = '#ff9800';
-      borderColor = '#ffcc02';
-      wickColor   = '#ffcc02';
-    }
-
-    // Wick
-    ctx.strokeStyle = wickColor; ctx.lineWidth = Math.max(1, cw*0.08);
-    ctx.beginPath();
-    ctx.moveTo(x, priceToY(c.high));
-    ctx.lineTo(x, priceToY(c.low));
-    ctx.stroke();
-
-    // Body
-    const yOpen  = priceToY(c.open);
-    const yClose = priceToY(c.close);
-    const bx = x - bw/2;
-    const by = Math.min(yOpen, yClose);
-    const bh = Math.max(1, Math.abs(yClose-yOpen));
-
-    ctx.fillStyle   = bodyColor;
-    ctx.strokeStyle = borderColor;
-    ctx.lineWidth   = Math.max(0.5, cw*0.05);
-    ctx.fillRect(bx, by, bw, bh);
-    if(bw > 3) ctx.strokeRect(bx, by, bw, bh);
+  // ── CANDLES or BOOKMAP ──
+  if(chartStyle === 'bookmap'){
+    drawBookmap(start, end, cw, bw, patternIdx);
+  } else {
+    drawCandlesClassic(start, end, cw, bw, patternIdx);
   }
 
   // ── SMC LABELS on candles (HH/HL/LH/LL) — OCULTOS
@@ -906,6 +889,130 @@ function drawChart(){
     ctx.fillStyle = '#ffffff'; ctx.fillRect(w-PAD.R, y-9, PAD.R, 18);
     ctx.fillStyle = '#000'; ctx.font='bold 9px Share Tech Mono,monospace'; ctx.textAlign='left';
     ctx.fillText('$'+fmtP(livePrice), w-PAD.R+3, y+4);
+  }
+}
+
+// ── CLASSIC CANDLE RENDERER ──────────────────────────
+function drawCandlesClassic(start, end, cw, bw, patternIdx){
+  for(let i=start;i<end;i++){
+    const c   = candles[i];
+    const x   = idxToX(i-start);
+    const isUp = c.close >= c.open;
+    const isPattern = (i === patternIdx);
+
+    let bodyColor  = isUp ? candleColors.bullBody   : candleColors.bearBody;
+    let borderColor= isUp ? candleColors.bullBorder : candleColors.bearBorder;
+    let wickColor  = isUp ? candleColors.bullWick   : candleColors.bearWick;
+    if(isPattern){ bodyColor='#ff9800'; borderColor='#ffcc02'; wickColor='#ffcc02'; }
+
+    ctx.strokeStyle = wickColor; ctx.lineWidth = Math.max(1, cw*0.08); ctx.setLineDash([]);
+    ctx.beginPath(); ctx.moveTo(x, priceToY(c.high)); ctx.lineTo(x, priceToY(c.low)); ctx.stroke();
+
+    const yOpen=priceToY(c.open), yClose=priceToY(c.close);
+    const bx=x-bw/2, by=Math.min(yOpen,yClose), bh=Math.max(1,Math.abs(yClose-yOpen));
+    ctx.fillStyle=bodyColor; ctx.strokeStyle=borderColor;
+    ctx.lineWidth=Math.max(0.5,cw*0.05);
+    ctx.fillRect(bx,by,bw,bh);
+    if(bw>3) ctx.strokeRect(bx,by,bw,bh);
+  }
+}
+
+// ── BOOKMAP RENDERER ─────────────────────────────────
+function drawBookmap(start, end, cw, bw, patternIdx){
+  // volume range
+  let volMax = 1;
+  for(let i=start;i<end;i++){
+    const v = candles[i] ? (candles[i].volume||0) : 0;
+    if(v > volMax) volMax = v;
+  }
+
+  const maxBubbleR = Math.min(cw * 0.85, 16);
+
+  for(let i=start;i<end;i++){
+    const c = candles[i];
+    if(!c) continue;
+
+    const pyHigh = priceToY(c.high);
+    const pyLow  = priceToY(c.low);
+    const pyOpen = priceToY(c.open);
+    const pyClose= priceToY(c.close);
+
+    // Skip if any coordinate is NaN / Infinity (price scale not ready)
+    if(!isFinite(pyHigh)||!isFinite(pyLow)||!isFinite(pyOpen)||!isFinite(pyClose)) continue;
+
+    const x      = idxToX(i-start);
+    const isUp   = c.close >= c.open;
+    const isPat  = (i === patternIdx);
+
+    // 1. Wick
+    let wickColor = isUp ? candleColors.bullWick : candleColors.bearWick;
+    if(isPat) wickColor = '#ffcc02';
+    ctx.strokeStyle = wickColor;
+    ctx.lineWidth   = Math.max(0.8, cw*0.05);
+    ctx.setLineDash([]);
+    ctx.beginPath(); ctx.moveTo(x, pyHigh); ctx.lineTo(x, pyLow); ctx.stroke();
+
+    // 2. Slim body
+    let bodyColor   = isUp ? candleColors.bullBody   : candleColors.bearBody;
+    let borderColor = isUp ? candleColors.bullBorder : candleColors.bearBorder;
+    if(isPat){ bodyColor='#ff9800'; borderColor='#ffcc02'; }
+    const cbw = Math.max(1, bw * 0.45);
+    const bx  = x - cbw/2;
+    const by  = Math.min(pyOpen, pyClose);
+    const bh  = Math.max(1, Math.abs(pyClose - pyOpen));
+    ctx.fillStyle   = bodyColor;
+    ctx.strokeStyle = borderColor;
+    ctx.lineWidth   = Math.max(0.5, cw*0.04);
+    ctx.fillRect(bx, by, cbw, bh);
+    if(cbw > 2) ctx.strokeRect(bx, by, cbw, bh);
+
+    // 3. Bubble (no gradients — flat fill only to avoid NaN crashes)
+    const vol      = c.volume || 0;
+    const volRatio = Math.sqrt(vol / volMax);
+    const r        = Math.max(2, volRatio * maxBubbleR);
+
+    const bubbleY = isUp ? pyHigh - r - 3 : pyLow + r + 3;
+    if(!isFinite(bubbleY)) continue;
+
+    const alpha = 0.3 + volRatio * 0.6;
+
+    // Outer glow ring — simple concentric circle, no gradient
+    if(r >= 4){
+      ctx.beginPath();
+      ctx.arc(x, bubbleY, r * 1.7, 0, Math.PI*2);
+      ctx.fillStyle = isUp ? `rgba(0,230,118,0.07)` : `rgba(255,23,68,0.07)`;
+      ctx.fill();
+
+      ctx.beginPath();
+      ctx.arc(x, bubbleY, r * 1.3, 0, Math.PI*2);
+      ctx.fillStyle = isUp ? `rgba(0,230,118,0.12)` : `rgba(255,23,68,0.12)`;
+      ctx.fill();
+    }
+
+    // Main filled bubble
+    ctx.beginPath();
+    ctx.arc(x, bubbleY, r, 0, Math.PI*2);
+    ctx.fillStyle = isPat
+      ? `rgba(255,152,0,${alpha})`
+      : isUp
+        ? `rgba(0,230,118,${alpha})`
+        : `rgba(255,23,68,${alpha})`;
+    ctx.fill();
+
+    // Highlight arc (top-left quarter, flat white)
+    if(r >= 5){
+      ctx.beginPath();
+      ctx.arc(x - r*0.2, bubbleY - r*0.2, r * 0.45, 0, Math.PI*2);
+      ctx.fillStyle = `rgba(255,255,255,${0.18 * volRatio})`;
+      ctx.fill();
+    }
+
+    // Border
+    ctx.beginPath();
+    ctx.arc(x, bubbleY, r, 0, Math.PI*2);
+    ctx.strokeStyle = isUp ? `rgba(0,230,118,0.55)` : `rgba(255,23,68,0.55)`;
+    ctx.lineWidth   = Math.max(0.5, r * 0.1);
+    ctx.stroke();
   }
 }
 
