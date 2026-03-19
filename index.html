@@ -405,6 +405,7 @@ input[type=color]{display:none}
   <div class="chart-style-btns" style="display:flex;gap:2px;flex-shrink:0;margin-left:4px">
     <button class="tf-btn active" id="cs-candle" onclick="setChartStyle('candle')" title="Candles">🕯️</button>
     <button class="tf-btn" id="cs-bookmap" onclick="setChartStyle('bookmap')" title="Bookmap">🔵</button>
+    <button class="tf-btn" id="bm-values-btn" onclick="toggleBookmapValues()" title="Mostrar valores no Bookmap" style="display:none">💲</button>
   </div>
   <div class="ohlc-row">
     <span class="oc">O:<span id="co">-</span></span>
@@ -443,10 +444,11 @@ input[type=color]{display:none}
 
 <div id="bottom">
   <div class="tab-nav">
-    <button class="tab-btn2 active" onclick="switchTab('ind',this)">📊 INDICADORES</button>
-    <button class="tab-btn2" onclick="switchTab('ai',this)">🤖 IA TRADER</button>
-    <button class="tab-btn2" onclick="switchTab('hist',this)">📋 HISTÓRICO</button>
-    <button class="tab-btn2" onclick="switchTab('perf',this);renderPerformance()">🎯 PERFORMANCE</button>
+    <button class="tab-btn2 active" onclick="switchTab('ind',this)">📊 INDS</button>
+    <button class="tab-btn2" onclick="switchTab('ai',this)">🤖 IA</button>
+    <button class="tab-btn2" onclick="switchTab('hist',this)">📋 HIST</button>
+    <button class="tab-btn2" onclick="switchTab('perf',this);renderPerformance()">🎯 PERF</button>
+    <button class="tab-btn2" onclick="switchTab('trade',this)">⚡ TRADE</button>
   </div>
   <div id="tab-ind" class="tab-pane active">
     <div class="ind-grid">
@@ -516,6 +518,87 @@ input[type=color]{display:none}
         </tr></thead>
         <tbody id="hist-tbody"><tr><td colspan="7" style="text-align:center;color:var(--text2);padding:12px">Faça login para ver o histórico</td></tr></tbody>
       </table>
+    </div>
+  </div>
+
+  <!-- TRADE TAB -->
+  <div id="tab-trade" class="tab-pane" style="padding:8px 10px">
+    <!-- CONFIG: API Keys Bybit -->
+    <div style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:10px;margin-bottom:8px">
+      <div style="font-size:9px;color:var(--accent);letter-spacing:2px;font-weight:700;margin-bottom:8px">🔑 CONFIGURAÇÃO BYBIT</div>
+      <div style="font-size:9px;color:var(--text2);margin-bottom:6px;line-height:1.5">Insira suas API Keys da Bybit (permissão: <strong style="color:var(--text)">Trade</strong>). As chaves ficam salvas localmente.</div>
+      <div style="display:flex;flex-direction:column;gap:5px">
+        <div>
+          <div style="font-size:8px;color:var(--text2);margin-bottom:2px;letter-spacing:1px">API KEY</div>
+          <input id="bybit-api-key" type="text" placeholder="Sua Bybit API Key..." style="width:100%;padding:6px 9px;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:Share Tech Mono,monospace;font-size:10px;outline:none" oninput="this.style.borderColor='var(--accent)'">
+        </div>
+        <div>
+          <div style="font-size:8px;color:var(--text2);margin-bottom:2px;letter-spacing:1px">API SECRET</div>
+          <input id="bybit-api-secret" type="password" placeholder="Sua Bybit API Secret..." style="width:100%;padding:6px 9px;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:Share Tech Mono,monospace;font-size:10px;outline:none" oninput="this.style.borderColor='var(--accent)'">
+        </div>
+        <button onclick="saveBybitKeys()" style="padding:6px;background:rgba(0,212,255,.1);border:1px solid var(--accent);border-radius:6px;color:var(--accent);font-family:Exo 2,sans-serif;font-size:10px;font-weight:700;letter-spacing:1px;cursor:pointer;transition:all .2s">SALVAR CHAVES</button>
+        <div id="bybit-key-status" style="font-size:9px;text-align:center;display:none"></div>
+      </div>
+    </div>
+
+    <!-- PARÂMETROS DE TRADE -->
+    <div style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:10px;margin-bottom:8px">
+      <div style="font-size:9px;color:var(--accent);letter-spacing:2px;font-weight:700;margin-bottom:8px">⚙️ PARÂMETROS</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:6px">
+        <div>
+          <div style="font-size:8px;color:var(--text2);margin-bottom:2px;letter-spacing:1px">ALAVANCAGEM</div>
+          <div style="display:flex;align-items:center;gap:4px">
+            <input id="bybit-leverage" type="number" value="10" min="1" max="100" style="width:60px;padding:5px;background:var(--bg);border:1px solid var(--border);border-radius:5px;color:var(--text);font-family:Share Tech Mono,monospace;font-size:11px;text-align:center;outline:none">
+            <span style="font-size:9px;color:var(--text2)">x</span>
+          </div>
+        </div>
+        <div>
+          <div style="font-size:8px;color:var(--text2);margin-bottom:2px;letter-spacing:1px">CAPITAL (USDT)</div>
+          <input id="bybit-capital" type="number" value="100" min="5" step="5" style="width:80px;padding:5px;background:var(--bg);border:1px solid var(--border);border-radius:5px;color:var(--text);font-family:Share Tech Mono,monospace;font-size:11px;text-align:center;outline:none">
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:6px 0;border-top:1px dashed rgba(255,255,255,.05)">
+        <div>
+          <div style="font-size:10px;color:var(--text);font-weight:700">Fechar parcial no alvo 1</div>
+          <div style="font-size:8px;color:var(--text2)">Fecha 50% da posição ao atingir alvo parcial</div>
+        </div>
+        <label class="toggle"><input type="checkbox" id="bybit-partial-close" checked><span class="toggle-slider"></span></label>
+      </div>
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:6px 0;border-top:1px dashed rgba(255,255,255,.05)">
+        <div>
+          <div style="font-size:10px;color:var(--text);font-weight:700">Mover stop p/ entrada no parcial</div>
+          <div style="font-size:8px;color:var(--text2)">Break-even após fechar parcial</div>
+        </div>
+        <label class="toggle"><input type="checkbox" id="bybit-breakeven" checked><span class="toggle-slider"></span></label>
+      </div>
+    </div>
+
+    <!-- ATIVAR TRADE REAL -->
+    <div style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:10px;margin-bottom:8px">
+      <div style="font-size:9px;color:var(--accent);letter-spacing:2px;font-weight:700;margin-bottom:8px">⚡ TRADE REAL</div>
+      <div style="font-size:9px;color:var(--text2);margin-bottom:8px;line-height:1.6;background:rgba(255,214,0,.05);border:1px solid rgba(255,214,0,.2);border-radius:5px;padding:6px">
+        ⚠️ <strong style="color:var(--yellow)">ATENÇÃO:</strong> Ao ativar, o bot executará ordens REAIS na Bybit automaticamente quando a IA gerar um sinal. Certifique-se de ter capital suficiente e configurado corretamente.
+      </div>
+      <button id="trade-real-btn" onclick="toggleTradeReal()" style="width:100%;padding:8px;background:var(--bg);border:2px solid var(--border);border-radius:8px;color:var(--text2);font-family:Exo 2,sans-serif;font-size:12px;font-weight:700;letter-spacing:2px;cursor:pointer;transition:all .3s;display:flex;align-items:center;justify-content:center;gap:6px">
+        <span id="trade-real-dot" style="width:8px;height:8px;border-radius:50%;background:currentColor"></span>
+        <span id="trade-real-txt">TRADE REAL: DESATIVADO</span>
+      </button>
+    </div>
+
+    <!-- STATUS DA POSIÇÃO ABERTA -->
+    <div id="trade-position-card" style="display:none;background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:10px">
+      <div style="font-size:9px;color:var(--accent);letter-spacing:2px;font-weight:700;margin-bottom:8px">📊 POSIÇÃO BYBIT</div>
+      <div id="trade-position-info" style="font-size:10px;color:var(--text);font-family:Share Tech Mono,monospace;line-height:1.8"></div>
+      <button onclick="closeBybitPositionManual()" style="margin-top:8px;width:100%;padding:6px;background:rgba(255,23,68,.1);border:1px solid var(--red);border-radius:6px;color:var(--red);font-family:Exo 2,sans-serif;font-size:10px;font-weight:700;letter-spacing:1px;cursor:pointer">FECHAR POSIÇÃO MANUALMENTE</button>
+    </div>
+
+    <!-- LOG DE EXECUÇÃO -->
+    <div style="margin-top:6px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+        <div style="font-size:8px;color:var(--text2);letter-spacing:2px">LOG DE EXECUÇÃO</div>
+        <button onclick="clearTradeLog()" style="font-size:8px;color:var(--text2);background:transparent;border:none;cursor:pointer;letter-spacing:1px">LIMPAR</button>
+      </div>
+      <div id="trade-log" style="background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:6px;font-family:Share Tech Mono,monospace;font-size:9px;color:var(--text2);max-height:100px;overflow-y:auto;line-height:1.7">Aguardando ativação...</div>
     </div>
   </div>
 </div>
@@ -639,6 +722,15 @@ function setChartStyle(style){
   chartStyle = style;
   document.getElementById('cs-candle').classList.toggle('active', style==='candle');
   document.getElementById('cs-bookmap').classList.toggle('active', style==='bookmap');
+  const bmValBtn = document.getElementById('bm-values-btn');
+  if(bmValBtn) bmValBtn.style.display = style==='bookmap' ? '' : 'none';
+  drawChart();
+}
+
+function toggleBookmapValues(){
+  bookmapShowValues = !bookmapShowValues;
+  const btn = document.getElementById('bm-values-btn');
+  if(btn) btn.classList.toggle('active', bookmapShowValues);
   drawChart();
 }
 
@@ -796,9 +888,7 @@ function drawChart(){
     const frac = gi/gridCount;
     const price = priceMax - (priceMax-priceMin)*frac;
     const y = PAD.T + frac*_cAreaH;
-    // Linha de grid
-    ctx.strokeStyle='rgba(26,40,64,0.4)'; ctx.lineWidth=0.5; ctx.setLineDash([]);
-    ctx.beginPath(); ctx.moveTo(PAD.L, y); ctx.lineTo(w-PAD.R, y); ctx.stroke();
+    // Grade REMOVIDA
     ctx.fillStyle='#3a5870';
     ctx.fillText('$'+fmtP(price), w-PAD.R+4, y+3);
   }
@@ -917,6 +1007,9 @@ function drawCandlesClassic(start, end, cw, bw, patternIdx){
   }
 }
 
+// ── BOOKMAP CONFIG ────────────────────────────────────
+let bookmapShowValues = false; // botão toggle para mostrar valores
+
 // ── BOOKMAP RENDERER ─────────────────────────────────
 function drawBookmap(start, end, cw, bw, patternIdx){
   // volume range
@@ -926,7 +1019,9 @@ function drawBookmap(start, end, cw, bw, patternIdx){
     if(v > volMax) volMax = v;
   }
 
-  const maxBubbleR = Math.min(cw * 0.85, 16);
+  // Tamanho fixo das bolhas em pixels (NÃO escala com zoom)
+  const MIN_R = 3;
+  const MAX_R = 18;
 
   for(let i=start;i<end;i++){
     const c = candles[i];
@@ -966,10 +1061,10 @@ function drawBookmap(start, end, cw, bw, patternIdx){
     ctx.fillRect(bx, by, cbw, bh);
     if(cbw > 2) ctx.strokeRect(bx, by, cbw, bh);
 
-    // 3. Bubble (no gradients — flat fill only to avoid NaN crashes)
+    // 3. Bubble — tamanho FIXO em pixels, não escala com zoom
     const vol      = c.volume || 0;
     const volRatio = Math.sqrt(vol / volMax);
-    const r        = Math.max(2, volRatio * maxBubbleR);
+    const r        = MIN_R + volRatio * (MAX_R - MIN_R); // sempre fixo em px
 
     const bubbleY = isUp ? pyHigh - r - 3 : pyLow + r + 3;
     if(!isFinite(bubbleY)) continue;
@@ -1013,6 +1108,16 @@ function drawBookmap(start, end, cw, bw, patternIdx){
     ctx.strokeStyle = isUp ? `rgba(0,230,118,0.55)` : `rgba(255,23,68,0.55)`;
     ctx.lineWidth   = Math.max(0.5, r * 0.1);
     ctx.stroke();
+
+    // Valor do volume sobre/abaixo da bolha
+    if(bookmapShowValues && r >= 5){
+      const volStr = vol >= 1000 ? (vol/1000).toFixed(1)+'k' : vol.toFixed(1);
+      ctx.font = `bold ${Math.max(8, Math.min(11, r*0.85))}px Share Tech Mono,monospace`;
+      ctx.textAlign = 'center';
+      ctx.fillStyle = isUp ? 'rgba(0,230,118,0.9)' : 'rgba(255,23,68,0.9)';
+      const labelY = isUp ? bubbleY - r - 4 : bubbleY + r + 11;
+      ctx.fillText(volStr, x, labelY);
+    }
   }
 }
 
@@ -2445,6 +2550,8 @@ function updatePrice(p){
     const pct=(p-open24)/open24*100,el=document.getElementById('price-chg');
     el.textContent=(pct>=0?'+':'')+pct.toFixed(2)+'%'; el.className='price-c '+(pct>=0?'up':'dn');
   }
+  // Atualizar card de posição Bybit se aberta
+  if(_bybitOpenPosition) updateTradePositionCard();
 }
 
 // ══════════════════════════════════════════════════════
@@ -3090,6 +3197,8 @@ JSON:
         result._near_support = supports.length > 0 ? Math.min(...supports.map(s=>Math.abs(livePrice-s)/tfA['1m'].atr)) : 99;
         result._near_resistance = resistances.length > 0 ? Math.min(...resistances.map(r=>Math.abs(livePrice-r)/tfA['1m'].atr)) : 99;
         if(_session) saveNewTrade(result);
+        // Executar trade real se ativo
+        onAISignalForRealTrade(result).catch(e=>tradeLog('❌ '+e.message));
         // Entrada feita — bloquear até próxima troca de label
         _pendingFLSignal = null;
         _labelAnalyzed = true; // já marcado no checkFollowLineSignal, mas reforçar aqui
@@ -4352,14 +4461,380 @@ function copyDiagnostico(){
   });
 }
 
+// ══════════════════════════════════════════════════════
+// BYBIT REAL TRADE ENGINE
+// ══════════════════════════════════════════════════════
+let _bybitApiKey    = localStorage.getItem('bybit_api_key')    || '';
+let _bybitApiSecret = localStorage.getItem('bybit_api_secret') || '';
+let _tradeRealActive = false;
+let _bybitOpenPosition = null; // posição aberta na Bybit
+let _bybitPartialDone  = false;
+
+// Restaurar chaves salvas nos campos
+window.addEventListener('DOMContentLoaded', () => {
+  const kf = document.getElementById('bybit-api-key');
+  const sf = document.getElementById('bybit-api-secret');
+  if(kf && _bybitApiKey)    kf.value = '••••••••';
+  if(sf && _bybitApiSecret) sf.value = '••••••••';
+});
+
+function saveBybitKeys(){
+  const k = document.getElementById('bybit-api-key').value.trim();
+  const s = document.getElementById('bybit-api-secret').value.trim();
+  const st = document.getElementById('bybit-key-status');
+  if(!k || k.includes('•') || !s || s.includes('•')){
+    st.style.display='block'; st.style.color='var(--red)'; st.textContent='⚠️ Preencha os campos com suas chaves reais';
+    setTimeout(()=>st.style.display='none', 3000); return;
+  }
+  localStorage.setItem('bybit_api_key', k);
+  localStorage.setItem('bybit_api_secret', s);
+  _bybitApiKey    = k;
+  _bybitApiSecret = s;
+  document.getElementById('bybit-api-key').value    = '••••••••';
+  document.getElementById('bybit-api-secret').value = '••••••••';
+  st.style.display='block'; st.style.color='var(--green)'; st.textContent='✅ Chaves salvas localmente!';
+  setTimeout(()=>st.style.display='none', 3000);
+  tradeLog('🔑 API Keys da Bybit configuradas com sucesso');
+}
+
+function toggleTradeReal(){
+  if(!_bybitApiKey || !_bybitApiSecret){
+    showToast('⚠️ Configure as API Keys da Bybit primeiro!','var(--yellow)'); 
+    return;
+  }
+  if(!_session){ showToast('⚠️ Faça login primeiro','var(--yellow)'); return; }
+  _tradeRealActive = !_tradeRealActive;
+  const btn  = document.getElementById('trade-real-btn');
+  const dot  = document.getElementById('trade-real-dot');
+  const txt  = document.getElementById('trade-real-txt');
+  if(_tradeRealActive){
+    btn.style.borderColor = 'var(--green)';
+    btn.style.color       = 'var(--green)';
+    btn.style.background  = 'rgba(0,230,118,.07)';
+    btn.style.animation   = 'pg 2s infinite';
+    dot.style.animation   = 'blink 1s infinite';
+    txt.textContent       = 'TRADE REAL: ATIVO';
+    tradeLog('⚡ TRADE REAL ATIVADO — Bybit BTCUSDT Perpetual');
+    tradeLog(`  Alavancagem: ${getBybitLeverage()}x | Capital: $${getBybitCapital()} USDT`);
+    tradeLog(`  Fechar parcial: ${getBybitPartialClose()?'SIM':'NÃO'} | Break-even: ${getBybitBreakeven()?'SIM':'NÃO'}`);
+  } else {
+    btn.style.borderColor = 'var(--border)';
+    btn.style.color       = 'var(--text2)';
+    btn.style.background  = 'var(--bg)';
+    btn.style.animation   = '';
+    dot.style.animation   = '';
+    txt.textContent       = 'TRADE REAL: DESATIVADO';
+    tradeLog('🔴 Trade real desativado');
+  }
+}
+
+function getBybitLeverage(){ return parseInt(document.getElementById('bybit-leverage')?.value)||10; }
+function getBybitCapital(){   return parseFloat(document.getElementById('bybit-capital')?.value)||100; }
+function getBybitPartialClose(){ return document.getElementById('bybit-partial-close')?.checked ?? true; }
+function getBybitBreakeven(){    return document.getElementById('bybit-breakeven')?.checked ?? true; }
+
+function tradeLog(msg){
+  const box = document.getElementById('trade-log');
+  if(!box) return;
+  const ts = new Date().toLocaleTimeString('pt-BR');
+  box.innerHTML += `<div>[${ts}] ${msg}</div>`;
+  box.scrollTop = box.scrollHeight;
+}
+
+function clearTradeLog(){
+  const box = document.getElementById('trade-log');
+  if(box) box.innerHTML = 'Log limpo.';
+}
+
+// ── Bybit Signature (HMAC-SHA256) ──────────────────────
+async function bybitSign(params, secret){
+  const ts    = Date.now().toString();
+  const recv  = '5000';
+  const sortedStr = Object.keys(params).sort().map(k=>`${k}=${params[k]}`).join('&');
+  const preSign   = ts + _bybitApiKey + recv + sortedStr;
+  const enc = new TextEncoder();
+  const key = await crypto.subtle.importKey('raw', enc.encode(secret), {name:'HMAC',hash:'SHA-256'}, false, ['sign']);
+  const sig = await crypto.subtle.sign('HMAC', key, enc.encode(preSign));
+  const hex = Array.from(new Uint8Array(sig)).map(b=>b.toString(16).padStart(2,'0')).join('');
+  return { ts, sign: hex, recv };
+}
+
+async function bybitRequest(method, path, params={}){
+  const { ts, sign, recv } = await bybitSign(params, _bybitApiSecret);
+  const headers = {
+    'Content-Type':    'application/json',
+    'X-BAPI-API-KEY':  _bybitApiKey,
+    'X-BAPI-TIMESTAMP':ts,
+    'X-BAPI-SIGN':     sign,
+    'X-BAPI-RECV-WINDOW': recv,
+  };
+  const base = 'https://api.bybit.com';
+  let url = base + path;
+  let body = undefined;
+  if(method === 'GET'){
+    const qs = Object.keys(params).map(k=>`${k}=${encodeURIComponent(params[k])}`).join('&');
+    if(qs) url += '?' + qs;
+  } else {
+    body = JSON.stringify(params);
+  }
+  const res = await fetch(url, { method, headers, body });
+  const json = await res.json();
+  if(json.retCode !== 0) throw new Error(`Bybit ${path}: ${json.retMsg} (${json.retCode})`);
+  return json.result;
+}
+
+// ── Definir alavancagem na Bybit ───────────────────────
+async function bybitSetLeverage(leverage){
+  await bybitRequest('POST', '/v5/position/set-leverage', {
+    category: 'linear', symbol: 'BTCUSDT',
+    buyLeverage: leverage.toString(), sellLeverage: leverage.toString()
+  });
+}
+
+// ── Abrir posição ──────────────────────────────────────
+async function bybitOpenOrder(side, qty, stopLoss, takeProfit){
+  return await bybitRequest('POST', '/v5/order/create', {
+    category:      'linear',
+    symbol:        'BTCUSDT',
+    side:          side,        // 'Buy' ou 'Sell'
+    orderType:     'Market',
+    qty:           qty.toString(),
+    stopLoss:      stopLoss.toFixed(2),
+    takeProfit:    takeProfit.toFixed(2),
+    tpslMode:      'Full',
+    timeInForce:   'GTC',
+    positionIdx:   0,
+  });
+}
+
+// ── Fechar posição parcial ─────────────────────────────
+async function bybitClosePartial(side, qty){
+  const closeSide = side === 'Buy' ? 'Sell' : 'Buy';
+  return await bybitRequest('POST', '/v5/order/create', {
+    category:    'linear',
+    symbol:      'BTCUSDT',
+    side:        closeSide,
+    orderType:   'Market',
+    qty:         qty.toString(),
+    reduceOnly:  true,
+    timeInForce: 'GTC',
+    positionIdx: 0,
+  });
+}
+
+// ── Fechar posição toda ────────────────────────────────
+async function bybitCloseAll(side){
+  const closeSide = side === 'Buy' ? 'Sell' : 'Buy';
+  const pos = await bybitRequest('GET', '/v5/position/list', {
+    category: 'linear', symbol: 'BTCUSDT'
+  });
+  const posInfo = pos?.list?.[0];
+  if(!posInfo || parseFloat(posInfo.size) === 0) return;
+  return await bybitRequest('POST', '/v5/order/create', {
+    category:    'linear', symbol: 'BTCUSDT',
+    side:        closeSide, orderType: 'Market',
+    qty:         posInfo.size, reduceOnly: true,
+    timeInForce: 'GTC', positionIdx: 0,
+  });
+}
+
+// ── Mover stop para break-even ─────────────────────────
+async function bybitMoveStopToEntry(entryPrice){
+  await bybitRequest('POST', '/v5/position/trading-stop', {
+    category: 'linear', symbol: 'BTCUSDT',
+    stopLoss:   entryPrice.toFixed(2),
+    positionIdx: 0,
+  });
+}
+
+// ── Calcular qty em BTC ────────────────────────────────
+function calcBybitQty(price){
+  const capital   = getBybitCapital();
+  const leverage  = getBybitLeverage();
+  const notional  = capital * leverage;
+  const qty       = notional / price;
+  // Bybit: min lot 0.001, precisão 3 casas
+  return Math.max(0.001, parseFloat(qty.toFixed(3)));
+}
+
+// ── EXECUTAR ENTRADA REAL ──────────────────────────────
+async function executeBybitEntry(signal){
+  if(!_tradeRealActive) return;
+  if(!_bybitApiKey || !_bybitApiSecret){ tradeLog('❌ API Keys não configuradas'); return; }
+
+  const dir   = (signal.direcao||'').toUpperCase();
+  if(dir !== 'COMPRA' && dir !== 'VENDA') return;
+
+  const side  = dir === 'COMPRA' ? 'Buy' : 'Sell';
+  const entry = parseFloat(signal.entrada) || livePrice;
+  const stop  = parseFloat(signal.stop)   || 0;
+  const alvo  = parseFloat(signal.alvo)   || 0;
+  const alvoP = parseFloat(signal.alvo_parcial) || null;
+
+  if(!stop || !alvo){ tradeLog('❌ Stop ou Alvo inválidos — abortando'); return; }
+
+  tradeLog(`⚡ Executando entrada REAL: ${dir} @ $${entry.toFixed(2)}`);
+  tradeLog(`   Stop: $${stop.toFixed(2)} | Alvo: $${alvo.toFixed(2)}${alvoP?` | Parcial: $${alvoP.toFixed(2)}`:''}`);
+
+  try{
+    const lev = getBybitLeverage();
+    await bybitSetLeverage(lev);
+    tradeLog(`  ✅ Alavancagem configurada: ${lev}x`);
+
+    const qty = calcBybitQty(entry);
+    tradeLog(`  📦 Qty calculada: ${qty} BTC (Capital: $${getBybitCapital()} x ${lev}x)`);
+
+    const order = await bybitOpenOrder(side, qty, stop, alvo);
+    tradeLog(`  ✅ Ordem aberta! ID: ${order?.orderId||'?'}`);
+
+    _bybitOpenPosition = {
+      side, entry, stop, alvo, alvoP, qty,
+      orderId:    order?.orderId||null,
+      partial:    false,
+      openedAt:   Date.now(),
+    };
+    _bybitPartialDone = false;
+
+    updateTradePositionCard();
+    showToast(`⚡ ORDEM REAL: ${dir} @ $${entry.toFixed(0)} | ${lev}x`, dir==='COMPRA'?'var(--green)':'var(--red)');
+
+    // Iniciar monitoramento da posição
+    startBybitPositionMonitor();
+  } catch(e){
+    tradeLog(`❌ ERRO ao abrir posição: ${e.message}`);
+    showToast(`❌ Erro Bybit: ${e.message}`, 'var(--red)');
+  }
+}
+
+// ── Monitorar posição em tempo real (via livePrice) ────
+let _bybitMonitorInterval = null;
+
+function startBybitPositionMonitor(){
+  stopBybitPositionMonitor();
+  _bybitMonitorInterval = setInterval(checkBybitPosition, 5000);
+  tradeLog('👁️ Monitor de posição iniciado (check a cada 5s)');
+}
+
+function stopBybitPositionMonitor(){
+  if(_bybitMonitorInterval){ clearInterval(_bybitMonitorInterval); _bybitMonitorInterval = null; }
+}
+
+async function checkBybitPosition(){
+  if(!_bybitOpenPosition || !livePrice) return;
+  const { side, entry, stop, alvo, alvoP, qty } = _bybitOpenPosition;
+  const price = livePrice;
+
+  // Check Stop Loss
+  const hitStop = side === 'Buy' ? price <= stop : price >= stop;
+  if(hitStop){
+    tradeLog(`🔴 STOP atingido @ $${price.toFixed(2)} — posição deve ter fechado via SL da exchange`);
+    await refreshBybitPosition();
+    return;
+  }
+
+  // Check Take Profit
+  const hitAlvo = side === 'Buy' ? price >= alvo : price <= alvo;
+  if(hitAlvo){
+    tradeLog(`✅ ALVO TOTAL atingido @ $${price.toFixed(2)}`);
+    await refreshBybitPosition();
+    return;
+  }
+
+  // Check alvo parcial
+  if(alvoP && !_bybitPartialDone && getBybitPartialClose()){
+    const hitParcial = side === 'Buy' ? price >= alvoP : price <= alvoP;
+    if(hitParcial){
+      tradeLog(`⚡ Alvo parcial @ $${price.toFixed(2)} — fechando 50% da posição`);
+      _bybitPartialDone = true;
+      try{
+        const halfQty = parseFloat((qty * 0.5).toFixed(3));
+        await bybitClosePartial(side, halfQty);
+        tradeLog(`  ✅ Parcial executada: ${halfQty} BTC vendidos/comprados`);
+        if(getBybitBreakeven()){
+          await bybitMoveStopToEntry(entry);
+          tradeLog(`  🔒 Stop movido para entrada (break-even): $${entry.toFixed(2)}`);
+        }
+      } catch(e){
+        tradeLog(`  ❌ Erro no parcial: ${e.message}`);
+        _bybitPartialDone = false;
+      }
+      updateTradePositionCard();
+    }
+  }
+}
+
+async function refreshBybitPosition(){
+  try{
+    const pos = await bybitRequest('GET', '/v5/position/list', { category:'linear', symbol:'BTCUSDT' });
+    const p = pos?.list?.[0];
+    if(!p || parseFloat(p.size) === 0){
+      tradeLog('  ✅ Posição fechada confirmada pela exchange');
+      _bybitOpenPosition = null;
+      _bybitPartialDone  = false;
+      stopBybitPositionMonitor();
+      updateTradePositionCard();
+    }
+  } catch(e){ tradeLog(`  ⚠️ Erro ao verificar posição: ${e.message}`); }
+}
+
+async function closeBybitPositionManual(){
+  if(!_bybitOpenPosition){ tradeLog('⚠️ Nenhuma posição aberta para fechar'); return; }
+  try{
+    tradeLog('🔴 Fechando posição MANUALMENTE...');
+    await bybitCloseAll(_bybitOpenPosition.side);
+    tradeLog('  ✅ Ordem de fechamento enviada');
+    _bybitOpenPosition = null;
+    _bybitPartialDone  = false;
+    stopBybitPositionMonitor();
+    updateTradePositionCard();
+  } catch(e){
+    tradeLog(`❌ Erro ao fechar: ${e.message}`);
+    showToast(`❌ Erro: ${e.message}`, 'var(--red)');
+  }
+}
+
+function updateTradePositionCard(){
+  const card = document.getElementById('trade-position-card');
+  const info = document.getElementById('trade-position-info');
+  if(!card || !info) return;
+  if(!_bybitOpenPosition){
+    card.style.display = 'none'; return;
+  }
+  card.style.display = 'block';
+  const { side, entry, stop, alvo, alvoP, qty } = _bybitOpenPosition;
+  const dir   = side === 'Buy' ? '▲ COMPRA' : '▼ VENDA';
+  const color = side === 'Buy' ? 'var(--green)' : 'var(--red)';
+  const pnl   = livePrice ? (side==='Buy' ? livePrice-entry : entry-livePrice) * qty : 0;
+  info.innerHTML = `
+    <div style="color:${color};font-weight:700;font-size:12px;margin-bottom:4px">${dir}</div>
+    <div>Entrada: <span style="color:var(--accent)">$${fmtP(entry)}</span> | Qty: <span style="color:var(--text)">${qty} BTC</span></div>
+    <div>Stop: <span style="color:var(--red)">$${fmtP(stop)}</span> | Alvo: <span style="color:var(--green)">$${fmtP(alvo)}</span></div>
+    ${alvoP ? `<div>Parcial: <span style="color:var(--yellow)">$${fmtP(alvoP)}</span> ${_bybitPartialDone?'<span style="color:var(--green)">✅ EXECUTADO</span>':''}</div>` : ''}
+    <div>PnL estimado: <span style="color:${pnl>=0?'var(--green)':'var(--red)'}">${pnl>=0?'+':''}$${pnl.toFixed(2)}</span></div>
+    <div style="font-size:8px;color:var(--text2);margin-top:3px">Alavancagem: ${getBybitLeverage()}x | Capital: $${getBybitCapital()}</div>
+  `;
+}
+
+// ── Hook: executar trade real quando IA gerar sinal ───
+// Esse hook é chamado no final de runAI(), após saveNewTrade()
+async function onAISignalForRealTrade(result){
+  if(!_tradeRealActive) return;
+  const dir = (result.direcao||'').toUpperCase();
+  if(dir !== 'COMPRA' && dir !== 'VENDA') return;
+  if(_bybitOpenPosition){
+    tradeLog('⚠️ Já há posição aberta — ignorando novo sinal');
+    return;
+  }
+  tradeLog(`🤖 IA gerou sinal ${dir} — iniciando execução real...`);
+  await executeBybitEntry(result);
+}
+
 window.addEventListener('load',async()=>{
   await Promise.all([loadCandles('5m'),load24h()]);
   setInterval(load24h,30000);
-  setInterval(updateTimeWindowBar, 60000); // atualiza barra de horário a cada minuto
+  setInterval(updateTimeWindowBar, 60000);
   await initAuth();
   connectWS('5m');
-  // TF buttons
-  // Listeners de TF já registrados fora do load — não duplicar aqui
 });
 </script>
 </body>
