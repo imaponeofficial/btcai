@@ -279,6 +279,47 @@ input[type=color]{display:none}
 .perf-refresh-btn:hover{border-color:var(--accent);color:var(--accent)}
 ::-webkit-scrollbar{width:3px}::-webkit-scrollbar-track{background:var(--bg)}::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
 
+/* ── HAMBURGER MENU ── */
+#hamburger-btn{background:transparent;border:1px solid var(--border);border-radius:5px;
+  color:var(--text2);cursor:pointer;padding:4px 7px;font-size:16px;transition:all .15s;flex-shrink:0;line-height:1}
+#hamburger-btn:hover{border-color:var(--accent);color:var(--accent)}
+#hamburger-menu{display:none;position:fixed;top:0;right:0;bottom:0;z-index:300;
+  background:var(--bg2);border-left:1px solid var(--border);width:min(320px,90vw);
+  flex-direction:column;overflow:hidden;animation:slideInRight .2s ease}
+#hamburger-menu.open{display:flex}
+@keyframes slideInRight{from{transform:translateX(100%)}to{transform:translateX(0)}}
+#hamburger-overlay{display:none;position:fixed;inset:0;z-index:299;background:rgba(0,0,0,.5)}
+#hamburger-overlay.open{display:block}
+.hmenu-hdr{display:flex;align-items:center;justify-content:space-between;
+  padding:10px 14px;border-bottom:1px solid var(--border);flex-shrink:0}
+.hmenu-title{font-size:12px;font-weight:700;letter-spacing:2px;color:var(--accent)}
+.hmenu-close{background:transparent;border:none;color:var(--text2);font-size:18px;cursor:pointer}
+.hmenu-tabs{display:flex;flex-direction:column;flex-shrink:0;border-bottom:1px solid var(--border)}
+.hmenu-tab{display:flex;align-items:center;gap:8px;padding:11px 14px;background:transparent;
+  border:none;color:var(--text2);cursor:pointer;font-family:'Exo 2',sans-serif;font-size:11px;
+  font-weight:700;letter-spacing:1px;transition:all .15s;text-align:left;border-bottom:1px solid rgba(255,255,255,.03)}
+.hmenu-tab:hover{background:rgba(0,212,255,.05);color:var(--text)}
+.hmenu-tab.active{color:var(--accent);background:rgba(0,212,255,.07)}
+.hmenu-tab-ico{font-size:14px;width:20px;text-align:center}
+.hmenu-content{flex:1;overflow-y:auto;position:relative}
+.hmenu-pane{display:none;padding:0}
+.hmenu-pane.active{display:block}
+/* copiar estilos das tab-pane para dentro do menu */
+.hmenu-pane .tab-pane{display:block!important;max-height:none!important;padding:8px 10px}
+
+/* ── ACCORDION BOTTOM ── */
+#bottom-accordion-btn{width:100%;padding:6px 12px;background:var(--bg2);border:none;
+  border-top:1px solid var(--border);border-bottom:none;color:var(--text2);
+  cursor:pointer;font-family:'Exo 2',sans-serif;font-size:10px;font-weight:700;
+  letter-spacing:1px;display:flex;align-items:center;justify-content:space-between;
+  transition:color .15s;flex-shrink:0}
+#bottom-accordion-btn:hover{color:var(--accent)}
+#bottom-accordion-btn.open{color:var(--accent);border-bottom:1px solid var(--border)}
+#accordion-arrow{transition:transform .2s;font-size:10px}
+#bottom-accordion-btn.open #accordion-arrow{transform:rotate(180deg)}
+#bottom-accordion-content{display:none;overflow:hidden}
+#bottom-accordion-content.open{display:block}
+
 
 /* ── AUTH MODAL ── */
 #auth-modal{display:none;position:fixed;inset:0;z-index:200;background:rgba(0,0,0,.85);
@@ -391,6 +432,7 @@ input[type=color]{display:none}
   <div id="user-avatar" onclick="openUserModal()" title="Minha conta">👤</div>
   <button class="icon-btn" onclick="toggleFullscreen()" id="fs-btn" title="Tela cheia">⛶</button>
   <button class="icon-btn" onclick="openSettings()" title="Configurações">⚙️</button>
+  <button id="hamburger-btn" onclick="openHamburger()" title="Menu">☰</button>
 </div>
 
 <div id="tfbar">
@@ -442,7 +484,51 @@ input[type=color]{display:none}
   </div>
 </div>
 
+<!-- ════ HAMBURGER OVERLAY ════ -->
+<div id="hamburger-overlay" onclick="closeHamburger()"></div>
+
+<!-- ════ HAMBURGER MENU DRAWER ════ -->
+<div id="hamburger-menu">
+  <div class="hmenu-hdr">
+    <div class="hmenu-title">☰ PAINEL</div>
+    <button class="hmenu-close" onclick="closeHamburger()">✕</button>
+  </div>
+  <div class="hmenu-tabs">
+    <button class="hmenu-tab active" onclick="switchHMenu('ind',this)"><span class="hmenu-tab-ico">📊</span>INDICADORES</button>
+    <button class="hmenu-tab" onclick="switchHMenu('ai',this)"><span class="hmenu-tab-ico">🤖</span>IA TRADER</button>
+    <button class="hmenu-tab" onclick="switchHMenu('hist',this)"><span class="hmenu-tab-ico">📋</span>HISTÓRICO</button>
+    <button class="hmenu-tab" onclick="switchHMenu('perf',this);renderPerformance()"><span class="hmenu-tab-ico">🎯</span>PERFORMANCE</button>
+    <button class="hmenu-tab" onclick="switchHMenu('trade',this)"><span class="hmenu-tab-ico">⚡</span>TRADE REAL</button>
+    <button class="hmenu-tab" onclick="switchHMenu('saldo',this);loadBybitBalance()"><span class="hmenu-tab-ico">💰</span>SALDO</button>
+  </div>
+  <div class="hmenu-content">
+    <div id="hmenu-pane-ind" class="hmenu-pane active"><div class="tab-pane" style="display:block;max-height:none;padding:8px 10px">
+      <div class="ind-grid">
+        <div class="ind-card"><div class="ind-n">RSI 14</div><div class="ind-v" id="hm-rsi">--</div><div class="ind-s neu" id="hm-rsi-s">NEUTRO</div></div>
+        <div class="ind-card"><div class="ind-n">MACD</div><div class="ind-v" id="hm-macd">--</div><div class="ind-s neu" id="hm-macd-s">NEUTRO</div></div>
+        <div class="ind-card"><div class="ind-n">ADX</div><div class="ind-v" id="hm-adx">--</div><div class="ind-s neu" id="hm-adx-s">NEUTRO</div></div>
+        <div class="ind-card"><div class="ind-n">BB%</div><div class="ind-v" id="hm-bb">--</div><div class="ind-s neu" id="hm-bb-s">NEUTRO</div></div>
+        <div class="ind-card"><div class="ind-n">EMA 20</div><div class="ind-v" id="hm-ema20">--</div><div class="ind-s neu" id="hm-ema20-s">NEUTRO</div></div>
+        <div class="ind-card"><div class="ind-n">EMA 50</div><div class="ind-v" id="hm-ema50">--</div><div class="ind-s neu" id="hm-ema50-s">NEUTRO</div></div>
+        <div class="ind-card"><div class="ind-n">ATR</div><div class="ind-v" id="hm-atr">--</div><div class="ind-s neu" id="hm-atr-s">NORMAL</div></div>
+        <div class="ind-card"><div class="ind-n">VOLUME</div><div class="ind-v" id="hm-vol">--</div><div class="ind-s neu" id="hm-vol-s">NORMAL</div></div>
+      </div>
+    </div></div>
+    <div id="hmenu-pane-ai"    class="hmenu-pane"><div class="tab-pane" id="hmenu-ai-inner"   style="display:block;max-height:none;padding:8px 10px"></div></div>
+    <div id="hmenu-pane-hist"  class="hmenu-pane"><div class="tab-pane" id="hmenu-hist-inner" style="display:block;max-height:none;padding:8px 10px"></div></div>
+    <div id="hmenu-pane-perf"  class="hmenu-pane"><div class="tab-pane" id="hmenu-perf-inner" style="display:block;max-height:none;padding:8px 10px"></div></div>
+    <div id="hmenu-pane-trade" class="hmenu-pane"><div class="tab-pane" id="hmenu-trade-inner" style="display:block;max-height:none;padding:8px 10px"></div></div>
+    <div id="hmenu-pane-saldo" class="hmenu-pane"><div class="tab-pane" id="hmenu-saldo-inner" style="display:block;max-height:none;padding:8px 10px"></div></div>
+  </div>
+</div>
+
 <div id="bottom">
+  <!-- ── BOTÃO SANFONA ── -->
+  <button id="bottom-accordion-btn" onclick="toggleAccordion()">
+    <span id="accordion-label">📊 PAINEL DE INDICADORES</span>
+    <span id="accordion-arrow">▼</span>
+  </button>
+  <div id="bottom-accordion-content">
   <div class="tab-nav">
     <button class="tab-btn2 active" onclick="switchTab('ind',this)">📊 INDS</button>
     <button class="tab-btn2" onclick="switchTab('ai',this)">🤖 IA</button>
@@ -671,7 +757,8 @@ input[type=color]{display:none}
 
     <div id="bal-status" style="font-size:8px;color:var(--text2);text-align:center;margin-top:6px"></div>
   </div>
-</div>
+</div><!-- /bottom-accordion-content -->
+</div><!-- /bottom -->
 
 <div id="settings-modal">
   <div class="modal-box">
@@ -1045,10 +1132,18 @@ function drawChart(){
     ctx.setLineDash([4,4]); ctx.strokeStyle = 'rgba(255,255,255,0.3)'; ctx.lineWidth = 1;
     ctx.beginPath(); ctx.moveTo(PAD.L, y); ctx.lineTo(w-PAD.R, y); ctx.stroke();
     ctx.setLineDash([]);
-    // Label
+    // Label do preço
     ctx.fillStyle = '#ffffff'; ctx.fillRect(w-PAD.R, y-9, PAD.R, 18);
     ctx.fillStyle = '#000'; ctx.font='bold 9px Share Tech Mono,monospace'; ctx.textAlign='left';
     ctx.fillText('$'+fmtP(livePrice), w-PAD.R+3, y+4);
+    // Countdown do candle logo abaixo do preço
+    const cdEl = document.getElementById('cd');
+    const cdTxt = cdEl ? cdEl.textContent : '--:--';
+    if(cdTxt && cdTxt !== '--:--'){
+      ctx.fillStyle = 'rgba(255,214,0,0.85)'; ctx.fillRect(w-PAD.R, y+9, PAD.R, 14);
+      ctx.fillStyle = '#000'; ctx.font='bold 8px Share Tech Mono,monospace'; ctx.textAlign='left';
+      ctx.fillText(cdTxt, w-PAD.R+2, y+20);
+    }
   }
 }
 
@@ -3231,10 +3326,16 @@ JSON:
 
     let dir=(result.direcao||'').toUpperCase();
 
-    // Dupla validação: confiança mínima 72% e score local >= 55%
+    // Tripla validação: confiança mínima 72%, score local >= 55% e RR mínimo 1.5
     if(dir==='COMPRA'||dir==='VENDA'){
       const conf = result.confianca||0;
       const localConf = localScore.confidence;
+      const _entryP = parseFloat(result.entrada) || livePrice;
+      const _stopP  = parseFloat(result.stop)    || _entryP;
+      const _alvoP  = parseFloat(result.alvo)    || _entryP;
+      const _risk   = Math.abs(_entryP - _stopP);
+      const _reward = Math.abs(_alvoP  - _entryP);
+      const _rr     = _risk > 0 ? _reward / _risk : 0;
       if(conf < 72){
         console.log(`[AI] Rejeitado: confiança IA ${conf}% < 72%`);
         result.direcao='AGUARDAR'; dir='AGUARDAR';
@@ -3243,6 +3344,11 @@ JSON:
         console.log(`[AI] Rejeitado: score local ${localConf}% insuficiente`);
         result.direcao='AGUARDAR'; dir='AGUARDAR';
         result.contexto=`[Rejeitado: score local insuficiente (${localConf}%)] `+(result.contexto||'');
+      } else if(_rr < 1.5){
+        console.log(`[AI] Rejeitado: RR ${_rr.toFixed(2)} < mínimo 1.5`);
+        result.direcao='AGUARDAR'; dir='AGUARDAR';
+        result.contexto=`[Rejeitado: RR ${_rr.toFixed(2)} abaixo do mínimo 1.5:1] `+(result.contexto||'');
+        showToast(`⚠️ RR insuficiente (${_rr.toFixed(2)}) — mínimo 1.5:1`,'var(--yellow)');
       }
     }
 
@@ -4994,12 +5100,124 @@ async function onAISignalForRealTrade(result){
   await executeBybitEntry(result);
 }
 
+// ══════════════════════════════════════════════════════
+// HAMBURGER MENU
+// ══════════════════════════════════════════════════════
+function openHamburger(){
+  document.getElementById('hamburger-menu').classList.add('open');
+  document.getElementById('hamburger-overlay').classList.add('open');
+  syncHamburgerContent();
+}
+function closeHamburger(){
+  document.getElementById('hamburger-menu').classList.remove('open');
+  document.getElementById('hamburger-overlay').classList.remove('open');
+}
+function switchHMenu(tab, btn){
+  document.querySelectorAll('.hmenu-tab').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  document.querySelectorAll('[id^="hmenu-pane-"]').forEach(p=>p.classList.remove('active'));
+  document.getElementById('hmenu-pane-'+tab)?.classList.add('active');
+  syncHamburgerContent();
+}
+
+// Sincroniza conteúdo das abas no menu hambúrguer (espelho das abas do bottom)
+function syncHamburgerContent(){
+  // AI tab — clonar conteúdo atual
+  const aiSrc = document.getElementById('tab-ai');
+  const aiDst = document.getElementById('hmenu-ai-inner');
+  if(aiSrc && aiDst) aiDst.innerHTML = aiSrc.innerHTML;
+
+  // HIST tab
+  const histSrc = document.getElementById('tab-hist');
+  const histDst = document.getElementById('hmenu-hist-inner');
+  if(histSrc && histDst) histDst.innerHTML = histSrc.innerHTML;
+
+  // PERF tab
+  const perfSrc = document.getElementById('tab-perf');
+  const perfDst = document.getElementById('hmenu-perf-inner');
+  if(perfSrc && perfDst) perfDst.innerHTML = perfSrc.innerHTML;
+
+  // TRADE tab
+  const tradeSrc = document.getElementById('tab-trade');
+  const tradeDst = document.getElementById('hmenu-trade-inner');
+  if(tradeSrc && tradeDst) tradeDst.innerHTML = tradeSrc.innerHTML;
+
+  // SALDO tab
+  const saldoSrc = document.getElementById('tab-saldo');
+  const saldoDst = document.getElementById('hmenu-saldo-inner');
+  if(saldoSrc && saldoDst) saldoDst.innerHTML = saldoSrc.innerHTML;
+
+  // Sync indicator values into hamburger ind panel
+  const pairs = ['rsi','macd','adx','bb','ema20','ema50','atr','vol'];
+  pairs.forEach(id=>{
+    const src = document.getElementById('i-'+id);
+    const srcS = document.getElementById('i-'+id+'-s');
+    const dst = document.getElementById('hm-'+id);
+    const dstS = document.getElementById('hm-'+id+'-s');
+    if(src && dst){ dst.textContent = src.textContent; dst.className = src.className; }
+    if(srcS && dstS){ dstS.textContent = srcS.textContent; dstS.className = srcS.className; }
+  });
+}
+
+// Sync indicadores no hambúrguer sempre que calcInds roda
+const _origCalcInds = typeof calcInds === 'function' ? calcInds : null;
+// Patch: após calcInds, sincronizar hamburguer se aberto
+(function patchCalcInds(){
+  const orig = window.calcInds;
+  if(!orig) return;
+  window.calcInds = function(){
+    orig.apply(this, arguments);
+    if(document.getElementById('hamburger-menu').classList.contains('open')){
+      const pairs = ['rsi','macd','adx','bb','ema20','ema50','atr','vol'];
+      pairs.forEach(id=>{
+        const src = document.getElementById('i-'+id);
+        const srcS = document.getElementById('i-'+id+'-s');
+        const dst = document.getElementById('hm-'+id);
+        const dstS = document.getElementById('hm-'+id+'-s');
+        if(src && dst){ dst.textContent = src.textContent; dst.className = src.className; }
+        if(srcS && dstS){ dstS.textContent = srcS.textContent; dstS.className = srcS.className; }
+      });
+    }
+  };
+})();
+
+// ══════════════════════════════════════════════════════
+// ACCORDION BOTTOM
+// ══════════════════════════════════════════════════════
+function toggleAccordion(){
+  const btn = document.getElementById('bottom-accordion-btn');
+  const content = document.getElementById('bottom-accordion-content');
+  const arrow = document.getElementById('accordion-arrow');
+  const label = document.getElementById('accordion-label');
+  const isOpen = content.classList.contains('open');
+  content.classList.toggle('open', !isOpen);
+  btn.classList.toggle('open', !isOpen);
+  // Atualiza label para refletir aba ativa
+  if(!isOpen){
+    const activeTab = document.querySelector('.tab-btn2.active');
+    label.textContent = activeTab ? activeTab.textContent.trim() : '📊 PAINEL';
+  }
+}
+
+// Atualizar label do accordion quando troca de aba
+const _origSwitchTab = typeof switchTab === 'function' ? null : null;
+(function patchSwitchTab(){
+  const orig = window.switchTab;
+  if(!orig) return;
+  window.switchTab = function(tab, btn){
+    orig.apply(this, arguments);
+    const label = document.getElementById('accordion-label');
+    if(label && btn) label.textContent = btn.textContent.trim();
+  };
+})();
+
 window.addEventListener('load',async()=>{
   await Promise.all([loadCandles('5m'),load24h()]);
   setInterval(load24h,30000);
   setInterval(updateTimeWindowBar, 60000);
   await initAuth();
   connectWS('5m');
+  // Accordion começa fechado — não fazer nada extra (display:none por padrão)
 });
 </script>
 </body>
