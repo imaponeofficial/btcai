@@ -498,6 +498,8 @@ input[type=color]{display:none}
     <button class="hmenu-tab" onclick="switchHMenu('ai',this)"><span class="hmenu-tab-ico">🤖</span>IA TRADER</button>
     <button class="hmenu-tab" onclick="switchHMenu('hist',this)"><span class="hmenu-tab-ico">📋</span>HISTÓRICO</button>
     <button class="hmenu-tab" onclick="switchHMenu('perf',this);renderPerformance()"><span class="hmenu-tab-ico">🎯</span>PERFORMANCE</button>
+    <button class="hmenu-tab" onclick="switchHMenu('phist',this)"><span class="hmenu-tab-ico">🔀</span>PARC. HISTÓRICO</button>
+    <button class="hmenu-tab" onclick="switchHMenu('pperf',this);renderPartialPerformance()"><span class="hmenu-tab-ico">🔀</span>PARC. PERFORMANCE</button>
     <button class="hmenu-tab" onclick="switchHMenu('trade',this)"><span class="hmenu-tab-ico">⚡</span>TRADE REAL</button>
     <button class="hmenu-tab" onclick="switchHMenu('saldo',this);loadBybitBalance()"><span class="hmenu-tab-ico">💰</span>SALDO</button>
   </div>
@@ -517,6 +519,8 @@ input[type=color]{display:none}
     <div id="hmenu-pane-ai"    class="hmenu-pane"><div class="tab-pane" id="hmenu-ai-inner"   style="display:block;max-height:none;padding:8px 10px"></div></div>
     <div id="hmenu-pane-hist"  class="hmenu-pane"><div class="tab-pane" id="hmenu-hist-inner" style="display:block;max-height:none;padding:8px 10px"></div></div>
     <div id="hmenu-pane-perf"  class="hmenu-pane"><div class="tab-pane" id="hmenu-perf-inner" style="display:block;max-height:none;padding:8px 10px"></div></div>
+    <div id="hmenu-pane-phist" class="hmenu-pane"><div class="tab-pane" id="hmenu-phist-inner" style="display:block;max-height:none;padding:8px 10px"></div></div>
+    <div id="hmenu-pane-pperf" class="hmenu-pane"><div class="tab-pane" id="hmenu-pperf-inner" style="display:block;max-height:none;padding:8px 10px"></div></div>
     <div id="hmenu-pane-trade" class="hmenu-pane"><div class="tab-pane" id="hmenu-trade-inner" style="display:block;max-height:none;padding:8px 10px"></div></div>
     <div id="hmenu-pane-saldo" class="hmenu-pane"><div class="tab-pane" id="hmenu-saldo-inner" style="display:block;max-height:none;padding:8px 10px"></div></div>
   </div>
@@ -534,6 +538,8 @@ input[type=color]{display:none}
     <button class="tab-btn2" onclick="switchTab('ai',this)">🤖 IA</button>
     <button class="tab-btn2" onclick="switchTab('hist',this)">📋 HIST</button>
     <button class="tab-btn2" onclick="switchTab('perf',this);renderPerformance()">🎯 PERF</button>
+    <button class="tab-btn2" onclick="switchTab('phist',this)">🔀 P.HIST</button>
+    <button class="tab-btn2" onclick="switchTab('pperf',this);renderPartialPerformance()">🔀 P.PERF</button>
     <button class="tab-btn2" onclick="switchTab('trade',this)">⚡ TRADE</button>
     <button class="tab-btn2" onclick="switchTab('saldo',this);loadBybitBalance()">💰 SALDO</button>
   </div>
@@ -605,6 +611,29 @@ input[type=color]{display:none}
         </tr></thead>
         <tbody id="hist-tbody"><tr><td colspan="7" style="text-align:center;color:var(--text2);padding:12px">Faça login para ver o histórico</td></tr></tbody>
       </table>
+    </div>
+  </div>
+
+  <!-- MODELO PARCIAL — HISTÓRICO -->
+  <div id="tab-phist" class="tab-pane" style="padding:8px 10px">
+    <div style="background:rgba(0,212,255,.06);border:1px solid rgba(0,212,255,.2);border-radius:7px;padding:7px 10px;margin-bottom:8px;font-size:9px;color:var(--text2);line-height:1.7">
+      🔀 <strong style="color:var(--accent)">MODELO PARCIAL</strong> — Contabiliza apenas trades com alvo parcial definido registrados <strong style="color:var(--text)">após a implementação</strong>.<br>
+      Lógica: 50% fecha no alvo parcial → stop move para entrada (break-even). Resultado: <span style="color:var(--green)">GANHO</span> (alvo final) · <span style="color:var(--yellow)">PARCIAL</span> (break-even) · <span style="color:var(--red)">PERDA</span> (stop antes da parcial).
+    </div>
+    <div id="phist-table-wrap" style="overflow-x:auto">
+      <table class="hist-table">
+        <thead><tr>
+          <th>DATA/HORA</th><th>DIR</th><th>ENTRADA</th><th>PARCIAL</th><th>ALVO</th><th>RR</th><th>RESULTADO</th>
+        </tr></thead>
+        <tbody id="phist-tbody"><tr><td colspan="7" style="text-align:center;color:var(--text2);padding:12px">Nenhuma entrada com modelo parcial ainda</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- MODELO PARCIAL — PERFORMANCE -->
+  <div id="tab-pperf" class="tab-pane" style="padding:8px 10px">
+    <div id="pperf-content">
+      <div class="placeholder" style="padding:16px">🔀<br>Abra a aba para ver a performance do modelo parcial</div>
     </div>
   </div>
 
@@ -2652,6 +2681,7 @@ function connectWS(tf){
     const k=msg.data[0];
     livePrice=+k.close; updatePrice(livePrice);
     checkAutoClose(livePrice);
+    checkPartialModelClose();
     const cnd={time:Math.floor(+k.start/1000),open:+k.open,high:+k.high,low:+k.low,close:+k.close,volume:+k.volume};
     const last=candles[candles.length-1];
     if(last&&last.time===cnd.time){candles[candles.length-1]=cnd;}
@@ -3719,6 +3749,7 @@ async function onLogin(){
   await loadTradeHistory();
   await loadApiKeyFromDB();
   setTimeout(checkRetroactiveClose,2500);
+  setTimeout(checkPartialModelClose,3000);
 }
 
 function openAuth(){document.getElementById('auth-modal').classList.add('open');}
@@ -3974,6 +4005,9 @@ function renderHistory(rows){
   // Redesenhar gráfico para mostrar trades fechados
   drawChart();
   
+  // Renderizar histórico do modelo parcial
+  renderPartialHistory(rows);
+  
   // Stats
   const closed=rows.filter(r=>r.result!=='ABERTO');
   const wins=closed.filter(r=>r.result==='GANHO').length;
@@ -4094,6 +4128,105 @@ async function checkRetroactiveClose(){
   }
 }
 
+// ══════════════════════════════════════════════════════
+// MODELO PARCIAL — autoClose com 50% na parcial
+// Só processa trades com partial_mode=true (daqui em diante)
+// ══════════════════════════════════════════════════════
+let _partialCloseChecking = false;
+
+async function checkPartialModelClose(){
+  if(!_session || _partialCloseChecking || !_historyLoaded) return;
+  if(!candles || candles.length === 0) return;
+
+  // Filtra trades abertos que têm o modelo parcial ativado
+  const partialTrades = (_openTrades||[]).filter(r =>
+    r.partial_mode === true &&
+    r.partial_target &&
+    parseFloat(r.partial_target) !== parseFloat(r.entry_price)
+  );
+  if(!partialTrades.length) return;
+
+  _partialCloseChecking = true;
+  let anyChanged = false;
+
+  for(const trade of [...partialTrades]){
+    const dir    = trade.direction;
+    const entry  = parseFloat(trade.entry_price);
+    const stop   = parseFloat(trade.stop_price);
+    const alvo   = parseFloat(trade.target_price);
+    const parcial= parseFloat(trade.partial_target);
+    const partialHit = trade.partial_hit === true;
+
+    if(!stop || !alvo || !parcial) continue;
+
+    const entryTs = trade.entry_time
+      ? (typeof trade.entry_time === 'string'
+          ? Math.floor(new Date(trade.entry_time).getTime()/1000)
+          : trade.entry_time)
+      : 0;
+    const relevantCandles = candles.filter(c => c.time >= entryTs);
+
+    // Percorrer candles em ordem para detectar sequência de eventos
+    let partialHitNow = partialHit;
+    let finalResult   = null;
+    let stopAfterPartial = false;
+
+    for(const c of relevantCandles){
+      if(!partialHitNow){
+        // Ainda não atingiu a parcial — verificar se bate parcial ou stop primeiro
+        const hitParcial = dir === 'COMPRA' ? c.high >= parcial : c.low <= parcial;
+        const hitStop    = dir === 'COMPRA' ? c.low  <= stop    : c.high >= stop;
+        if(hitParcial){
+          partialHitNow = true;
+          // Marcar no banco que a parcial foi atingida (sem fechar o trade ainda)
+          if(!trade.partial_hit){
+            try{
+              await supa('/rest/v1/trade_signals?id=eq.'+trade.id,'PATCH',
+                {partial_hit:true}, _session.access_token);
+              trade.partial_hit = true;
+              console.log('[ParcialModel] Parcial atingida para trade '+trade.id);
+            }catch(e){ console.warn('partial_hit update:', e.message); }
+          }
+        } else if(hitStop){
+          // Stop antes da parcial — perda total (igual ao modelo atual)
+          finalResult = 'PERDA';
+          break;
+        }
+      } else {
+        // Parcial já atingida — agora checar se vai no alvo ou stop (break-even)
+        // Stop passa a ser a entrada (break-even)
+        const stopBE = entry;
+        const hitAlvo   = dir === 'COMPRA' ? c.high >= alvo   : c.low  <= alvo;
+        const hitStopBE = dir === 'COMPRA' ? c.low  <= stopBE : c.high >= stopBE;
+        if(hitAlvo){
+          finalResult = 'GANHO';
+          break;
+        } else if(hitStopBE){
+          // Break-even atingido após parcial — resultado: PARCIAL_GANHO
+          finalResult = 'PARCIAL_GANHO';
+          stopAfterPartial = true;
+          break;
+        }
+      }
+    }
+
+    if(finalResult){
+      try{
+        // partial_result guarda o resultado do modelo parcial
+        // result principal não é alterado — permanece GANHO/PERDA do modelo original
+        await supa('/rest/v1/trade_signals?id=eq.'+trade.id,'PATCH',
+          {partial_result: finalResult, partial_hit: partialHitNow},
+          _session.access_token);
+        anyChanged = true;
+        console.log('[ParcialModel] Trade '+trade.id+' → partial_result='+finalResult);
+      }catch(e){ console.warn('partial_result update:', e.message); }
+    }
+  }
+
+  _partialCloseChecking = false;
+  if(anyChanged) await loadTradeHistory();
+}
+
 async function saveNewTrade(signal){
   if(!_session) return;
   const entryPrice = parseFloat(signal.entrada) || livePrice;
@@ -4140,6 +4273,10 @@ async function saveNewTrade(signal){
     entry_time: Math.floor(Date.now()/1000),
     result:'ABERTO',
     indicators_snapshot: JSON.stringify(snap),
+    // Modelo parcial: ativo apenas para trades daqui em diante (com alvo parcial definido)
+    partial_mode: !!(partialTarget && partialTarget !== entryPrice),
+    partial_result: null, // será preenchido quando a parcial for atingida
+    partial_hit: false,   // se a parcial foi atingida antes do stop
   };
   try{
     const saved=await supa('/rest/v1/trade_signals','POST',row,_session.access_token);
@@ -4618,6 +4755,256 @@ PROGNÓSTICO:
   }finally{
     btn.disabled=false;btn.textContent='✨ GERAR DIAGNÓSTICO COMPLETO';
   }
+}
+
+// ══════════════════════════════════════════════════════
+// MODELO PARCIAL — HISTÓRICO E PERFORMANCE
+// ══════════════════════════════════════════════════════
+
+function renderPartialHistory(rows){
+  const tbody = document.getElementById('phist-tbody');
+  if(!tbody) return;
+
+  // Apenas trades com partial_mode = true
+  const partialTrades = (rows||[]).filter(r => r.partial_mode === true);
+
+  if(!partialTrades.length){
+    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--text2);padding:12px">Nenhuma entrada com modelo parcial ainda.<br><span style="font-size:8px;opacity:.6">As próximas entradas da IA serão registradas aqui automaticamente.</span></td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = partialTrades.map(r => {
+    const d = new Date(r.created_at);
+    const dt = d.toLocaleDateString('pt-BR') + ' ' + d.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
+    const dir = r.direction === 'COMPRA'
+      ? '<span class="badge-buy">▲ C</span>'
+      : '<span class="badge-sell">▼ V</span>';
+
+    const pr = r.partial_result;
+    let resHtml;
+    if(!pr){
+      // Trade ainda aberto (sem resultado parcial)
+      if(r.result === 'ABERTO'){
+        resHtml = r.partial_hit
+          ? '<span style="color:var(--yellow);font-size:9px">🟡 PARCIAL HIT</span>'
+          : '<span class="badge-open">🔴 ABERTO</span>';
+      } else {
+        // Trade fechado no modelo original, mas sem partial_result (stop antes da parcial)
+        resHtml = '<span class="badge-lose">❌ PERDA</span>';
+      }
+    } else if(pr === 'GANHO'){
+      resHtml = '<span class="badge-win">✅ GANHO</span>';
+    } else if(pr === 'PARCIAL_GANHO'){
+      resHtml = '<span style="color:var(--yellow);font-weight:700;font-size:9px">🟡 PARCIAL (BE)</span>';
+    } else {
+      resHtml = '<span class="badge-lose">❌ PERDA</span>';
+    }
+
+    const entry  = parseFloat(r.entry_price);
+    const stop   = parseFloat(r.stop_price);
+    const alvo   = parseFloat(r.target_price);
+    const parcial= parseFloat(r.partial_target);
+    const risk   = Math.abs(entry - stop);
+    const rrFull = risk > 0 ? (Math.abs(alvo - entry) / risk) : null;
+    const rrParcial = risk > 0 ? (Math.abs(parcial - entry) / risk) : null;
+
+    const rrCell = rrFull !== null
+      ? `<span style="font-family:Share Tech Mono,monospace;font-size:8px;color:var(--text2)">${rrParcial?.toFixed(1)||'?'}→${rrFull.toFixed(1)}</span>`
+      : '—';
+
+    const parcialCell = parcial && parcial !== entry
+      ? `<span style="color:var(--yellow);font-family:Share Tech Mono,monospace">$${fmtP(parcial)}</span>`
+      : '—';
+
+    return `<tr>
+      <td style="color:var(--text2)">${dt}</td>
+      <td>${dir}</td>
+      <td style="color:var(--accent)">$${fmtP(r.entry_price)}</td>
+      <td>${parcialCell}</td>
+      <td style="color:var(--green)">$${fmtP(r.target_price)}</td>
+      <td>${rrCell}</td>
+      <td>${resHtml}</td>
+    </tr>`;
+  }).join('');
+}
+
+function renderPartialPerformance(){
+  const el = document.getElementById('pperf-content');
+  if(!el) return;
+  if(!_session){ el.innerHTML = '<div class="perf-no-data">🔒<br>Faça login para ver a performance</div>'; return; }
+
+  // Apenas trades com partial_mode = true E com resultado definido
+  const all = (_tradeHistory||[]).filter(r => r.partial_mode === true);
+  // Trades com resultado parcial calculado
+  // Se partial_result existe, usa ele. Se não (stop antes da parcial), considera PERDA.
+  const closed = all.filter(r => {
+    if(r.result === 'ABERTO') return false; // ainda aberto no modelo original
+    if(r.partial_result) return true;        // já tem resultado parcial calculado
+    // fechado no modelo original sem atingir parcial → PERDA no modelo parcial
+    return true;
+  });
+
+  if(closed.length < 1){
+    el.innerHTML = `<div class="perf-no-data">🔀<br>Nenhuma entrada do modelo parcial fechada ainda.<br><br>
+    <span style="font-size:10px;opacity:.6">As próximas entradas confirmadas pela IA<br>começarão a aparecer aqui automaticamente.</span></div>`;
+    return;
+  }
+
+  // Resultado de cada trade no modelo parcial
+  function getPartialResult(t){
+    if(t.partial_result) return t.partial_result; // GANHO, PARCIAL_GANHO ou PERDA
+    return 'PERDA'; // stop antes da parcial
+  }
+
+  function getPartialROI(t){
+    const entry   = parseFloat(t.entry_price);
+    const stop    = parseFloat(t.stop_price);
+    const alvo    = parseFloat(t.target_price);
+    const parcial = parseFloat(t.partial_target);
+    const risk    = Math.abs(entry - stop);
+    if(!risk) return 0;
+    const rrFull    = Math.abs(alvo    - entry) / risk;
+    const rrParcial = Math.abs(parcial - entry) / risk;
+    const pr = getPartialResult(t);
+    if(pr === 'GANHO'){
+      // 50% no parcial (rrParcial) + 50% no alvo (rrFull)
+      return (rrParcial * 0.5) + (rrFull * 0.5);
+    } else if(pr === 'PARCIAL_GANHO'){
+      // 50% no parcial (rrParcial) + 50% break-even (0)
+      return rrParcial * 0.5;
+    } else {
+      // Perda total
+      return -1;
+    }
+  }
+
+  const wins      = closed.filter(t => getPartialResult(t) === 'GANHO');
+  const parciais  = closed.filter(t => getPartialResult(t) === 'PARCIAL_GANHO');
+  const losses    = closed.filter(t => getPartialResult(t) === 'PERDA');
+  const winRate   = (wins.length / closed.length * 100);
+  const positiveRate = ((wins.length + parciais.length) / closed.length * 100);
+
+  let totalROI = 0;
+  closed.forEach(t => { totalROI += getPartialROI(t); });
+
+  // Para comparação: ROI do modelo atual (alvo total)
+  function getRRFull(t){
+    const e = parseFloat(t.entry_price), s = parseFloat(t.stop_price), a = parseFloat(t.target_price);
+    if(!e||!s||!a||Math.abs(s-e)<0.01) return null;
+    return Math.abs(a-e)/Math.abs(s-e);
+  }
+  let totalROIClassic = 0;
+  closed.forEach(t => {
+    const rr = getRRFull(t) || 2;
+    totalROIClassic += (t.result === 'GANHO') ? rr : -1;
+  });
+
+  const roiColor   = totalROI >= 0 ? 'var(--green)' : 'var(--red)';
+  const roiStr     = (totalROI >= 0 ? '+' : '') + totalROI.toFixed(2) + 'R';
+  const roiClassicStr = (totalROIClassic >= 0 ? '+' : '') + totalROIClassic.toFixed(2) + 'R';
+  const roiClassicColor = totalROIClassic >= 0 ? 'var(--green)' : 'var(--red)';
+
+  const wrColor = winRate >= 60 ? 'var(--green)' : winRate >= 40 ? 'var(--yellow)' : 'var(--red)';
+
+  let html = `
+  <div class="perf-refresh"><button class="perf-refresh-btn" onclick="renderPartialPerformance()">↻ ATUALIZAR</button></div>
+
+  <div style="background:rgba(255,214,0,.06);border:1px solid rgba(255,214,0,.2);border-radius:6px;padding:7px 10px;font-size:9px;color:var(--text2);margin-bottom:8px;line-height:1.7">
+    🔀 Lógica: 50% fecha no alvo parcial. Resultado: <span style="color:var(--green)">GANHO</span>=alvo final · <span style="color:var(--yellow)">PARCIAL</span>=break-even · <span style="color:var(--red)">PERDA</span>=stop sem parcial.
+  </div>
+
+  <div class="perf-kpi-grid" style="grid-template-columns:repeat(3,1fr)">
+    <div class="perf-kpi"><div class="perf-kpi-l">ENTRADAS</div><div class="perf-kpi-v" style="color:var(--text)">${closed.length}</div></div>
+    <div class="perf-kpi"><div class="perf-kpi-l">GANHOS</div><div class="perf-kpi-v" style="color:var(--green)">${wins.length}</div></div>
+    <div class="perf-kpi"><div class="perf-kpi-l">PARCIAIS (BE)</div><div class="perf-kpi-v" style="color:var(--yellow)">${parciais.length}</div></div>
+    <div class="perf-kpi"><div class="perf-kpi-l">PERDAS</div><div class="perf-kpi-v" style="color:var(--red)">${losses.length}</div></div>
+    <div class="perf-kpi"><div class="perf-kpi-l">ROI PARCIAL</div><div class="perf-kpi-v" style="color:${roiColor}">${roiStr}</div></div>
+    <div class="perf-kpi"><div class="perf-kpi-l">ROI CLÁSSICO</div><div class="perf-kpi-v" style="color:${roiClassicColor}">${roiClassicStr}</div></div>
+  </div>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:8px;text-align:center;font-size:9px">
+    <div style="background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:7px">
+      <div style="color:var(--text2);font-size:7px;letter-spacing:1px;margin-bottom:2px">WIN RATE (só GANHO)</div>
+      <div style="font-family:Share Tech Mono,monospace;font-size:14px;font-weight:700;color:${wrColor}">${winRate.toFixed(1)}%</div>
+    </div>
+    <div style="background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:7px">
+      <div style="color:var(--text2);font-size:7px;letter-spacing:1px;margin-bottom:2px">POSITIVO (GANHO+PARC)</div>
+      <div style="font-family:Share Tech Mono,monospace;font-size:14px;font-weight:700;color:${positiveRate>=50?'var(--green)':'var(--yellow)'}">${positiveRate.toFixed(1)}%</div>
+    </div>
+  </div>`;
+
+  // Comparativo de ROI
+  const diff = totalROI - totalROIClassic;
+  if(closed.length >= 3){
+    if(diff > 0){
+      html += `<div class="perf-insight">✅ O modelo parcial gerou <strong>${diff >= 0 ? '+' : ''}${diff.toFixed(2)}R</strong> a mais que o modelo clássico. Sair parcialmente está <strong>protegendo capital</strong> e melhorando o ROI.</div>`;
+    } else if(diff < 0){
+      html += `<div class="perf-warn">⚠️ O modelo parcial gerou <strong>${diff.toFixed(2)}R</strong> em relação ao modelo clássico. Com os dados atuais, segurar até o alvo final está sendo mais eficiente.</div>`;
+    } else {
+      html += `<div class="perf-insight">🔄 Os dois modelos têm ROI similar. Dados insuficientes para conclusão — continue operando.</div>`;
+    }
+  } else {
+    html += `<div class="perf-warn">⚠️ Apenas ${closed.length} entrada(s) com modelo parcial. Dados insuficientes — continue operando para comparação significativa.</div>`;
+  }
+
+  html += '<hr class="perf-hr">';
+
+  // Por direção
+  const buyP  = closed.filter(r => r.direction === 'COMPRA');
+  const sellP = closed.filter(r => r.direction === 'VENDA');
+  if(buyP.length || sellP.length){
+    html += `<div class="perf-section"><div class="perf-sec-title">💣🔨 Resultado por Sinal Follow Line</div>`;
+    [{label:'💣 COMPRA', arr:buyP},{label:'🔨 VENDA', arr:sellP}].filter(g=>g.arr.length>0).forEach(g=>{
+      const gw  = g.arr.filter(t => getPartialResult(t) === 'GANHO').length;
+      const gp  = g.arr.filter(t => getPartialResult(t) === 'PARCIAL_GANHO').length;
+      const gl  = g.arr.filter(t => getPartialResult(t) === 'PERDA').length;
+      const roiG = g.arr.reduce((s,t) => s + getPartialROI(t), 0);
+      const roiStr2 = (roiG>=0?'+':'') + roiG.toFixed(2) + 'R';
+      const isBuy = g.label.includes('COMPRA');
+      html += `<div style="background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:7px 10px;margin-bottom:5px;font-size:9px">
+        <div style="display:flex;justify-content:space-between;margin-bottom:4px">
+          <span style="color:${isBuy?'var(--green)':'var(--red)'};font-weight:700">${g.label}</span>
+          <span style="color:${roiG>=0?'var(--green)':'var(--red)'};font-family:Share Tech Mono,monospace">${roiStr2}</span>
+        </div>
+        <div style="display:flex;gap:8px;color:var(--text2);font-size:8px">
+          <span>✅ ${gw} GANHO</span>
+          <span style="color:var(--yellow)">🟡 ${gp} PARCIAL</span>
+          <span style="color:var(--red)">❌ ${gl} PERDA</span>
+          <span style="color:var(--text2)">(${g.arr.length} total)</span>
+        </div>
+      </div>`;
+    });
+    html += `</div>`;
+  }
+
+  // Tabela detalhada dos últimos trades
+  html += `<hr class="perf-hr"><div class="perf-section"><div class="perf-sec-title">📋 Últimos Trades (Modelo Parcial)</div>
+  <div style="overflow-x:auto"><table class="hist-table">
+    <thead><tr><th>DATA</th><th>DIR</th><th>ROI PARC</th><th>ROI CLÁS</th><th>RESULTADO</th></tr></thead>
+    <tbody>`;
+  closed.slice(0,20).forEach(t => {
+    const d = new Date(t.created_at);
+    const dt = d.toLocaleDateString('pt-BR');
+    const dir = t.direction === 'COMPRA' ? '<span class="badge-buy">▲ C</span>' : '<span class="badge-sell">▼ V</span>';
+    const roiP = getPartialROI(t);
+    const roiC = (t.result === 'GANHO') ? (getRRFull(t)||2) : -1;
+    const pr = getPartialResult(t);
+    const resHtml = pr === 'GANHO'
+      ? '<span class="badge-win">✅ GANHO</span>'
+      : pr === 'PARCIAL_GANHO'
+      ? '<span style="color:var(--yellow);font-size:9px">🟡 PARCIAL</span>'
+      : '<span class="badge-lose">❌ PERDA</span>';
+    html += `<tr>
+      <td style="color:var(--text2)">${dt}</td>
+      <td>${dir}</td>
+      <td style="color:${roiP>=0?'var(--green)':'var(--red)'};font-family:Share Tech Mono,monospace">${roiP>=0?'+':''}${roiP.toFixed(2)}R</td>
+      <td style="color:${roiC>=0?'var(--green)':'var(--red)'};font-family:Share Tech Mono,monospace">${roiC>=0?'+':''}${roiC.toFixed(2)}R</td>
+      <td>${resHtml}</td>
+    </tr>`;
+  });
+  html += `</tbody></table></div></div>`;
+
+  el.innerHTML = html;
 }
 
 function copyDiagnostico(){
@@ -5136,6 +5523,16 @@ function syncHamburgerContent(){
   const perfSrc = document.getElementById('tab-perf');
   const perfDst = document.getElementById('hmenu-perf-inner');
   if(perfSrc && perfDst) perfDst.innerHTML = perfSrc.innerHTML;
+
+  // PARCIAL HIST tab
+  const phistSrc = document.getElementById('tab-phist');
+  const phistDst = document.getElementById('hmenu-phist-inner');
+  if(phistSrc && phistDst) phistDst.innerHTML = phistSrc.innerHTML;
+
+  // PARCIAL PERF tab
+  const pperfSrc = document.getElementById('tab-pperf');
+  const pperfDst = document.getElementById('hmenu-pperf-inner');
+  if(pperfSrc && pperfDst) pperfDst.innerHTML = pperfSrc.innerHTML;
 
   // TRADE tab
   const tradeSrc = document.getElementById('tab-trade');
