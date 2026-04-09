@@ -2463,7 +2463,7 @@ function calcFollowLine(candles){
 }
 
 // Detecta se houve sinal novo no último candle FECHADO
-// Retorna 'COMPRA', 'VENDA' ou null
+// Retorna { dir, flTrendLine } ou null
 // REGRA: o label ocorre quando iTrend muda no candle fechado (penúltimo = slice[-2])
 // Comparamos penúltimo vs antepenúltimo — o candle atual [-1] está ainda em formação
 function detectFollowLineSignal(candles){
@@ -2477,8 +2477,10 @@ function detectFollowLineSignal(candles){
   // fl[-3] = candle anterior fechado ← referência de comparação
   const prev = fl[fl.length - 3]; // antepenúltimo (fechado)
   const curr = fl[fl.length - 2]; // penúltimo (último fechado = onde o label aparece)
-  if(prev.iTrend === -1 && curr.iTrend === 1) return 'COMPRA';  // 💣 virou azul
-  if(prev.iTrend === 1  && curr.iTrend === -1) return 'VENDA';  // 🔨 virou vermelho
+  // trendLine do candle mais recente (em formação) — nível técnico atual do indicador
+  const flTrendLine = fl[fl.length - 1]?.trendLine ?? null;
+  if(prev.iTrend === -1 && curr.iTrend === 1) return { dir: 'COMPRA', flTrendLine };  // 💣 virou azul
+  if(prev.iTrend === 1  && curr.iTrend === -1) return { dir: 'VENDA',  flTrendLine };  // 🔨 virou vermelho
   return null;
 }
 
@@ -2503,6 +2505,7 @@ let _lastFLSignalTime = 0;     // timestamp da vela do último label
 let _labelAnalyzed = false;
 
 let _pendingFLSignal = null; // direção do sinal Follow Line pendente para runAI
+let _pendingFLTrendLine = null; // nível da trendLine no momento do sinal FL pendente
 
 // Calcula ms até o próximo fechamento de candle M5 (horário fixo: 00, 05, 10, 15... minutos)
 // Dispara 3 segundos APÓS o fechamento para garantir que o candle está fechado na Binance
@@ -2534,7 +2537,8 @@ function checkFollowLineSignal(){
     return;
   }
 
-  const sigDir = detectFollowLineSignal(src);
+  const flResult = detectFollowLineSignal(src);
+  const sigDir = flResult ? flResult.dir : null;
   // O label está no ÚLTIMO CANDLE FECHADO = src[src.length-2]
   // (src[src.length-1] é o candle em formação, que não usamos para label)
   const labelCandle = src.length - 2; // índice do último candle fechado
@@ -2562,7 +2566,8 @@ function checkFollowLineSignal(){
   if(sigDir && !_labelAnalyzed && _lastFLSignalCandle === labelCandle && _lastFLSignalDir === sigDir){
     _labelAnalyzed = true; // marcar como analisado — não repetir nesta vela
     _pendingFLSignal = sigDir;
-    console.log(`[FL Label] Disparando IA para analisar label ${sigDir}`);
+    _pendingFLTrendLine = flResult.flTrendLine;
+    console.log(`[FL Label] Disparando IA para analisar label ${sigDir} | TrendLine: ${_pendingFLTrendLine?.toFixed(2)??'N/A'}`);
     if(!_aiRunning) runAI();
   } else if(!sigDir){
     // Sem label ativo no momento — aguardar próximo
@@ -3248,18 +3253,31 @@ async function runAI(){
     const htf=tfA['1h'];
     const consec = localScore.consecBull > 0 ? `${localScore.consecBull} velas consecutivas de ALTA` : localScore.consecBear > 0 ? `${localScore.consecBear} velas consecutivas de BAIXA` : 'sem sequência';
 
-    const sys=`Você é um trader quantitativo especialista em TRADING REAL de Bitcoin (spot/futuros), timeframe M5. Sua função é confirmar ou rejeitar o sinal gerado pelo Follow Line PRO e, SE confirmado, definir Stop Loss e Take Profit com RR mínimo de 1:2.
+    const flTLVal = _pendingFLTrendLine;
+    const flTLStr = flTLVal !== null ? `$${flTLVal.toFixed(2)}` : 'N/A';
+    // Faixa obrigatória de stop por ATR
+    const _atrM5v     = tfA['5m'] ? tfA['5m'].atr : tfA['1m'].atr;
+    const _minStopDst = (_atrM5v * 1.2).toFixed(0);
+    const _maxStopDst = (_atrM5v * 4.0).toFixed(0);
+    // Referência de stop ancorada na trendLine do Follow Line
+    const _stopRefBuy  = flTLVal !== null ? flTLVal.toFixed(2) : (livePrice - _atrM5v * 1.5).toFixed(2);
+    const _stopRefSell = flTLVal !== null ? flTLVal.toFixed(2) : (livePrice + _atrM5v * 1.5).toFixed(2);
+
+    const sys=`Você é um trader quantitativo especialista em TRADING REAL de Bitcoin (spot/futuros), timeframe M5. Sua função é confirmar ou rejeitar o sinal gerado pelo Follow Line PRO e, SE confirmado, definir Stop Loss e Take Profit.
 
 CONTEXTO DO SINAL:
 O indicador Follow Line PRO gerou um sinal de entrada (💣 COMPRA ou 🔨 VENDA) baseado em cruzamento da Trend Line + BB + ATR. Dentro da janela 05:00–17:00 UTC. Sua função é validar se este sinal tem edge real.
 
-REGRAS ABSOLUTAS:
-1. Só confirme COMPRA/VENDA se tiver CONVICÇÃO REAL (confiança >= 72%). Qualquer dúvida = AGUARDAR.
-2. O sinal do Follow Line é o gatilho. Você valida o CONTEXTO e define os níveis.
-3. SEMPRE forneça stop e alvo quando confirmar — o RR mínimo é 1:2 (alvo = 2x o stop).
-4. Stop para COMPRA: abaixo do último suporte ou mínima recente. Stop para VENDA: acima da última resistência ou máxima recente.
-5. Alvo: próxima resistência (COMPRA) ou próximo suporte (VENDA) — mínimo 2x o stop.
-6. Se os indicadores conflitarem com o sinal do Follow Line = AGUARDAR.
+REGRAS DE STOP — OBRIGATÓRIAS (violação = resposta inválida):
+1. COMPRA: stop DEVE ser MENOR que a entrada (stop abaixo do preço de entrada).
+2. VENDA: stop DEVE ser MAIOR que a entrada (stop acima do preço de entrada).
+3. Distância do stop: entre ${_minStopDst} e ${_maxStopDst} pontos (1.2x–4.0x ATR M5=${_atrM5v.toFixed(0)}).
+4. Stop menor que ${_minStopDst} pts é atingido por ruído. Stop maior que ${_maxStopDst} pts inviabiliza o RR.
+5. Use o nível da Trend Line do Follow Line PRO como referência primária de stop.
+6. RR mínimo 1:2 (alvo = pelo menos 2x a distância do stop).
+7. Só confirme COMPRA/VENDA se tiver CONVICÇÃO REAL (confiança >= 72%). Qualquer dúvida = AGUARDAR.
+8. Alvo: próxima resistência (COMPRA) ou próximo suporte (VENDA) — mínimo 2x o stop.
+9. Se os indicadores conflitarem com o sinal do Follow Line = AGUARDAR.
 
 CRITÉRIOS PARA CONFIRMAR O SINAL:
 COMPRA (Follow Line virou azul 💣): Tendência M5/M15 favorável, RSI não sobrecomprado (<70), MACD positivo ou cruzando, preço acima EMA ou tocando como suporte, sem resistência forte imediata acima.
@@ -3269,7 +3287,10 @@ Responda APENAS com JSON. Sem markdown. Sem texto fora do JSON.`;
 
     const usr=`SINAL DO FOLLOW LINE PRO: ${localScore.direction} (BullScore:${localScore.bullScore} BearScore:${localScore.bearScore} Gap:${localScore.gap})
 Razões do score local: ${localScore.reasons.join(' | ')}
-ATR atual (M5): ${tfA['5m']?tfA['5m'].atr.toFixed(0):tfA['1m'].atr.toFixed(0)}
+ATR atual (M5): ${_atrM5v.toFixed(0)}
+TREND LINE Follow Line PRO (nível técnico atual): ${flTLStr}
+  → Para COMPRA: stop sugerido ABAIXO de $${_stopRefBuy} (trend line como suporte)
+  → Para VENDA:  stop sugerido ACIMA de $${_stopRefSell} (trend line como resistência)
 
 VALIDE este sinal e defina Stop + Alvo com base nos dados abaixo.
 
@@ -3298,7 +3319,7 @@ JSON:
   "direcao":"${localScore.direction} ou AGUARDAR",
   "confianca":0-100,
   "entrada":${livePrice.toFixed(2)},
-  "stop": <preço do stop loss — para COMPRA abaixo do suporte; para VENDA acima da resistência>,
+  "stop": <preço do stop loss — para COMPRA menor que ${livePrice.toFixed(2)}; para VENDA maior que ${livePrice.toFixed(2)}>,
   "alvo": <preço do take profit — mínimo RR 1:2>,
   "alvo_parcial": <alvo parcial opcional em RR 1:1, ou null>,
   "confluencias":["razão 1","razão 2","razão 3"],
@@ -3356,7 +3377,7 @@ JSON:
 
     let dir=(result.direcao||'').toUpperCase();
 
-    // Tripla validação: confiança mínima 72%, score local >= 55% e RR mínimo 1.5
+    // Tripla validação: confiança mínima 72%, score local >= 55%, RR mínimo 1.5 e stop no lado correto
     if(dir==='COMPRA'||dir==='VENDA'){
       const conf = result.confianca||0;
       const localConf = localScore.confidence;
@@ -3366,7 +3387,18 @@ JSON:
       const _risk   = Math.abs(_entryP - _stopP);
       const _reward = Math.abs(_alvoP  - _entryP);
       const _rr     = _risk > 0 ? _reward / _risk : 0;
-      if(conf < 72){
+      // ── Direção do stop (validação crítica) ──
+      if(dir==='COMPRA' && _stopP >= _entryP){
+        console.log(`[AI] Stop inválido para COMPRA: stop $${_stopP.toFixed(2)} >= entrada $${_entryP.toFixed(2)}`);
+        result.direcao='AGUARDAR'; dir='AGUARDAR';
+        result.contexto=`[Rejeitado: stop $${_stopP.toFixed(0)} acima/igual à entrada em COMPRA — inválido] `+(result.contexto||'');
+        showToast(`⚠️ Stop inválido para COMPRA — rejeitado`,'var(--yellow)');
+      } else if(dir==='VENDA' && _stopP <= _entryP){
+        console.log(`[AI] Stop inválido para VENDA: stop $${_stopP.toFixed(2)} <= entrada $${_entryP.toFixed(2)}`);
+        result.direcao='AGUARDAR'; dir='AGUARDAR';
+        result.contexto=`[Rejeitado: stop $${_stopP.toFixed(0)} abaixo/igual à entrada em VENDA — inválido] `+(result.contexto||'');
+        showToast(`⚠️ Stop inválido para VENDA — rejeitado`,'var(--yellow)');
+      } else if(conf < 72){
         console.log(`[AI] Rejeitado: confiança IA ${conf}% < 72%`);
         result.direcao='AGUARDAR'; dir='AGUARDAR';
         result.contexto=`[Rejeitado: confiança ${conf}% abaixo do mínimo 72%] `+(result.contexto||'');
@@ -3407,12 +3439,14 @@ JSON:
         onAISignalForRealTrade(result).catch(e=>tradeLog('❌ '+e.message));
         // Entrada feita — bloquear até próxima troca de label
         _pendingFLSignal = null;
+        _pendingFLTrendLine = null;
         _labelAnalyzed = true; // já marcado no checkFollowLineSignal, mas reforçar aqui
         console.log('[AI] Label consumido — próxima entrada só com novo label FL');
       }
     } else {
       // AGUARDAR: label descartado — também bloquear até próxima troca
       _pendingFLSignal = null;
+      _pendingFLTrendLine = null;
       _labelAnalyzed = true;
       console.log('[AI] Label DESCARTADO — aguardando próxima troca de direção FL');
     }
@@ -3867,6 +3901,7 @@ async function loadApiKeyFromDB(){
         _lastFLSignalDir = null;
         _labelAnalyzed = false;
         _pendingFLSignal = null;
+        _pendingFLTrendLine = null;
         console.log('[AI] Posição aberta detectada — aguardando fechar para novo label');
         updateOpenBanner();
         // Ligar IA mesmo assim para monitorar o auto-close
@@ -4123,6 +4158,7 @@ async function checkRetroactiveClose(){
     _lastFLSignalDir = null;
     _labelAnalyzed = false;
     _pendingFLSignal = null;
+    _pendingFLTrendLine = null;
     console.log('[RetroClose] Posição fechada retroativamente — aguardando próximo label FL');
     if(aiActive){ stopAIScheduler(); scheduleAI(); }
   }
@@ -4349,6 +4385,7 @@ async function checkAutoClose(price){
       _lastFLSignalDir = null;
       _labelAnalyzed = false;
       _pendingFLSignal = null;
+      _pendingFLTrendLine = null;
       console.log('[AutoClose] Posição fechada — aguardando próximo label FL para nova entrada');
     }catch(e){ console.warn('autoClose erro:',e.message); }
     finally{ _autoCloseChecking=false; }
