@@ -871,6 +871,24 @@ input[type=color]{display:none}
       </div>
       <div id="apikey-status" style="font-size:9px;margin-top:5px;display:none"></div>
     </div>
+    <div class="apikey-section" style="border-top:1px solid var(--border);padding-top:14px">
+      <div class="apikey-label">📊 FILTRO ADX</div>
+      <div style="font-size:9px;color:var(--text2);margin-bottom:10px">Bloqueia sinais quando o mercado está lateral (ADX abaixo do mínimo). Igual ao indicador no TradingView.</div>
+      <div style="display:flex;gap:10px;align-items:flex-end">
+        <div style="flex:1">
+          <div style="font-size:9px;color:var(--text2);margin-bottom:4px;letter-spacing:.5px">PERÍODO ADX</div>
+          <input id="adx-length-field" type="number" min="2" max="50" value="14"
+            style="width:100%;background:var(--bg3,#1e2130);border:1px solid var(--border);border-radius:4px;color:var(--text1,#e0e0e0);padding:6px 8px;font-size:11px;font-family:inherit">
+        </div>
+        <div style="flex:1">
+          <div style="font-size:9px;color:var(--text2);margin-bottom:4px;letter-spacing:.5px">ADX MÍNIMO</div>
+          <input id="adx-min-field" type="number" min="10" max="50" value="20"
+            style="width:100%;background:var(--bg3,#1e2130);border:1px solid var(--border);border-radius:4px;color:var(--text1,#e0e0e0);padding:6px 8px;font-size:11px;font-family:inherit">
+        </div>
+        <button onclick="saveAdxFilter()" class="apikey-save" style="white-space:nowrap">SALVAR</button>
+      </div>
+      <div id="adx-filter-status" style="font-size:9px;margin-top:5px;display:none"></div>
+    </div>
     <div class="modal-hdr" style="border-top:1px solid var(--border);border-bottom:none;padding:12px 16px">
       <div style="font-size:9px;color:var(--text2)">Versão 2.0 · Supabase Connected</div>
       <div style="width:8px;height:8px;border-radius:50%;background:var(--green);box-shadow:0 0 6px var(--green)"></div>
@@ -1890,6 +1908,12 @@ function drawFollowLineOnChart(start, end, cw){
     const isSellSignal = flP.iTrend !== -1 && fl.iTrend === -1;
     if(!isBuySignal && !isSellSignal) continue;
 
+    // ── Filtro ADX (idêntico ao indicador Pine Script) ──
+    // adx_ok = adx_val >= adx_min — bloqueia labels em mercado lateral
+    const adxSlice = src.slice(Math.max(0, i - _adxLength * 2), i + 1);
+    const adxVal   = calcADX(adxSlice, _adxLength);
+    if(adxVal < _adxMin) continue; // mercado lateral — não plota o label
+
     const x = timeToX(src[i].time);
     if(x === null) continue;
 
@@ -2599,6 +2623,8 @@ function stopAIScheduler(){
 let _autoCloseChecking=false;
 let currentTF='5m', aiActive=false, ws=null, livePrice=0, open24=0;
 let candles5m = []; // candles M5 dedicados para o Follow Line PRO (independente do TF do gráfico)
+let _adxLength = 14; // período ADX do filtro (carregado do banco)
+let _adxMin    = 20; // ADX mínimo para operar (carregado do banco)
 let tfCache={};
 const TF={'1m':{i:'1m',s:60},'5m':{i:'5m',s:300},'15m':{i:'15m',s:900},'1h':{i:'1h',s:3600},'4h':{i:'4h',s:14400},'1d':{i:'1d',s:86400}};
 function fmtP(v){return Number(v).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});}
@@ -3848,7 +3874,7 @@ async function loadApiKeyFromDB(){
   if(!_session) return;
   try{
     const rows=await supa(
-      '/rest/v1/user_settings?user_id=eq.'+_session.user.id+'&select=groq_api_key,candle_colors,inds_config,ai_active,ai_tf',
+      '/rest/v1/user_settings?user_id=eq.'+_session.user.id+'&select=groq_api_key,candle_colors,inds_config,ai_active,ai_tf,adx_length,adx_min',
       'GET',null,_session.access_token);
     if(!rows||!rows.length){ console.log('[DB] Nenhum registro em user_settings'); return; }
     const row=rows[0];
@@ -3888,6 +3914,10 @@ async function loadApiKeyFromDB(){
         if(ind){ ind.enabled=s.enabled; ind.color=s.color; if(s.period) ind.period=s.period; }
       });
     }
+
+    // Filtro ADX
+    if(row.adx_length != null){ const el=document.getElementById('adx-length-field'); if(el) el.value=row.adx_length; _adxLength=row.adx_length; }
+    if(row.adx_min    != null){ const el=document.getElementById('adx-min-field');    if(el) el.value=row.adx_min;    _adxMin=row.adx_min; }
 
     drawChart();
 
@@ -3966,6 +3996,24 @@ async function saveApiKey(){
     _groqKey=val;
     document.getElementById('apikey-field').value='••••••••••••••••';
     st.textContent='✅ Salvo com sucesso!';st.style.color='var(--green)';
+    setTimeout(()=>{st.style.display='none';},2500);
+  }catch(e){st.textContent='❌ '+e.message;st.style.color='var(--red)';}
+}
+
+async function saveAdxFilter(){
+  if(!_session){alert('Faça login primeiro');return;}
+  const lengthVal = parseInt(document.getElementById('adx-length-field').value,10);
+  const minVal    = parseInt(document.getElementById('adx-min-field').value,10);
+  const st = document.getElementById('adx-filter-status');
+  if(isNaN(lengthVal)||lengthVal<2||lengthVal>50){st.textContent='❌ Período deve ser entre 2 e 50.';st.style.color='var(--red)';st.style.display='block';return;}
+  if(isNaN(minVal)||minVal<10||minVal>50){st.textContent='❌ Mínimo deve ser entre 10 e 50.';st.style.color='var(--red)';st.style.display='block';return;}
+  st.textContent='Salvando...';st.style.display='block';st.style.color='var(--text2)';
+  try{
+    await supaUpsertSettings({ adx_length: lengthVal, adx_min: minVal });
+    _adxLength = lengthVal;
+    _adxMin    = minVal;
+    drawChart(); // redesenha imediatamente com os novos valores
+    st.textContent='✅ Filtro ADX salvo!';st.style.color='var(--green)';
     setTimeout(()=>{st.style.display='none';},2500);
   }catch(e){st.textContent='❌ '+e.message;st.style.color='var(--red)';}
 }
