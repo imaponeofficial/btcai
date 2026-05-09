@@ -1898,6 +1898,9 @@ function drawFollowLineOnChart(start, end, cw){
   ctx.globalAlpha = 1;
 
   // ── 2. Labels históricos (💣/🔨) — só dentro do horário ──
+  // Pré-calcular ADX para todo o src de uma vez (Wilder RMA precisa de histórico completo)
+  const adxArray = calcADXArray(src, _adxLength);
+
   for(let i = 1; i < flAll.length; i++){
     const fl  = flAll[i];
     const flP = flAll[i - 1];
@@ -1910,9 +1913,7 @@ function drawFollowLineOnChart(start, end, cw){
 
     // ── Filtro ADX (idêntico ao indicador Pine Script) ──
     // adx_ok = adx_val >= adx_min — bloqueia labels em mercado lateral
-    const adxSlice = src.slice(Math.max(0, i - _adxLength * 2), i + 1);
-    const adxVal   = calcADX(adxSlice, _adxLength);
-    if(adxVal < _adxMin) continue; // mercado lateral — não plota o label
+    if(adxArray[i] < _adxMin) continue; // mercado lateral — não plota o label
 
     const x = timeToX(src[i].time);
     if(x === null) continue;
@@ -2847,6 +2848,53 @@ function calcADX(arr,p=14){
   let adx=dxs.slice(0,p).reduce((a,b)=>a+b,0)/p;
   for(let i=p;i<dxs.length;i++) adx=(adx*(p-1)+dxs[i])/p;
   return adx;
+}
+
+// Retorna array com valor ADX para cada candle do array inteiro
+// Igual ao Pine Script: cada barra tem seu ADX calculado com todo o histórico anterior
+function calcADXArray(arr,p=14){
+  const result=new Array(arr.length).fill(0);
+  if(arr.length < p*3) return result;
+
+  const trs=[],pDMs=[],mDMs=[];
+  for(let i=1;i<arr.length;i++){
+    const up=arr[i].high-arr[i-1].high, dn=arr[i-1].low-arr[i].low;
+    trs.push(Math.max(arr[i].high-arr[i].low,Math.abs(arr[i].high-arr[i-1].close),Math.abs(arr[i].low-arr[i-1].close)));
+    pDMs.push(up>dn&&up>0?up:0);
+    mDMs.push(dn>up&&dn>0?dn:0);
+  }
+
+  function rma(src){
+    const out=new Array(src.length).fill(0);
+    let s=0; for(let i=0;i<p;i++) s+=src[i];
+    out[p-1]=s/p;
+    for(let i=p;i<src.length;i++) out[i]=(out[i-1]*(p-1)+src[i])/p;
+    return out;
+  }
+  const aTR=rma(trs), aPDM=rma(pDMs), aMDM=rma(mDMs);
+
+  // DX por candle (alinhado ao índice do array original: offset +1 por causa do i=1)
+  const dxArr=new Array(arr.length).fill(0);
+  for(let i=p-1;i<aTR.length;i++){
+    const t=aTR[i]||0.0001;
+    const pd=100*aPDM[i]/t, md=100*aMDM[i]/t;
+    dxArr[i+1]=Math.abs(pd-md)/((pd+md)||0.0001)*100;
+  }
+
+  // ADX = RMA do DX, calculado progressivamente para cada candle
+  const dxsOnly=dxArr.filter((_,i)=>i>=p); // valores válidos começam em p
+  let adxVal=0, seeded=false, seedCount=0, seedSum=0;
+  for(let i=p;i<arr.length;i++){
+    const dx=dxArr[i];
+    if(!seeded){
+      seedSum+=dx; seedCount++;
+      if(seedCount===p){ adxVal=seedSum/p; seeded=true; }
+    } else {
+      adxVal=(adxVal*(p-1)+dx)/p;
+    }
+    result[i]=seeded?adxVal:0;
+  }
+  return result;
 }
 function findSR(arr,lookback=60){
   const sl=arr.slice(-lookback);
