@@ -2812,16 +2812,41 @@ function calcATR(arr,p=14){
   return trs.slice(-p).reduce((a,b)=>a+b)/p;
 }
 function calcADX(arr,p=14){
-  if(arr.length<p*2)return 25;
-  let pDM=0,mDM=0,tr=0;
-  for(let i=arr.length-p;i<arr.length;i++){
-    const up=arr[i].high-arr[i-1].high,dn=arr[i-1].low-arr[i].low;
-    pDM+=up>dn&&up>0?up:0; mDM+=dn>up&&dn>0?dn:0;
-    tr+=Math.max(arr[i].high-arr[i].low,Math.abs(arr[i].high-arr[i-1].close),Math.abs(arr[i].low-arr[i-1].close));
+  // Wilder's RMA — idêntico ao ta.dmi() do Pine Script
+  if(arr.length < p*3) return 25;
+
+  // 1. TR, +DM, -DM por candle
+  const trs=[],pDMs=[],mDMs=[];
+  for(let i=1;i<arr.length;i++){
+    const up=arr[i].high-arr[i-1].high, dn=arr[i-1].low-arr[i].low;
+    trs.push(Math.max(arr[i].high-arr[i].low,Math.abs(arr[i].high-arr[i-1].close),Math.abs(arr[i].low-arr[i-1].close)));
+    pDMs.push(up>dn&&up>0?up:0);
+    mDMs.push(dn>up&&dn>0?dn:0);
   }
-  if(!tr)return 25;
-  const pDI=100*pDM/tr,mDI=100*mDM/tr;
-  return Math.abs(pDI-mDI)/(pDI+mDI||1)*100;
+
+  // 2. Wilder RMA: seed = média simples dos primeiros p, depois (prev*(p-1)+cur)/p
+  function rma(src){
+    const out=new Array(src.length).fill(0);
+    let s=0; for(let i=0;i<p;i++) s+=src[i];
+    out[p-1]=s/p;
+    for(let i=p;i<src.length;i++) out[i]=(out[i-1]*(p-1)+src[i])/p;
+    return out;
+  }
+  const aTR=rma(trs), aPDM=rma(pDMs), aMDM=rma(mDMs);
+
+  // 3. DI+ e DI- → DX
+  const dxs=[];
+  for(let i=p-1;i<aTR.length;i++){
+    const t=aTR[i]||0.0001;
+    const pd=100*aPDM[i]/t, md=100*aMDM[i]/t;
+    dxs.push(Math.abs(pd-md)/((pd+md)||0.0001)*100);
+  }
+
+  // 4. ADX = RMA do DX
+  if(dxs.length<p) return 25;
+  let adx=dxs.slice(0,p).reduce((a,b)=>a+b,0)/p;
+  for(let i=p;i<dxs.length;i++) adx=(adx*(p-1)+dxs[i])/p;
+  return adx;
 }
 function findSR(arr,lookback=60){
   const sl=arr.slice(-lookback);
