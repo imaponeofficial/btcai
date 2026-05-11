@@ -1899,7 +1899,7 @@ function drawFollowLineOnChart(start, end, cw){
 
   // ── 2. Labels históricos (💣/🔨) — só dentro do horário ──
   // Pré-calcular ADX para todo o src de uma vez (Wilder RMA precisa de histórico completo)
-  const adxArray = calcADXArray(src, _adxLength);
+  const adxArray = calcADXArray(src, _adxLength, 14);
 
   for(let i = 1; i < flAll.length; i++){
     const fl  = flAll[i];
@@ -2442,6 +2442,28 @@ function calcFollowLine(candles){
   let trendLine = null;
   let iTrend = 0;
 
+  // Pré-calcular ATR com Wilder's RMA — idêntico ao ta.atr() do Pine Script
+  // Pine Script: fli_atrVal = ta.atr(fli_atrPeriod)
+  // RMA: seed = média simples dos primeiros p TRs, depois (prev*(p-1)+cur)/p
+  const atrRMA = new Array(candles.length).fill(0);
+  if(candles.length > 1){
+    const trs = [0]; // índice 0 sem TR
+    for(let i = 1; i < candles.length; i++){
+      trs.push(Math.max(
+        candles[i].high - candles[i].low,
+        Math.abs(candles[i].high - candles[i-1].close),
+        Math.abs(candles[i].low  - candles[i-1].close)
+      ));
+    }
+    let seed = 0;
+    for(let i = 1; i <= FL_ATR_PERIOD; i++) seed += trs[i] || 0;
+    seed /= FL_ATR_PERIOD;
+    atrRMA[FL_ATR_PERIOD] = seed;
+    for(let i = FL_ATR_PERIOD + 1; i < candles.length; i++){
+      atrRMA[i] = (atrRMA[i-1] * (FL_ATR_PERIOD - 1) + trs[i]) / FL_ATR_PERIOD;
+    }
+  }
+
   for(let i = 0; i < candles.length; i++){
     const slice = candles.slice(Math.max(0, i - FL_BB_PERIOD + 1), i + 1);
     const closes = slice.map(c=>c.close);
@@ -2450,17 +2472,8 @@ function calcFollowLine(candles){
     const bbUpper = sma + std * FL_BB_DEV;
     const bbLower = sma - std * FL_BB_DEV;
 
-    // ATR
-    let atrSum = 0, atrCnt = 0;
-    for(let j = Math.max(1, i - FL_ATR_PERIOD + 1); j <= i; j++){
-      const tr = Math.max(
-        candles[j].high - candles[j].low,
-        Math.abs(candles[j].high - candles[j-1].close),
-        Math.abs(candles[j].low  - candles[j-1].close)
-      );
-      atrSum += tr; atrCnt++;
-    }
-    const atr = atrCnt > 0 ? atrSum / atrCnt : 0;
+    // ATR Wilder's RMA (igual Pine Script ta.atr)
+    const atr = atrRMA[i] || 0;
 
     const close = candles[i].close;
     const bbSignal = close > bbUpper ? 1 : close < bbLower ? -1 : 0;
@@ -2812,9 +2825,11 @@ function calcATR(arr,p=14){
   }
   return trs.slice(-p).reduce((a,b)=>a+b)/p;
 }
-function calcADX(arr,p=14){
-  // Wilder's RMA — idêntico ao ta.dmi() do Pine Script
-  if(arr.length < p*3) return 25;
+function calcADX(arr,diPeriod=14,adxSmoothing=14){
+  // Wilder's RMA — idêntico ao ta.dmi(diPeriod, adxSmoothing) do Pine Script
+  // diPeriod     = período dos DI+ e DI- (vem do banco: adx_length)
+  // adxSmoothing = suavização do ADX (fixo 14, igual Pine Script)
+  if(arr.length < diPeriod*3) return 25;
 
   // 1. TR, +DM, -DM por candle
   const trs=[],pDMs=[],mDMs=[];
@@ -2825,36 +2840,37 @@ function calcADX(arr,p=14){
     mDMs.push(dn>up&&dn>0?dn:0);
   }
 
-  // 2. Wilder RMA: seed = média simples dos primeiros p, depois (prev*(p-1)+cur)/p
-  function rma(src){
+  // 2. Wilder RMA dos DIs usa diPeriod
+  function rmaFn(src,period){
     const out=new Array(src.length).fill(0);
-    let s=0; for(let i=0;i<p;i++) s+=src[i];
-    out[p-1]=s/p;
-    for(let i=p;i<src.length;i++) out[i]=(out[i-1]*(p-1)+src[i])/p;
+    let s=0; for(let i=0;i<period;i++) s+=src[i];
+    out[period-1]=s/period;
+    for(let i=period;i<src.length;i++) out[i]=(out[i-1]*(period-1)+src[i])/period;
     return out;
   }
-  const aTR=rma(trs), aPDM=rma(pDMs), aMDM=rma(mDMs);
+  const aTR=rmaFn(trs,diPeriod), aPDM=rmaFn(pDMs,diPeriod), aMDM=rmaFn(mDMs,diPeriod);
 
   // 3. DI+ e DI- → DX
   const dxs=[];
-  for(let i=p-1;i<aTR.length;i++){
+  for(let i=diPeriod-1;i<aTR.length;i++){
     const t=aTR[i]||0.0001;
     const pd=100*aPDM[i]/t, md=100*aMDM[i]/t;
     dxs.push(Math.abs(pd-md)/((pd+md)||0.0001)*100);
   }
 
-  // 4. ADX = RMA do DX
-  if(dxs.length<p) return 25;
-  let adx=dxs.slice(0,p).reduce((a,b)=>a+b,0)/p;
-  for(let i=p;i<dxs.length;i++) adx=(adx*(p-1)+dxs[i])/p;
+  // 4. ADX = RMA do DX usando adxSmoothing (fixo 14, igual Pine Script)
+  if(dxs.length<adxSmoothing) return 25;
+  let adx=dxs.slice(0,adxSmoothing).reduce((a,b)=>a+b,0)/adxSmoothing;
+  for(let i=adxSmoothing;i<dxs.length;i++) adx=(adx*(adxSmoothing-1)+dxs[i])/adxSmoothing;
   return adx;
 }
 
 // Retorna array com valor ADX para cada candle do array inteiro
 // Igual ao Pine Script: cada barra tem seu ADX calculado com todo o histórico anterior
-function calcADXArray(arr,p=14){
+function calcADXArray(arr,diPeriod=14,adxSmoothing=14){
+  // Igual ao Pine Script: diPeriod para DIs, adxSmoothing (14) para o ADX
   const result=new Array(arr.length).fill(0);
-  if(arr.length < p*3) return result;
+  if(arr.length < diPeriod*3) return result;
 
   const trs=[],pDMs=[],mDMs=[];
   for(let i=1;i<arr.length;i++){
@@ -2864,33 +2880,32 @@ function calcADXArray(arr,p=14){
     mDMs.push(dn>up&&dn>0?dn:0);
   }
 
-  function rma(src){
+  function rmaFn2(src,period){
     const out=new Array(src.length).fill(0);
-    let s=0; for(let i=0;i<p;i++) s+=src[i];
-    out[p-1]=s/p;
-    for(let i=p;i<src.length;i++) out[i]=(out[i-1]*(p-1)+src[i])/p;
+    let s=0; for(let i=0;i<period;i++) s+=src[i];
+    out[period-1]=s/period;
+    for(let i=period;i<src.length;i++) out[i]=(out[i-1]*(period-1)+src[i])/period;
     return out;
   }
-  const aTR=rma(trs), aPDM=rma(pDMs), aMDM=rma(mDMs);
+  const aTR=rmaFn2(trs,diPeriod), aPDM=rmaFn2(pDMs,diPeriod), aMDM=rmaFn2(mDMs,diPeriod);
 
-  // DX por candle (alinhado ao índice do array original: offset +1 por causa do i=1)
+  // DX por candle
   const dxArr=new Array(arr.length).fill(0);
-  for(let i=p-1;i<aTR.length;i++){
+  for(let i=diPeriod-1;i<aTR.length;i++){
     const t=aTR[i]||0.0001;
     const pd=100*aPDM[i]/t, md=100*aMDM[i]/t;
     dxArr[i+1]=Math.abs(pd-md)/((pd+md)||0.0001)*100;
   }
 
-  // ADX = RMA do DX, calculado progressivamente para cada candle
-  const dxsOnly=dxArr.filter((_,i)=>i>=p); // valores válidos começam em p
+  // ADX = RMA do DX usando adxSmoothing (fixo 14, igual Pine Script)
   let adxVal=0, seeded=false, seedCount=0, seedSum=0;
-  for(let i=p;i<arr.length;i++){
+  for(let i=diPeriod;i<arr.length;i++){
     const dx=dxArr[i];
     if(!seeded){
       seedSum+=dx; seedCount++;
-      if(seedCount===p){ adxVal=seedSum/p; seeded=true; }
+      if(seedCount===adxSmoothing){ adxVal=seedSum/adxSmoothing; seeded=true; }
     } else {
-      adxVal=(adxVal*(p-1)+dx)/p;
+      adxVal=(adxVal*(adxSmoothing-1)+dx)/adxSmoothing;
     }
     result[i]=seeded?adxVal:0;
   }
@@ -2947,7 +2962,7 @@ function calcInds(){
   const r=calcRSI(cls),e20=calcEMA(cls,20),e50=calcEMA(cls,50);
   const{hist:macd}={hist:calcEMA(cls,12)-calcEMA(cls,26)};
   const{pct:bbPct}=calcBB(cls);
-  const atr=calcATR(candles),adx=calcADX(candles);
+  const atr=calcATR(candles),adx=calcADX(candles,14,14);
   const avgV=vls.slice(-20).reduce((a,b)=>a+b)/20,vr=vls[vls.length-1]/avgV;
   setInd('i-rsi',r.toFixed(1),r<30?'buy':r>70?'sell':'neu',r<30?'COMPRA':r>70?'VENDA':'NEUTRO');
   setInd('i-macd',macd.toFixed(0),macd>0?'buy':'sell',macd>0?'COMPRA':'VENDA');
@@ -3258,7 +3273,7 @@ async function runAI(){
       const r=calcRSI(cls),e20=calcEMA(cls,20),e50=calcEMA(cls,50);
       const macd=calcEMA(cls,12)-calcEMA(cls,26);
       const{upper,lower,mid,pct:bbPct}=calcBB(cls);
-      const atr=calcATR(kl),adx=calcADX(kl);
+      const atr=calcATR(kl),adx=calcADX(kl,14,14);
       const trend=detectTrend(cls),struct=detectStructure(kl),pattern=detectCandlePattern(kl);
       const vols=kl.map(c=>c.volume);
       const volR=vols[vols.length-1]/(vols.slice(-20).reduce((a,b)=>a+b)/20||1);
