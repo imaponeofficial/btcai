@@ -11,6 +11,47 @@
   --accent:#00d4ff;--green:#00e676;--red:#ff1744;--yellow:#ffd600;
   --text:#b0cce0;--text2:#4a7090;
 }
+/* LIGHT THEME */
+[data-theme="light"]{
+  --bg:#ffffff;--bg2:#f0f4f8;--bg3:#e4ecf3;--border:#c8d8e8;
+  --accent:#0077cc;--green:#00a854;--red:#e01030;--yellow:#cc8800;
+  --text:#1a2840;--text2:#6080a0;
+}
+[data-theme="light"] html,
+[data-theme="light"] body{ background:var(--bg);color:var(--text); }
+[data-theme="light"] .logo-nm{ color:var(--text); }
+[data-theme="light"] .price-v{ color:var(--text); }
+[data-theme="light"] .hst{ background:var(--bg3); }
+[data-theme="light"] .up{ color:var(--green);background:rgba(0,168,84,.12); }
+[data-theme="light"] .dn{ color:var(--red);background:rgba(224,16,48,.12); }
+[data-theme="light"] #ch-tooltip{ background:rgba(255,255,255,.97);border-color:var(--border);color:var(--text); }
+[data-theme="light"] .cpicker-panel{ background:#f0f4f8;border-color:#c8d8e8; }
+[data-theme="light"] .cp-hex{ background:#fff;border-color:#c8d8e8;color:var(--text); }
+[data-theme="light"] .modal-close:hover{ color:var(--text); }
+[data-theme="light"] .str-needle{ background:#1a2840;box-shadow:0 0 5px #1a2840; }
+[data-theme="light"] .str-mid{ background:rgba(0,0,0,.15); }
+[data-theme="light"] .ind-toggle-row{ border-bottom:1px dashed rgba(0,0,0,.08); }
+[data-theme="light"] .auth-box{ background:var(--bg2);border-color:var(--border); }
+[data-theme="light"] .auth-input{ background:#fff;border-color:var(--border);color:var(--text); }
+[data-theme="light"] .auth-input::placeholder{ color:var(--text2); }
+[data-theme="light"] .auth-label{ color:var(--text2); }
+[data-theme="light"] .auth-sub{ color:var(--text2); }
+[data-theme="light"] .auth-logo{ color:var(--accent); }
+[data-theme="light"] .auth-tab{ color:var(--text2); }
+[data-theme="light"] .auth-tab.active{ color:var(--accent); }
+[data-theme="light"] .api-in{ background:var(--bg);border-color:var(--border);color:var(--text); }
+[data-theme="light"] .api-in::placeholder{ color:var(--text2); }
+[data-theme="light"] .tf-btn{ color:var(--text2); }
+[data-theme="light"] .icon-btn{ color:var(--text2); }
+[data-theme="light"] .tab-btn2{ color:var(--text2); }
+
+/* THEME TOGGLE BUTTON */
+#theme-toggle{
+  background:transparent;border:1px solid var(--border);border-radius:5px;
+  color:var(--text2);cursor:pointer;padding:4px 7px;font-size:14px;
+  transition:all .15s;flex-shrink:0;line-height:1;
+}
+#theme-toggle:hover{border-color:var(--accent);color:var(--accent)}
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);font-family:'Exo 2',sans-serif}
 #app{display:flex;flex-direction:column;height:100vh;height:100dvh}
@@ -408,7 +449,7 @@ input[type=color]{display:none}
 </style>
 </head>
 <body>
-<div id="app"> <div id="hdr"> <div class="logo"> <div class="logo-ic">₿</div> <div class="logo-nm">BTC<span>AI</span></div> </div> <div class="price-blk"> <div class="price-v" id="live-price">--,---</div> <div class="price-c up" id="price-chg">+0.00%</div> </div> <div class="hstats"> <div class="hst"><div class="hst-l">HIGH</div><div class="hst-v" id="s-hi">--</div></div> <div class="hst"><div class="hst-l">LOW</div><div class="hst-v" id="s-lo">--</div></div> </div> <button id="login-btn" onclick="openAuth()"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:4px;vertical-align:middle"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>LOGIN</button> <div id="user-avatar" onclick="openUserModal()" title="Minha conta"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div> <button class="icon-btn" onclick="toggleFullscreen()" id="fs-btn" title="Tela cheia"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg></button> <button class="icon-btn" onclick="openSettings()" title="Configurações"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></button> <button id="hamburger-btn" onclick="openHamburger()" title="Menu"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg></button>
+<div id="app"> <div id="hdr"> <div class="logo"> <div class="logo-ic">₿</div> <div class="logo-nm">BTC<span>AI</span></div> </div> <div class="price-blk"> <div class="price-v" id="live-price">--,---</div> <div class="price-c up" id="price-chg">+0.00%</div> </div> <div class="hstats"> <div class="hst"><div class="hst-l">HIGH</div><div class="hst-v" id="s-hi">--</div></div> <div class="hst"><div class="hst-l">LOW</div><div class="hst-v" id="s-lo">--</div></div> </div> <button id="login-btn" onclick="openAuth()"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:4px;vertical-align:middle"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>LOGIN</button> <div id="user-avatar" onclick="openUserModal()" title="Minha conta"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div> <button class="icon-btn" onclick="toggleFullscreen()" id="fs-btn" title="Tela cheia"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg></button> <button class="icon-btn" onclick="openSettings()" title="Configurações"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></button> <button id="theme-toggle" onclick="toggleTheme()" title="Alternar tema">☀️</button> <button id="hamburger-btn" onclick="openHamburger()" title="Menu"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg></button>
 </div> <div id="tfbar"> <div class="tf-btns"> <button class="tf-btn" data-tf="1m">1M</button> <button class="tf-btn active" data-tf="5m">5M</button> <button class="tf-btn" data-tf="15m">15M</button> <button class="tf-btn" data-tf="1h">1H</button> <button class="tf-btn" data-tf="4h">4H</button> <button class="tf-btn" data-tf="1d">1D</button> </div>
 </div> <div id="chart-wrap" class="cursor-cross"> <canvas id="chart-canvas"></canvas> <div id="ch-tooltip"></div> <div id="ch-price-lbl"></div> <div id="ch-time-lbl"></div> </div> <div id="strength"> <div class="str-labels"> <span class="str-sell"> VENDA</span> <span style="font-size:8px;color:var(--text2);letter-spacing:2px">FORÇA</span> <span class="str-buy">COMPRA </span> </div> <div class="str-track"> <div class="sf-sell" id="sf-sell" style="width:0%"></div> <div class="sf-buy" id="sf-buy" style="width:0%"></div> <div class="str-mid"></div> <div class="str-needle" id="s-needle" style="left:calc(50% - 1.5px)"></div> </div> <div class="str-pcts"> <span class="pct-s" id="p-sell">50%</span> <span class="pct-b" id="p-buy">50%</span> </div>
 </div> <!--  HAMBURGER OVERLAY  -->
@@ -5132,6 +5173,37 @@ const _origSwitchTab = typeof switchTab === 'function' ? null : null;
     const label = document.getElementById('accordion-label');
     if(label && btn) label.textContent = btn.textContent.trim();
   };
+})();
+
+// 
+// THEME TOGGLE
+// 
+function toggleTheme(){
+  const root = document.documentElement;
+  const btn = document.getElementById('theme-toggle');
+  const isLight = root.getAttribute('data-theme') === 'light';
+  if(isLight){
+    root.removeAttribute('data-theme');
+    btn.textContent = '☀️';
+    try{ localStorage.setItem('btcai-theme','dark'); }catch(e){}
+  } else {
+    root.setAttribute('data-theme','light');
+    btn.textContent = '🌙';
+    try{ localStorage.setItem('btcai-theme','light'); }catch(e){}
+  }
+  // Redraw chart to use new background colors
+  if(typeof drawChart === 'function') setTimeout(drawChart, 50);
+}
+// Restore saved theme on load
+(function(){
+  try{
+    const saved = localStorage.getItem('btcai-theme');
+    if(saved === 'light'){
+      document.documentElement.setAttribute('data-theme','light');
+      const btn = document.getElementById('theme-toggle');
+      if(btn) btn.textContent = '🌙';
+    }
+  }catch(e){}
 })();
 
 window.addEventListener('load',async()=>{
