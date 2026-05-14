@@ -68,10 +68,7 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);fon
 .price-v{font-family:'Share Tech Mono',monospace;font-size:clamp(15px,3.5vw,24px);color:#fff;line-height:1.1}
 .price-c{display:inline-block;margin-top:1px;font-size:10px;font-weight:700;padding:1px 5px;border-radius:3px;font-family:'Share Tech Mono',monospace}
 .up{color:var(--green);background:rgba(0,230,118,.12)}.dn{color:var(--red);background:rgba(255,23,68,.12)}
-.hstats{display:flex;gap:4px;flex-shrink:0}
-.hst{text-align:center;padding:2px 6px;border:1px solid var(--border);border-radius:4px;background:var(--bg3)}
-.hst-l{font-size:7px;color:var(--text2);letter-spacing:1px}
-.hst-v{font-family:'Share Tech Mono',monospace;font-size:10px}
+
 .icon-btn{background:transparent;border:1px solid var(--border);border-radius:5px;color:var(--text2);
   cursor:pointer;padding:4px 7px;font-size:14px;transition:all .15s;flex-shrink:0}
 .icon-btn:hover{border-color:var(--accent);color:var(--accent)}
@@ -437,7 +434,37 @@ input[type=color]{display:none}
   border-radius:7px;padding:8px 10px;font-size:10px;color:var(--yellow);line-height:1.5;display:none}
 .locked-notice.visible{display:block}
 
-/* Login button in header */
+/* LOADING SCREEN */
+#loading-screen{
+  position:fixed;inset:0;z-index:9999;
+  background:var(--bg);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;
+  transition:opacity .4s ease;
+}
+#loading-screen.fade-out{ opacity:0; pointer-events:none; }
+.ld-logo{
+  display:flex;align-items:center;gap:10px;
+}
+.ld-logo-ic{
+  width:44px;height:44px;border-radius:12px;
+  background:linear-gradient(135deg,#00d4ff,#0055aa);
+  display:flex;align-items:center;justify-content:center;
+  font-size:22px;font-weight:900;color:#fff;
+  box-shadow:0 0 30px rgba(0,212,255,.35);
+}
+.ld-logo-nm{font-size:22px;font-weight:900;letter-spacing:3px;color:#fff}
+.ld-logo-nm span{color:var(--accent)}
+.ld-spinner{
+  width:36px;height:36px;border:3px solid var(--border);
+  border-top-color:var(--accent);border-radius:50%;
+  animation:ld-spin .8s linear infinite;
+}
+@keyframes ld-spin{to{transform:rotate(360deg)}}
+.ld-msg{
+  font-family:'Share Tech Mono',monospace;
+  font-size:11px;color:var(--text2);letter-spacing:2px;
+}
+
 #login-btn{padding:4px 10px;background:rgba(0,212,255,.1);border:1px solid var(--accent);
   border-radius:5px;color:var(--accent);cursor:pointer;font-family:'Exo 2',sans-serif;
   font-size:10px;font-weight:700;letter-spacing:1px;transition:all .2s;flex-shrink:0}
@@ -449,7 +476,16 @@ input[type=color]{display:none}
 </style>
 </head>
 <body>
-<div id="app"> <div id="hdr"> <div class="logo"> <div class="logo-ic">₿</div> <div class="logo-nm">BTC<span>AI</span></div> </div> <div class="price-blk"> <div class="price-v" id="live-price">--,---</div> <div class="price-c up" id="price-chg">+0.00%</div> </div> <div class="hstats"> <div class="hst"><div class="hst-l">HIGH</div><div class="hst-v" id="s-hi">--</div></div> <div class="hst"><div class="hst-l">LOW</div><div class="hst-v" id="s-lo">--</div></div> </div> <button id="login-btn" onclick="openAuth()"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:4px;vertical-align:middle"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>LOGIN</button> <div id="user-avatar" onclick="openUserModal()" title="Minha conta"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div> <button class="icon-btn" onclick="toggleFullscreen()" id="fs-btn" title="Tela cheia"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg></button> <button class="icon-btn" onclick="openSettings()" title="Configurações"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></button> <button id="hamburger-btn" onclick="openHamburger()" title="Menu"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg></button>
+<!-- LOADING SCREEN -->
+<div id="loading-screen">
+  <div class="ld-logo">
+    <div class="ld-logo-ic">₿</div>
+    <div class="ld-logo-nm">BTC<span>AI</span></div>
+  </div>
+  <div class="ld-spinner"></div>
+  <div class="ld-msg">CARREGANDO...</div>
+</div>
+<div id="app"> <div id="hdr"> <div class="logo"> <div class="logo-ic">₿</div> <div class="logo-nm">BTC<span>AI</span></div> </div> <div class="price-blk"> <div class="price-v" id="live-price">--,---</div> <div class="price-c up" id="price-chg">+0.00%</div> </div> <button id="login-btn" onclick="openAuth()"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:4px;vertical-align:middle"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>LOGIN</button> <div id="user-avatar" onclick="openUserModal()" title="Minha conta"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div> <button class="icon-btn" onclick="toggleFullscreen()" id="fs-btn" title="Tela cheia"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg></button> <button class="icon-btn" onclick="openSettings()" title="Configurações"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></button> <button id="hamburger-btn" onclick="openHamburger()" title="Menu"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg></button>
 </div> <div id="tfbar"> <div class="tf-btns"> <button class="tf-btn" data-tf="1m">1M</button> <button class="tf-btn active" data-tf="5m">5M</button> <button class="tf-btn" data-tf="15m">15M</button> <button class="tf-btn" data-tf="1h">1H</button> <button class="tf-btn" data-tf="4h">4H</button> <button class="tf-btn" data-tf="1d">1D</button> </div>
 </div> <div id="chart-wrap" class="cursor-cross"> <canvas id="chart-canvas"></canvas> <div id="ch-tooltip"></div> <div id="ch-price-lbl"></div> <div id="ch-time-lbl"></div> </div> <div id="strength"> <div class="str-labels"> <span class="str-sell"> VENDA</span> <span style="font-size:8px;color:var(--text2);letter-spacing:2px">FORÇA</span> <span class="str-buy">COMPRA </span> </div> <div class="str-track"> <div class="sf-sell" id="sf-sell" style="width:0%"></div> <div class="sf-buy" id="sf-buy" style="width:0%"></div> <div class="str-mid"></div> <div class="str-needle" id="s-needle" style="left:calc(50% - 1.5px)"></div> </div> <div class="str-pcts"> <span class="pct-s" id="p-sell">50%</span> <span class="pct-b" id="p-buy">50%</span> </div>
 </div> <!--  HAMBURGER OVERLAY  -->
@@ -1995,8 +2031,12 @@ function getTouchZone(el, tx, ty){
   return 'pan';
 }
 
+// LONG-PRESS CROSSHAIR STATE
+let _chLongPressTimer = null;
+let _chCrosshairActive = false; // crosshair mode ativo (long-press detectado)
+let _chTouchX = 0, _chTouchY = 0; // posição atual do toque no canvas
+
 wrap.addEventListener('touchstart', e=>{
-  // Não usar preventDefault aqui — deixar o browser decidir cancelability
   const t0 = e.touches[0];
   if(e.touches.length === 1){
     const zone = getTouchZone(wrap, t0.clientX, t0.clientY);
@@ -2008,10 +2048,29 @@ wrap.addEventListener('touchstart', e=>{
     tState.startView  = viewStart;
     tState.startCount = viewCount;
     if(priceAutoScale) calcPriceRange();
-    priceAutoScale = false; // usuário assume controle — sem auto-scale
+    priceAutoScale = false;
     tState.startMin = priceMin;
     tState.startMax = priceMax;
+
+    // Iniciar timer de long-press apenas na zona do gráfico
+    if(zone === 'pan'){
+      _chLongPressTimer = setTimeout(()=>{
+        // Long-press confirmado: ativar crosshair
+        _chCrosshairActive = true;
+        const rect = canvas.getBoundingClientRect();
+        _chTouchX = t0.clientX - rect.left;
+        _chTouchY = t0.clientY - rect.top;
+        drawChart();
+        drawCrosshair(_chTouchX, _chTouchY);
+        // Vibração de feedback tátil (se suportado)
+        if(navigator.vibrate) navigator.vibrate(30);
+      }, 320); // 320ms = long press
+    }
   } else if(e.touches.length === 2){
+    // Cancelar crosshair e long-press se entrar segundo dedo
+    if(_chLongPressTimer){ clearTimeout(_chLongPressTimer); _chLongPressTimer=null; }
+    _chCrosshairActive = false;
+    hideCrosshair();
     tState.mode = 'pinch';
     const t1 = e.touches[1];
     tState.pinchDist  = Math.hypot(t0.clientX-t1.clientX, t0.clientY-t1.clientY);
@@ -2019,28 +2078,47 @@ wrap.addEventListener('touchstart', e=>{
     tState.startCount = viewCount;
     tState.startView  = viewStart;
   }
-},{passive:true}); // passive:true = sem erro cancelable
+},{passive:true});
 
 wrap.addEventListener('touchmove', e=>{
   if(!tState.mode) return;
-
-  // Só chama preventDefault se o evento for cancelable
   if(e.cancelable) e.preventDefault();
 
   const t0 = e.touches[0];
+
+  // Se crosshair ativo: mover crosshair, não pan
+  if(_chCrosshairActive && e.touches.length === 1){
+    const rect = canvas.getBoundingClientRect();
+    _chTouchX = t0.clientX - rect.left;
+    _chTouchY = t0.clientY - rect.top;
+    if(_chTouchX >= PAD.L && _chTouchX <= W()-PAD.R && _chTouchY >= PAD.T && _chTouchY <= H()-PAD.B){
+      drawChart();
+      drawCrosshair(_chTouchX, _chTouchY);
+    } else {
+      hideCrosshair();
+    }
+    return;
+  }
+
+  // Cancelar long-press se mover antes de confirmar
+  if(_chLongPressTimer){
+    const dx = t0.clientX - tState.startX;
+    const dy = t0.clientY - tState.startY;
+    if(Math.hypot(dx,dy) > 8){
+      clearTimeout(_chLongPressTimer);
+      _chLongPressTimer = null;
+    }
+  }
 
   if(tState.mode === 'pan'){
     const dx = t0.clientX - tState.startX;
     const dy = t0.clientY - tState.startY;
     const cw = chartW() / viewCount;
-    // Horizontal — delta relativo ao ponto de início
     viewStart = Math.max(0, Math.min(candles.length - viewCount*0.2, tState.startView - dx/cw));
     if(viewStart < 5) loadMoreHistory();
-    // Vertical — delta relativo ao início, aplicado ao snapshot
     if(Math.abs(dy) > 1){
       priceAutoScale = false;
       const range = tState.startMax - tState.startMin;
-      // dy < 0 = touch foi pra cima = candles sobem = janela de preço sobe = min/max aumentam
       const shift = (dy / chartH()) * range;
       priceMin = tState.startMin + shift;
       priceMax = tState.startMax + shift;
@@ -2048,8 +2126,6 @@ wrap.addEventListener('touchmove', e=>{
     drawChart();
   }
   else if(tState.mode === 'pscale'){
-    // Arrastar para CIMA = zoom in (menos range)
-    // Arrastar para BAIXO = zoom out (mais range)
     priceAutoScale = false;
     const dy     = t0.clientY - tState.startY;
     const range  = tState.startMax - tState.startMin;
@@ -2060,8 +2136,6 @@ wrap.addEventListener('touchmove', e=>{
     drawChart();
   }
   else if(tState.mode === 'tscale'){
-    // Arrastar para DIREITA = zoom out (mais candles)
-    // Arrastar para ESQUERDA = zoom in (menos candles)
     const dx       = t0.clientX - tState.startX;
     const factor   = Math.exp(dx * 0.006);
     const newCount = Math.max(10, Math.min(candles.length, Math.round(tState.startCount * factor)));
@@ -2086,7 +2160,12 @@ wrap.addEventListener('touchmove', e=>{
   }
 },{passive:false});
 
-wrap.addEventListener('touchend', ()=>{ tState.mode=null; },{passive:true});
+wrap.addEventListener('touchend', ()=>{
+  if(_chLongPressTimer){ clearTimeout(_chLongPressTimer); _chLongPressTimer=null; }
+  _chCrosshairActive = false;
+  hideCrosshair();
+  tState.mode=null;
+},{passive:true});
 
 // Duplo toque na escala de preço = reset auto
 wrap.addEventListener('dblclick', e=>{
@@ -2126,16 +2205,7 @@ function drawCrosshair(x, y){
     chTimeLbl.style.bottom = '0px';
     chTimeLbl.textContent = label;
 
-    // Tooltip
-    const isUp = c.close>=c.open;
-    chTip.style.display='block';
-    chTip.style.left = Math.min(x+12, w-160)+'px';
-    chTip.style.top  = '6px';
-    chTip.innerHTML=`<span style="color:#888">O</span> <span style="color:#fff">${fmtP(c.open)}</span> <span style="color:var(--green)">H</span> <span style="color:#fff">${fmtP(c.high)}</span><br><span style="color:var(--red)">L</span> <span style="color:#fff">${fmtP(c.low)}</span> <span style="color:${isUp?'var(--green)':'var(--red)'}">C ${fmtP(c.close)}</span>`;
-    const _co=document.getElementById('co'); if(_co) _co.textContent=fmtP(c.open);
-    const _ch=document.getElementById('ch'); if(_ch) _ch.textContent=fmtP(c.high);
-    const _cl=document.getElementById('cl'); if(_cl) _cl.textContent=fmtP(c.low);
-    const _cc=document.getElementById('cc'); if(_cc) _cc.textContent=fmtP(c.close);
+    // Tooltip OHLC desativado intencionalmente
   }
 }
 function hideCrosshair(){
@@ -5403,6 +5473,12 @@ window.addEventListener('load',async()=>{
   await initAuth();
   connectWS('5m');
   // Accordion começa fechado — não fazer nada extra (display:none por padrão)
+  // Esconder loading screen após tudo carregar
+  const ls = document.getElementById('loading-screen');
+  if(ls){
+    ls.classList.add('fade-out');
+    setTimeout(()=>{ ls.style.display='none'; }, 420);
+  }
 });
 </script>
 <div id="tab-ai" style="display:none">
