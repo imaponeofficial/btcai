@@ -29,7 +29,7 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);fon
 .up{color:var(--green);background:rgba(0,230,118,.12)}.dn{color:var(--red);background:rgba(255,23,68,.12)}
 
 .icon-btn{background:transparent;border:1px solid var(--border);border-radius:5px;color:var(--text2);
-  cursor:pointer;padding:4px 7px;font-size:14px;transition:all .15s;flex-shrink:0}
+  cursor:pointer;padding:4px 7px;font-size:10px;font-weight:700;letter-spacing:1px;transition:all .15s;flex-shrink:0}
 .icon-btn:hover{border-color:var(--accent);color:var(--accent)}
 
 /* TF BAR */
@@ -40,6 +40,9 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);fon
   border-radius:4px;cursor:pointer;font-family:'Exo 2',sans-serif;font-size:10px;font-weight:700;
   letter-spacing:1px;transition:all .15s;white-space:nowrap}
 .tf-btn.active{background:rgba(0,212,255,.1);border-color:var(--accent);color:var(--accent)}
+.refresh-btn{padding:3px 8px;border:1px solid var(--border);background:transparent;color:var(--text2);
+  border-radius:4px;cursor:pointer;font-size:10px;font-weight:700;letter-spacing:1px;transition:all .15s;white-space:nowrap;line-height:1}
+.refresh-btn:hover{border-color:var(--accent);color:var(--accent)}
 /* ASSET SELECTOR */
 .asset-btns{display:flex;gap:3px;flex-shrink:0}
 .asset-btn{padding:3px 10px;border:1px solid var(--border);background:transparent;color:var(--text2);
@@ -335,7 +338,7 @@ input[type=color]{display:none}
   <div class="ld-msg">CARREGANDO...</div>
 </div>
 <div id="app"> <div id="hdr"> <div class="logo"> <div class="logo-ic">√</div> <div class="logo-nm">SCALPER<span>AI</span></div> </div> <div class="price-blk"> <div class="price-v" id="live-price">--,---</div> <div class="price-c up" id="price-chg">+0.00%</div> </div> <button id="login-btn" onclick="openAuth()"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:4px;vertical-align:middle"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>LOGIN</button> <div id="user-avatar" onclick="openUserModal()" title="Minha conta"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div>
-</div> <div id="tfbar"> <div class="tf-btns"> <button class="tf-btn" data-tf="1m">1M</button> <button class="tf-btn active" data-tf="5m">5M</button> <button class="tf-btn" data-tf="15m">15M</button> <button class="tf-btn" data-tf="1h">1H</button> <button class="tf-btn" data-tf="4h">4H</button> <button class="tf-btn" data-tf="1d">1D</button> </div> <div class="asset-sep"></div> <div class="asset-btns"> <button class="asset-btn active" data-asset="BTC" onclick="switchAsset('BTC')">BTC</button> <button class="asset-btn" data-asset="XAU" onclick="switchAsset('XAU')">XAU</button> </div>
+</div> <div id="tfbar"> <div class="tf-btns"> <button class="tf-btn" data-tf="1m">1M</button> <button class="tf-btn active" data-tf="5m">5M</button> <button class="tf-btn" data-tf="15m">15M</button> <button class="tf-btn" data-tf="1h">1H</button> <button class="tf-btn" data-tf="4h">4H</button> <button class="tf-btn" data-tf="1d">1D</button> </div> <div class="asset-sep"></div> <div class="asset-btns"> <button class="asset-btn active" data-asset="BTC" onclick="switchAsset('BTC')">BTC</button> <button class="asset-btn" data-asset="XAU" onclick="switchAsset('XAU')">XAU</button> </div> <div class="asset-sep"></div> <button id="refresh-candles-btn" class="refresh-btn" onclick="doManualRefresh()" title="Atualizar velas">ATUALIZAR</button>
 </div> <div id="chart-wrap" class="cursor-cross"> <canvas id="chart-canvas"></canvas> <div id="ch-tooltip"></div> <div id="ch-price-lbl"></div> <div id="ch-time-lbl"></div> </div> <div id="strength"> <div class="str-labels"> <span class="str-sell"> VENDA</span> <span style="font-size:8px;color:var(--text2);letter-spacing:2px">FORÇA</span> <span class="str-buy">COMPRA </span> </div> <div class="str-track"> <div class="sf-sell" id="sf-sell" style="width:0%"></div> <div class="sf-buy" id="sf-buy" style="width:0%"></div> <div class="str-mid"></div> <div class="str-needle" id="s-needle" style="left:calc(50% - 1.5px)"></div> </div> <div class="str-pcts"> <span class="pct-s" id="p-sell">50%</span> <span class="pct-b" id="p-buy">50%</span> </div>
 </div> <!--  HAMBURGER OVERLAY  -->
 
@@ -1843,6 +1846,8 @@ async function loadMoreHistory(){
 }
 
 async function loadCandles(tf){
+  tf = tf || currentTF || '5m';
+  if(!TF[tf]) return;
   try{
     let fetched=await fetchKlines(TF[tf].i,1000);
     // XAU 1m: se o mercado abriu há pouco tempo, o fetchKlines retorna poucas velas
@@ -1919,12 +1924,14 @@ async function load24h(){
 let ws5m = null; // WebSocket dedicado para candles M5 (Follow Line PRO)
 
 function connectWS(tf){
+  tf = tf || currentTF || '5m';
+  if(!TF[tf]) return;
   if(ws){try{ws.close(1000);}catch(_){}ws=null;}
   const bvInt=bybitInterval(TF[tf].i);
   const sym=bybitSymbol(currentAsset);
   ws=new WebSocket('wss://stream.bybit.com/v5/public/linear');
   ws.onopen=()=>{ ws.send(JSON.stringify({op:'subscribe',args:[`kline.${bvInt}.${sym}`]})); };
-  ws.onclose=e=>{if(e.code!==1000)setTimeout(()=>connectWS(currentTF),3000);};
+  ws.onclose=e=>{if(e.code!==1000)setTimeout(()=>connectWS(currentTF||tf),3000);};
   ws.onmessage=evt=>{
     const msg=JSON.parse(evt.data);
     if(!msg.data||!msg.topic?.startsWith('kline.')) return;
@@ -2640,89 +2647,23 @@ async function saveSettingsToDB(){
 }
 
 // 
-// AUTO-REFRESH AO VOLTAR PARA A ABA/APP
+// BOTÃO DE ATUALIZAÇÃO MANUAL (fixo na barra de ativos)
 // 
-// Mostra um botão de "Atualizar Velas" quando o usuário sai e volta ao site,
-// evitando atualizações automáticas silenciosas que podem confundir o usuário.
-//
-const _REFRESH_THRESHOLD_MS = 30 * 1000; // 30 segundos sem ping = estava fora
-const _PING_KEY = 'btcai_last_ping';
-let _pingInterval = null;
-let _refreshBtnVisible = false;
+let _isRefreshing = false;
 
-// Grava timestamp a cada 10s enquanto a página está visível
-function _startPing(){
-  _stopPing();
-  try{ localStorage.setItem(_PING_KEY, String(Date.now())); }catch(_){}
-  _pingInterval = setInterval(()=>{
-    try{ localStorage.setItem(_PING_KEY, String(Date.now())); }catch(_){}
-  }, 10000);
-}
-function _stopPing(){
-  if(_pingInterval){ clearInterval(_pingInterval); _pingInterval=null; }
-}
-
-function showRefreshBtn(){
-  if(_refreshBtnVisible) return;
-  _refreshBtnVisible = true;
-  let btn = document.getElementById('chart-refresh-btn');
-  if(!btn){
-    btn = document.createElement('button');
-    btn.id = 'chart-refresh-btn';
-    btn.innerHTML = '↻ Atualizar Velas';
-    btn.style.cssText = [
-      'position:absolute','top:10px','left:50%','transform:translateX(-50%)',
-      'z-index:20','padding:6px 16px','background:rgba(0,212,255,0.15)',
-      'border:1px solid #00d4ff','border-radius:6px','color:#00d4ff',
-      'font-family:\'Exo 2\',sans-serif','font-size:11px','font-weight:700',
-      'letter-spacing:1px','cursor:pointer','transition:all .15s',
-      'backdrop-filter:blur(4px)'
-    ].join(';');
-    btn.onmouseover = ()=>{ btn.style.background='rgba(0,212,255,0.28)'; };
-    btn.onmouseout  = ()=>{ btn.style.background='rgba(0,212,255,0.15)'; };
-    btn.onclick = async ()=>{
-      btn.textContent = '↻ Atualizando...';
-      btn.disabled = true;
-      try{
-        await Promise.all([loadCandles(currentTF), load24h()]);
-        connectWS(currentTF);
-      }catch(e){ console.warn('[RefreshBtn] erro:',e); }
-      hideRefreshBtn();
-    };
-    document.getElementById('chart-wrap').appendChild(btn);
-  }
-  btn.style.display = 'block';
-}
-
-function hideRefreshBtn(){
-  _refreshBtnVisible = false;
-  const btn = document.getElementById('chart-refresh-btn');
-  if(btn){ btn.style.display='none'; btn.textContent='↻ Atualizar Velas'; btn.disabled=false; }
-}
-
-function _checkStaleness(){
+async function doManualRefresh(){
+  if(_isRefreshing) return;
+  _isRefreshing = true;
+  const btn = document.getElementById('refresh-candles-btn');
+  if(btn){ btn.style.opacity='0.5'; btn.style.pointerEvents='none'; }
+  const tf = currentTF || '5m';
   try{
-    const last = parseInt(localStorage.getItem(_PING_KEY)||'0', 10);
-    if(last && Date.now() - last > _REFRESH_THRESHOLD_MS){
-      showRefreshBtn();
-    }
-  }catch(_){}
-  _startPing();
+    await Promise.all([loadCandles(tf), load24h()]);
+    connectWS(tf);
+  }catch(e){ console.warn('[Refresh] erro:',e); }
+  if(btn){ btn.style.opacity='1'; btn.style.pointerEvents=''; }
+  _isRefreshing = false;
 }
-
-document.addEventListener('visibilitychange',()=>{
-  if(document.visibilityState==='hidden'){
-    _stopPing();
-  } else {
-    // Ao voltar visível: verifica se dados estão velhos (cobre fechar+reabrir)
-    _checkStaleness();
-  }
-});
-
-// Cobre restauração via BFCache (botão Voltar do navegador)
-window.addEventListener('pageshow', e=>{
-  if(e.persisted) showRefreshBtn();
-});
 
 window.addEventListener('load',async()=>{
   loadTimeWindowSetting();
@@ -2733,8 +2674,7 @@ window.addEventListener('load',async()=>{
   if(!_session){
     openSubCard();
   }
-  // Inicia o ping de presença (usado para detectar reabertura após fechar navegador)
-  _startPing();
+
   // Accordion começa fechado — não fazer nada extra (display:none por padrão)
   // Esconder loading screen após tudo carregar
   const ls = document.getElementById('loading-screen');
