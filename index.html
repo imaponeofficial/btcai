@@ -1446,7 +1446,8 @@ wrap.addEventListener('touchstart', e=>{
     tState.startView  = viewStart;
     tState.startCount = viewCount;
     if(priceAutoScale) calcPriceRange();
-    priceAutoScale = false;
+    // Só desativa auto-scale ao arrastar a escala de preço/tempo — pan horizontal mantém
+    if(zone !== 'pan') priceAutoScale = false;
     tState.startMin = priceMin;
     tState.startMax = priceMax;
 
@@ -1514,8 +1515,9 @@ wrap.addEventListener('touchmove', e=>{
     const cw = chartW() / viewCount;
     viewStart = Math.max(0, Math.min(candles.length - viewCount*0.2, tState.startView - dx/cw));
     if(viewStart < 5) loadMoreHistory();
-    if(Math.abs(dy) > 1){
+    if(Math.abs(dy) > 5){
       priceAutoScale = false;
+      if(!tState.startMin && !tState.startMax){ calcPriceRange(); tState.startMin=priceMin; tState.startMax=priceMax; }
       const range = tState.startMax - tState.startMin;
       const shift = (dy / chartH()) * range;
       priceMin = tState.startMin + shift;
@@ -1892,8 +1894,9 @@ async function loadCandles(tf){
     }
     candles=fetched;
     Object.keys(_emaCache).forEach(k=>delete _emaCache[k]);
+    const RIGHT_PADDING_CANDLES = 6; // slots vazios à direita da última vela
     viewCount=Math.min(80,candles.length);
-    viewStart=Math.max(0,candles.length-viewCount);
+    viewStart=Math.max(0,candles.length-viewCount+RIGHT_PADDING_CANDLES);
     priceAutoScale=true;
     resizeCanvas(); calcInds();
   }catch(e){console.error(e);}
@@ -1921,6 +1924,26 @@ async function load24h(){
   }catch(e){}
 }
 
+// ── RENDER LOOP LOCAL ─────────────────────────────────────────────────────────
+// Atualiza countdown e redesenha o gráfico a cada 500ms, independente dos ticks
+// do WebSocket. Garante que a vela e o cronômetro sejam fluidos mesmo se a Bybit
+// demorar entre mensagens (XAU pode ter gaps de 2-3s entre ticks).
+let _renderLoopId = null;
+let _wsLastCandleEnd = 0; // k.end em ms, atualizado pelo WS
+function startRenderLoop(){
+  if(_renderLoopId) clearInterval(_renderLoopId);
+  _renderLoopId = setInterval(()=>{
+    // Atualiza countdown com base no relógio local (sem depender do WS)
+    if(_wsLastCandleEnd > 0){
+      const rem = Math.max(0, Math.floor((_wsLastCandleEnd - Date.now()) / 1000));
+      _candleCountdown = String(Math.floor(rem/60)).padStart(2,'0') + ':' + String(rem%60).padStart(2,'0');
+    }
+    // Redesenha apenas se o mercado estiver aberto (evita trabalho desnecessário)
+    if(currentAsset !== 'XAU' || isXAUMarketOpen()) drawChart();
+  }, 500);
+}
+// ─────────────────────────────────────────────────────────────────────────────
+
 let ws5m = null; // WebSocket dedicado para candles M5 (Follow Line PRO)
 
 function connectWS(tf){
@@ -1930,7 +1953,7 @@ function connectWS(tf){
   const bvInt=bybitInterval(TF[tf].i);
   const sym=bybitSymbol(currentAsset);
   ws=new WebSocket('wss://stream.bybit.com/v5/public/linear');
-  ws.onopen=()=>{ ws.send(JSON.stringify({op:'subscribe',args:[`kline.${bvInt}.${sym}`]})); };
+  ws.onopen=()=>{ ws.send(JSON.stringify({op:'subscribe',args:[`kline.${bvInt}.${sym}`]})); startRenderLoop(); };
   ws.onclose=e=>{if(e.code!==1000)setTimeout(()=>connectWS(currentTF||tf),3000);};
   ws.onmessage=evt=>{
     const msg=JSON.parse(evt.data);
@@ -1939,21 +1962,27 @@ function connectWS(tf){
     // Ignora velas do mercado fechado (XAU fim de semana)
     if(currentAsset==='XAU' && !isXAUMarketOpen()) return;
     livePrice=+k.close; updatePrice(livePrice);
+    // Se o preço saiu da janela visível e auto-scale está desligado, reativa
+    if(!priceAutoScale && livePrice > 0 && priceMax > priceMin){
+      if(livePrice < priceMin || livePrice > priceMax) priceAutoScale = true;
+    }
     const cnd={time:Math.floor(+k.start/1000),open:+k.open,high:+k.high,low:+k.low,close:+k.close,volume:+k.volume};
     const last=candles[candles.length-1];
     if(last&&last.time===cnd.time){candles[candles.length-1]=cnd;}
     else if(cnd.time>(last?.time||0)){
       candles.push(cnd); if(candles.length>600)candles.shift();
-      viewStart=Math.max(0,candles.length-viewCount);
+      viewStart=Math.max(0,candles.length-viewCount+6);
     }
     if(tf==='5m') candles5m = candles;
-    drawChart();
+    // Salvar k.end para o render loop calcular o countdown localmente
+    _wsLastCandleEnd = +k.end;
+    // Atualizar OHLC do candle atual na interface
     const _co2=document.getElementById('co'); if(_co2) _co2.textContent=f(cnd.open);
     const _ch2=document.getElementById('ch'); if(_ch2) _ch2.textContent=f(cnd.high);
     const _cl2=document.getElementById('cl'); if(_cl2) _cl2.textContent=f(cnd.low);
     const _cc2=document.getElementById('cc'); if(_cc2) _cc2.textContent=f(cnd.close);
-    const endMs=+k.end; const rem=Math.max(0,Math.floor((endMs-Date.now())/1000));
-    _candleCountdown=String(Math.floor(rem/60)).padStart(2,'0')+':'+String(rem%60).padStart(2,'0');
+    // O render loop (setInterval 500ms) cuida do drawChart e countdown — não chamar aqui
+    // para evitar renderizações duplas e stuttering
     if(k.confirm){ Object.keys(_emaCache).forEach(k=>delete _emaCache[k]); calcInds(); }
   };
 
