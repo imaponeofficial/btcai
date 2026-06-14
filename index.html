@@ -342,21 +342,21 @@ input[type=color]{display:none}
 </div> <div id="settings-modal"> <div class="modal-box"> <div class="modal-hdr"> <div class="modal-title"> CONFIGURAÇÕES</div> <button class="modal-close" onclick="closeSettings()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button> </div> <div class="modal-section"> <div class="sec-title"> INDICADORES NO GRÁFICO</div> <div id="ind-settings-list"></div> </div>
  <div class="modal-section"> <div class="sec-title"> JANELA OPERACIONAL</div>
   <div class="ind-toggle-row"> <div class="ind-toggle-left"> <div style="width:10px;height:10px;border-radius:50%;background:var(--accent);flex-shrink:0"></div> <div class="ind-toggle-name">Janela Horária (05:00–17:00 UTC)</div> </div> <div class="ind-toggle-right"> <label class="toggle"> <input type="checkbox" id="toggle-time-window" checked onchange="setTimeWindowEnabled(this.checked)"> <span class="toggle-slider"></span> </label> </div> </div>
-  <div style="font-size:9px;color:var(--text2);margin-top:6px;line-height:1.5;padding:0 2px">Ativado: sinais só aparecem das 05:00 às 17:00 UTC.<br>Desativado: Follow Line e sinais visíveis a qualquer hora.</div>
+  <div style="font-size:9px;color:var(--text2);margin-top:6px;line-height:1.5;padding:0 2px">Ativado: sinais só aparecem das 05:00 às 17:00 UTC.<br>Desativado: sinais visíveis a qualquer hora.</div>
  </div>
 </div></div>
 <div id="sub-overlay"> <div class="sub-card">
   <button class="sub-close" onclick="closeSubCard()"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
-  <div class="sub-badge"><span class="dotpulse"></span> IA ATIVA AGORA NO BTC/USDT</div>
-  <div class="sub-title">Sinais de entrada em <span>tempo real</span> direto no gráfico</div>
+  <div class="sub-badge"><span class="dotpulse"></span> IA ATIVA AGORA</div>
+  <div class="sub-title">Sinais de entrada em <span>tempo real</span> direto no gráfico BTC/XAU</div>
   <div class="sub-sub">Assine e tenha acesso completo à análise automatizada: tendência, força do movimento e pontos de entrada calculados a cada vela.</div>
   <ul class="sub-features">
     <li><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Indicador de tendência plotado direto no gráfico</li>
     <li><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Medidor de força compra x venda em tempo real</li>
-    <li><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Múltiplos timeframes (1m a 1D) com indicadores configuráveis</li>
+    <li><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Múltiplos timeframes (1m a 1D)</li>
     <li><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Acesso via navegador, em qualquer dispositivo</li>
   </ul>
-  <div class="sub-price-row"><span class="sub-price">R$ 49,90</span><span class="sub-period">/ mês</span></div>
+  <div class="sub-price-row"><span class="sub-price">R$ 67,00</span><span class="sub-period">/ mês</span></div>
   <div class="sub-note">Cancele quando quiser, sem multa ou burocracia.</div>
   <a class="sub-cta" id="sub-cta-btn" href="#" target="_blank" rel="noopener" onclick="goToCheckout(event)">ASSINAR AGORA</a>
   <div class="sub-foot">🔒 Pagamento seguro &nbsp;•&nbsp; Acesso imediato</div>
@@ -2337,8 +2337,15 @@ async function supaUpsertSettings(data){
 async function supaAuth(path,body){
   const r=await fetch(SUPA_URL+'/auth/v1'+path,{method:'POST',
     headers:{'Content-Type':'application/json','apikey':SUPA_KEY},body:JSON.stringify(body)});
-  const d=await r.json();
-  if(!r.ok) throw new Error(d.error_description||d.message||'Auth error');
+  const d=await r.json().catch(()=>({}));
+  if(!r.ok){
+    // O Supabase retorna o texto do erro em campos diferentes dependendo do endpoint:
+    // /token usa "error_description", /signup usa "msg". Sem isso, toda falha cai
+    // no fallback genérico "Auth error" e a mensagem específica nunca é detectada.
+    const e=new Error(d.msg||d.error_description||d.message||d.error||'Auth error');
+    e.code=d.error_code||d.error||'';
+    throw e;
+  }
   return d;
 }
 
@@ -2447,6 +2454,15 @@ async function doAuth(){
     const path=_authMode==='login'?'/token?grant_type=password':'/signup';
     const d=await supaAuth(path,{email,password:pass});
     if(_authMode==='register' && d.user && !d.access_token){
+      // O Supabase, por segurança, não retorna erro quando o e-mail já existe:
+      // ele responde com sucesso e "identities: []" (nenhuma identidade nova criada).
+      if(Array.isArray(d.user.identities) && d.user.identities.length===0){
+        err.textContent='Este e-mail já possui cadastro. Faça login.';
+        err.style.display='block';
+        switchAuthTab('login');
+        btn.disabled=false;btn.textContent='ENTRAR';
+        return;
+      }
       err.textContent='Conta criada! Faça login para continuar.';
       err.style.display='block';
       switchAuthTab('login');
@@ -2458,23 +2474,30 @@ async function doAuth(){
     await onLogin();
     startTokenRefresh();
   }catch(e){
+    const code=(e.code||'').toLowerCase();
     const msg=(e.message||'').toLowerCase();
     let friendly='Erro ao autenticar. Tente novamente.';
     if(_authMode==='login'){
-      if(msg.includes('invalid login') || msg.includes('invalid credentials') || msg.includes('wrong password')){
+      if(code==='invalid_credentials' || msg.includes('invalid login') || msg.includes('invalid credentials') || msg.includes('wrong password')){
         friendly='E-mail ou senha incorretos.';
-      } else if(msg.includes('email not confirmed')){
-        friendly='Confirme seu e-mail antes de entrar.';
-      } else if(msg.includes('user not found') || msg.includes('no user')){
+      } else if(code==='email_not_confirmed' || msg.includes('email not confirmed')){
+        friendly='E-mail ainda não confirmado. Verifique sua caixa de entrada.';
+      } else if(code==='user_not_found' || msg.includes('user not found') || msg.includes('no user')){
         friendly='Nenhuma conta encontrada com este e-mail.';
-      } else if(msg.includes('too many')){
+      } else if(code==='over_request_rate_limit' || code==='over_email_send_rate_limit' || msg.includes('too many')){
         friendly='Muitas tentativas. Aguarde alguns minutos.';
+      } else if(code==='email_address_invalid' || msg.includes('invalid email') || msg.includes('email address')){
+        friendly='E-mail inválido.';
       }
     } else {
-      if(msg.includes('already registered') || msg.includes('already exists') || msg.includes('user already')){
+      if(code==='user_already_exists' || code==='email_exists' || msg.includes('already registered') || msg.includes('already exists') || msg.includes('user already')){
         friendly='Este e-mail já possui cadastro. Faça login.';
-      } else if(msg.includes('weak password') || msg.includes('password')){
+      } else if(code==='weak_password' || msg.includes('weak password') || msg.includes('password')){
         friendly='Senha fraca. Use pelo menos 6 caracteres.';
+      } else if(code==='email_address_invalid' || msg.includes('invalid email') || msg.includes('email address')){
+        friendly='E-mail inválido.';
+      } else if(code==='over_email_send_rate_limit' || msg.includes('too many')){
+        friendly='Muitas tentativas. Aguarde alguns minutos antes de tentar novamente.';
       }
     }
     err.textContent=friendly;err.style.display='block';
@@ -2575,8 +2598,44 @@ async function saveSettingsToDB(){
   }catch(e){console.warn('[DB] saveSettings erro:',e.message);}
 }
 
+// 
+// AUTO-REFRESH AO VOLTAR PARA A ABA/APP
+// 
+// Em celulares, quando o navegador fica em segundo plano por um tempo, a
+// conexão WebSocket é suspensa/encerrada pelo sistema e o gráfico fica
+// "parado" até o usuário recarregar a página manualmente. Os listeners
+// abaixo detectam quando o usuário volta para a aba e recarregam os
+// candles + reconectam o WebSocket automaticamente, sem precisar de F5.
+let _hiddenAt=null;
+let _refreshingOnReturn=false;
 
+async function refreshOnReturn(){
+  if(_refreshingOnReturn) return;
+  _refreshingOnReturn=true;
+  try{
+    await Promise.all([loadCandles(currentTF), load24h()]);
+    connectWS(currentTF);
+  }catch(e){ console.warn('[AutoRefresh] erro ao atualizar:',e); }
+  _refreshingOnReturn=false;
+}
 
+document.addEventListener('visibilitychange',()=>{
+  if(document.visibilityState==='hidden'){
+    _hiddenAt=Date.now();
+  } else if(document.visibilityState==='visible'){
+    // Só força um refresh completo se o app ficou em segundo plano por mais
+    // de 15s, evitando reconexões desnecessárias em trocas rápidas de aba.
+    if(_hiddenAt && Date.now()-_hiddenAt>15000){
+      refreshOnReturn();
+    }
+    _hiddenAt=null;
+  }
+});
+
+// Cobre o caso de a página ser restaurada a partir do cache do navegador
+window.addEventListener('pageshow',e=>{
+  if(e.persisted) refreshOnReturn();
+});
 
 window.addEventListener('load',async()=>{
   loadTimeWindowSetting();
