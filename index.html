@@ -40,6 +40,13 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);fon
   border-radius:4px;cursor:pointer;font-family:'Exo 2',sans-serif;font-size:10px;font-weight:700;
   letter-spacing:1px;transition:all .15s;white-space:nowrap}
 .tf-btn.active{background:rgba(0,212,255,.1);border-color:var(--accent);color:var(--accent)}
+/* ASSET SELECTOR */
+.asset-btns{display:flex;gap:3px;flex-shrink:0}
+.asset-btn{padding:3px 10px;border:1px solid var(--border);background:transparent;color:var(--text2);
+  border-radius:4px;cursor:pointer;font-family:'Exo 2',sans-serif;font-size:10px;font-weight:700;
+  letter-spacing:1px;transition:all .15s;white-space:nowrap}
+.asset-btn.active{background:rgba(0,212,255,.1);border-color:var(--accent);color:var(--accent)}
+.asset-sep{width:1px;background:var(--border);margin:0 6px;flex-shrink:0}
 /* CHART AREA */
 #chart-wrap{flex:1 1 0;position:relative;overflow:hidden;min-height:0;touch-action:none}
 #chart-canvas{display:block;position:absolute;top:0;left:0;touch-action:none}
@@ -328,7 +335,7 @@ input[type=color]{display:none}
   <div class="ld-msg">CARREGANDO...</div>
 </div>
 <div id="app"> <div id="hdr"> <div class="logo"> <div class="logo-ic">√</div> <div class="logo-nm">SCALPER<span>AI</span></div> </div> <div class="price-blk"> <div class="price-v" id="live-price">--,---</div> <div class="price-c up" id="price-chg">+0.00%</div> </div> <button id="login-btn" onclick="openAuth()"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:4px;vertical-align:middle"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>LOGIN</button> <div id="user-avatar" onclick="openUserModal()" title="Minha conta"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div>
-</div> <div id="tfbar"> <div class="tf-btns"> <button class="tf-btn" data-tf="1m">1M</button> <button class="tf-btn active" data-tf="5m">5M</button> <button class="tf-btn" data-tf="15m">15M</button> <button class="tf-btn" data-tf="1h">1H</button> <button class="tf-btn" data-tf="4h">4H</button> <button class="tf-btn" data-tf="1d">1D</button> </div>
+</div> <div id="tfbar"> <div class="tf-btns"> <button class="tf-btn" data-tf="1m">1M</button> <button class="tf-btn active" data-tf="5m">5M</button> <button class="tf-btn" data-tf="15m">15M</button> <button class="tf-btn" data-tf="1h">1H</button> <button class="tf-btn" data-tf="4h">4H</button> <button class="tf-btn" data-tf="1d">1D</button> </div> <div class="asset-sep"></div> <div class="asset-btns"> <button class="asset-btn active" data-asset="BTC" onclick="switchAsset('BTC')">BTC</button> <button class="asset-btn" data-asset="XAU" onclick="switchAsset('XAU')">XAU</button> </div>
 </div> <div id="chart-wrap" class="cursor-cross"> <canvas id="chart-canvas"></canvas> <div id="ch-tooltip"></div> <div id="ch-price-lbl"></div> <div id="ch-time-lbl"></div> </div> <div id="strength"> <div class="str-labels"> <span class="str-sell"> VENDA</span> <span style="font-size:8px;color:var(--text2);letter-spacing:2px">FORÇA</span> <span class="str-buy">COMPRA </span> </div> <div class="str-track"> <div class="sf-sell" id="sf-sell" style="width:0%"></div> <div class="sf-buy" id="sf-buy" style="width:0%"></div> <div class="str-mid"></div> <div class="str-needle" id="s-needle" style="left:calc(50% - 1.5px)"></div> </div> <div class="str-pcts"> <span class="pct-s" id="p-sell">50%</span> <span class="pct-b" id="p-buy">50%</span> </div>
 </div> <!--  HAMBURGER OVERLAY  -->
 
@@ -710,6 +717,21 @@ function drawChart(){
       ctx.fillStyle = '#000'; ctx.font='bold 8px Share Tech Mono,monospace'; ctx.textAlign='left';
       ctx.fillText(_candleCountdown, w-PAD.R+2, y+20);
     }
+  }
+
+  // MERCADO FECHADO (XAU fim de semana)
+  if(currentAsset==='XAU' && !isXAUMarketOpen()){
+    ctx.save();
+    ctx.fillStyle='rgba(10,16,26,0.72)';
+    ctx.fillRect(PAD.L, 0, w-PAD.L-PAD.R, h-PAD.B);
+    ctx.fillStyle='rgba(255,214,0,0.85)';
+    ctx.font='bold 15px Exo 2,sans-serif';
+    ctx.textAlign='center';
+    ctx.fillText('⏸  MERCADO FECHADO', (PAD.L+(w-PAD.R))/2, (h-PAD.B)/2 - 12);
+    ctx.fillStyle='rgba(255,255,255,0.4)';
+    ctx.font='11px Exo 2,sans-serif';
+    ctx.fillText('XAU/USD opera de seg a sex • Reabre domingo ~18h (horário de Brasília)', (PAD.L+(w-PAD.R))/2, (h-PAD.B)/2 + 12);
+    ctx.restore();
   }
 }
 
@@ -1717,11 +1739,46 @@ function detectFollowLineSignal(candles){
 }
 
 let currentTF='5m', ws=null, livePrice=0, open24=0;
+let currentAsset='BTC'; // 'BTC' ou 'XAU'
 let candles5m = []; // candles M5 dedicados para o Follow Line PRO (independente do TF do gráfico)
-let _adxLength = 14; // período ADX do filtro (carregado do banco)
-let _adxMin    = 20; // ADX mínimo para operar (carregado do banco)
+let _adxLength = 14;
+let _adxMin    = 20;
 let tfCache={};
 const TF={'1m':{i:'1m',s:60},'5m':{i:'5m',s:300},'15m':{i:'15m',s:900},'1h':{i:'1h',s:3600},'4h':{i:'4h',s:14400},'1d':{i:'1d',s:86400}};
+
+// Retorna o símbolo Bybit correto para o ativo atual
+function bybitSymbol(asset){ return asset==='XAU' ? 'XAUUSDT' : 'BTCUSDT'; }
+
+// Verifica se o mercado XAU está aberto (forex fecha fim de semana)
+// XAU opera seg-sex: abre ~21h UTC domingo, fecha ~21h UTC sexta
+function isXAUMarketOpen(){
+  const now=new Date();
+  const day=now.getUTCDay();
+  const h=now.getUTCHours(), m=now.getUTCMinutes();
+  const totalMin=h*60+m;
+  if(day===6) return false;
+  if(day===0 && totalMin<21*60) return false;
+  if(day===5 && totalMin>=21*60) return false;
+  return true;
+}
+
+// Verifica se um timestamp (segundos UTC) pertence ao horário de mercado XAU
+// XAU fecha: sexta 21h UTC → domingo 21h UTC
+function isXAUCandleInMarket(tsSec){
+  const d=new Date(tsSec*1000);
+  const day=d.getUTCDay();
+  const totalMin=d.getUTCHours()*60+d.getUTCMinutes();
+  if(day===6) return false;
+  if(day===0 && totalMin<21*60) return false;
+  if(day===5 && totalMin>=21*60) return false;
+  return true;
+}
+
+// Filtra velas fora do horário de mercado XAU
+function filterXAUCandles(list){
+  if(currentAsset!=='XAU') return list;
+  return list.filter(c=>isXAUCandleInMarket(c.time));
+}
 function fmtP(v){return Number(v).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});}
 function f(v){return fmtP(v);}
 
@@ -1731,16 +1788,40 @@ function bybitInterval(interval){
   const m={'1m':'1','5m':'5','15m':'15','30m':'30','1h':'60','4h':'240','1d':'D'};
   return m[interval]||interval;
 }
+// Retorna timestamp ms do último fechamento do mercado XAU, ou null se aberto
+function xauLastCloseTime(){
+  if(isXAUMarketOpen()) return null;
+  const now=new Date();
+  const day=now.getUTCDay();
+  let daysBack=0;
+  if(day===6) daysBack=1;       // sábado: fechou sexta
+  else if(day===0) daysBack=2;  // domingo: fechou sexta (2 dias atrás)
+  else if(day===5) daysBack=0;  // ainda é sexta mas passou das 21h
+  return Date.UTC(
+    now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()-daysBack,
+    20, 59, 59, 0  // 20:59:59 UTC = última vela antes do fechamento
+  );
+}
+
 async function fetchKlines(interval,limit=1000,endTime=null){
   const bvInterval=bybitInterval(interval);
-  let url=`https://api.bybit.com/v5/market/kline?category=linear&symbol=BTCUSDT&interval=${bvInterval}&limit=${Math.min(limit,1000)}`;
-  if(endTime) url+=`&end=${endTime}`; // Bybit usa &end= em ms
+  const sym=bybitSymbol(currentAsset);
+
+  // XAU mercado fechado: busca até o último fechamento para evitar velas sintéticas
+  let effectiveEnd=endTime;
+  if(currentAsset==='XAU' && !endTime){
+    const closeTs=xauLastCloseTime();
+    if(closeTs) effectiveEnd=closeTs;
+  }
+
+  let url=`https://api.bybit.com/v5/market/kline?category=linear&symbol=${sym}&interval=${bvInterval}&limit=${Math.min(limit,1000)}`;
+  if(effectiveEnd) url+=`&end=${effectiveEnd}`;
   const r=await fetch(url,{headers:{'Accept':'application/json'}});
   const json=await r.json();
   if(json.retCode!==0) throw new Error('Bybit: '+json.retMsg);
-  // Bybit retorna ordem DECRESCENTE — inverter
   const list=json.result?.list||[];
-  return list.reverse().map(k=>({time:Math.floor(+k[0]/1000),open:+k[1],high:+k[2],low:+k[3],close:+k[4],volume:+k[5]}));
+  const raw=list.reverse().map(k=>({time:Math.floor(+k[0]/1000),open:+k[1],high:+k[2],low:+k[3],close:+k[4],volume:+k[5]}));
+  return filterXAUCandles(raw);
 }
 
 async function loadMoreHistory(){
@@ -1748,7 +1829,7 @@ async function loadMoreHistory(){
   isLoadingMore=true;
   try{
     const oldest=candles[0].time*1000;
-    const older=await fetchKlines(TF[currentTF].i,500,oldest-1);
+    const older=await fetchKlines(TF[currentTF].i,500,oldest-1); // já filtrado pelo fetchKlines
     if(older.length){
       const newC=older.filter(c=>c.time<candles[0].time);
       const prevLen=candles.length;
@@ -1770,20 +1851,21 @@ async function loadCandles(tf){
     priceAutoScale=true;
     resizeCanvas(); calcInds();
   }catch(e){console.error(e);}
-  // Sempre manter candles5m sincronizados para o Follow Line PRO
+  // Manter candles5m sincronizados para o Follow Line PRO (ambos os ativos)
   if(tf !== '5m'){
     try{
       candles5m = await fetchKlines('5m', 1000);
       tfCache['5m'] = {data: candles5m, ts: Date.now()};
     }catch(e){ console.warn('candles5m load error', e); }
   } else {
-    candles5m = candles; // mesmos dados
+    candles5m = candles;
   }
 }
 
 async function load24h(){
   try{
-    const d=await(await fetch('https://api.bybit.com/v5/market/tickers?category=linear&symbol=BTCUSDT')).json();
+    const sym=bybitSymbol(currentAsset);
+    const d=await(await fetch(`https://api.bybit.com/v5/market/tickers?category=linear&symbol=${sym}`)).json();
     const t=d.result?.list?.[0];
     if(t){
       open24=+t.prevPrice24h||+t.openPrice;
@@ -1798,13 +1880,16 @@ let ws5m = null; // WebSocket dedicado para candles M5 (Follow Line PRO)
 function connectWS(tf){
   if(ws){try{ws.close(1000);}catch(_){}ws=null;}
   const bvInt=bybitInterval(TF[tf].i);
+  const sym=bybitSymbol(currentAsset);
   ws=new WebSocket('wss://stream.bybit.com/v5/public/linear');
-  ws.onopen=()=>{ ws.send(JSON.stringify({op:'subscribe',args:[`kline.${bvInt}.BTCUSDT`]})); };
+  ws.onopen=()=>{ ws.send(JSON.stringify({op:'subscribe',args:[`kline.${bvInt}.${sym}`]})); };
   ws.onclose=e=>{if(e.code!==1000)setTimeout(()=>connectWS(currentTF),3000);};
   ws.onmessage=evt=>{
     const msg=JSON.parse(evt.data);
     if(!msg.data||!msg.topic?.startsWith('kline.')) return;
     const k=msg.data[0];
+    // Ignora velas do mercado fechado (XAU fim de semana)
+    if(currentAsset==='XAU' && !isXAUMarketOpen()) return;
     livePrice=+k.close; updatePrice(livePrice);
     const cnd={time:Math.floor(+k.start/1000),open:+k.open,high:+k.high,low:+k.low,close:+k.close,volume:+k.volume};
     const last=candles[candles.length-1];
@@ -1827,8 +1912,9 @@ function connectWS(tf){
   // WS secundário para M5 (Follow Line) quando gráfico está em outro TF
   if(tf !== '5m'){
     if(ws5m){try{ws5m.close(1000);}catch(_){}ws5m=null;}
+    const sym5m=bybitSymbol(currentAsset);
     ws5m = new WebSocket('wss://stream.bybit.com/v5/public/linear');
-    ws5m.onopen=()=>{ ws5m.send(JSON.stringify({op:'subscribe',args:['kline.5.BTCUSDT']})); };
+    ws5m.onopen=()=>{ ws5m.send(JSON.stringify({op:'subscribe',args:[`kline.5.${sym5m}`]})); };
     ws5m.onclose=e=>{if(e.code!==1000)setTimeout(()=>{ if(currentTF!=='5m') connectWS5m(); },3000);};
     ws5m.onmessage=evt=>{
       const msg=JSON.parse(evt.data);
@@ -1848,8 +1934,9 @@ function connectWS(tf){
 function connectWS5m(){
   if(currentTF==='5m') return;
   if(ws5m){try{ws5m.close(1000);}catch(_){}ws5m=null;}
+  const sym5m=bybitSymbol(currentAsset);
   ws5m = new WebSocket('wss://stream.bybit.com/v5/public/linear');
-  ws5m.onopen=()=>{ ws5m.send(JSON.stringify({op:'subscribe',args:['kline.5.BTCUSDT']})); };
+  ws5m.onopen=()=>{ ws5m.send(JSON.stringify({op:'subscribe',args:[`kline.5.${sym5m}`]})); };
   ws5m.onclose=e=>{if(e.code!==1000)setTimeout(connectWS5m,3000);};
   ws5m.onmessage=evt=>{
     const msg=JSON.parse(evt.data);
@@ -2072,6 +2159,21 @@ document.querySelectorAll('.tf-btn').forEach(b=>b.addEventListener('click',async
   await loadCandles(currentTF);
   connectWS(currentTF);
 }));
+
+async function switchAsset(asset){
+  if(asset===currentAsset) return;
+  currentAsset=asset;
+  document.querySelectorAll('.asset-btn').forEach(b=>{
+    b.classList.toggle('active', b.dataset.asset===asset);
+  });
+  document.getElementById('live-price').textContent='--,---';
+  document.getElementById('price-chg').textContent='+0.00%';
+  tfCache={};
+  candles5m=[];
+  open24=0;
+  await Promise.all([loadCandles(currentTF), load24h()]);
+  connectWS(currentTF);
+}
 
 const CP_PRESETS=[
   '#ff1744','#ff6d00','#ffd600','#00e676','#00d4ff','#2979ff','#e040fb','#ff4081',
