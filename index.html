@@ -279,6 +279,22 @@ input[type=color]{display:none}
   font-family:'Share Tech Mono',monospace;
   font-size:11px;color:var(--text2);letter-spacing:2px;
 }
+/* Botão INICIAR na loading screen */
+#ld-start-btn{
+  display:none;
+  padding:13px 40px;
+  background:linear-gradient(135deg,var(--accent),#0055aa);
+  border:none;border-radius:10px;
+  color:#001018;font-family:'Exo 2',sans-serif;
+  font-size:14px;font-weight:800;letter-spacing:3px;
+  cursor:pointer;
+  box-shadow:0 0 28px rgba(0,212,255,.35);
+  animation:ld-btn-pop .35s ease;
+  transition:filter .2s,box-shadow .2s;
+}
+#ld-start-btn:hover{filter:brightness(1.1);box-shadow:0 0 38px rgba(0,212,255,.5)}
+#ld-start-btn:active{transform:scale(.97)}
+@keyframes ld-btn-pop{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
 
 #login-btn{padding:4px 10px;background:rgba(0,212,255,.1);border:1px solid var(--accent);
   border-radius:5px;color:var(--accent);cursor:pointer;font-family:'Exo 2',sans-serif;
@@ -334,8 +350,9 @@ input[type=color]{display:none}
     <div class="ld-logo-ic">√</div>
     <div class="ld-logo-nm">SCALPER<span>AI</span></div>
   </div>
-  <div class="ld-spinner"></div>
-  <div class="ld-msg">CARREGANDO...</div>
+  <div class="ld-spinner" id="ld-spinner"></div>
+  <div class="ld-msg" id="ld-msg">CARREGANDO...</div>
+  <button id="ld-start-btn" onclick="doStartRefresh()">▶ INICIAR</button>
 </div>
 <div id="app"> <div id="hdr"> <div class="logo"> <div class="logo-ic">√</div> <div class="logo-nm">SCALPER<span>AI</span></div> </div> <div class="price-blk"> <div class="price-v" id="live-price">--,---</div> <div class="price-c up" id="price-chg">+0.00%</div> </div> <button id="login-btn" onclick="openAuth()"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:4px;vertical-align:middle"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>LOGIN</button> <div id="user-avatar" onclick="openUserModal()" title="Minha conta"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div>
 </div> <div id="tfbar"> <div class="tf-btns"> <button class="tf-btn" data-tf="1m">1M</button> <button class="tf-btn active" data-tf="5m">5M</button> <button class="tf-btn" data-tf="15m">15M</button> <button class="tf-btn" data-tf="1h">1H</button> <button class="tf-btn" data-tf="4h">4H</button> <button class="tf-btn" data-tf="1d">1D</button> </div> <div class="asset-sep"></div> <div class="asset-btns"> <button class="asset-btn active" data-asset="BTC" onclick="switchAsset('BTC')">BTC</button> <button class="asset-btn" data-asset="XAU" onclick="switchAsset('XAU')">XAU</button> </div> <div class="asset-sep"></div> <button id="refresh-candles-btn" class="refresh-btn" onclick="doManualRefresh()" title="Atualizar velas">ATUALIZAR</button>
@@ -2704,14 +2721,37 @@ window.addEventListener('load',async()=>{
     openSubCard();
   }
 
-  // Accordion começa fechado — não fazer nada extra (display:none por padrão)
-  // Esconder loading screen após tudo carregar
+  // Ao terminar de carregar: esconde spinner/msg e mostra botão INICIAR
+  const spinner = document.getElementById('ld-spinner');
+  const msg = document.getElementById('ld-msg');
+  const startBtn = document.getElementById('ld-start-btn');
+  if(spinner) spinner.style.display = 'none';
+  if(msg) msg.style.display = 'none';
+  if(startBtn) startBtn.style.display = 'block';
+});
+
+// Chamado pelo botão INICIAR na loading screen
+async function doStartRefresh(){
+  const startBtn = document.getElementById('ld-start-btn');
+  const spinner = document.getElementById('ld-spinner');
+  const msg = document.getElementById('ld-msg');
+  if(startBtn){ startBtn.style.display='none'; }
+  if(spinner){ spinner.style.display=''; }
+  if(msg){ msg.textContent='ATUALIZANDO...'; msg.style.display=''; }
+
+  const tf = currentTF || '5m';
+  try{
+    await Promise.all([loadCandles(tf), load24h()]);
+    connectWS(tf);
+  }catch(e){ console.warn('[Start] erro:',e); }
+
+  // Fecha a loading screen
   const ls = document.getElementById('loading-screen');
   if(ls){
     ls.classList.add('fade-out');
     setTimeout(()=>{ ls.style.display='none'; }, 420);
   }
-});
+}
 </script>
 </body>
 </html>
