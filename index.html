@@ -2495,7 +2495,7 @@ async function onLogin(){
 // 
 // SUBSCRIPTION PAYWALL CARD
 // 
-const KIWIFY_CHECKOUT_URL = 'https://pay.kiwify.com.br/xBSZrqh'; // <-- troque pelo link do seu checkout na Kiwify
+const PERFECTPAY_CHECKOUT_URL = 'https://go.perfectpay.com.br/PPU38CQD7UC'; // <-- troque pelo link do seu checkout na PerfectPay
 
 function openSubCard(){
   document.getElementById('sub-overlay').classList.add('open');
@@ -2505,7 +2505,7 @@ function closeSubCard(){
 }
 function goToCheckout(e){
   e.preventDefault();
-  let url = KIWIFY_CHECKOUT_URL;
+  let url = PERFECTPAY_CHECKOUT_URL;
   // Pré-preenche o e-mail no checkout: prioriza o e-mail da conta já logada
   const email = _session?.user?.email || document.getElementById('auth-email')?.value?.trim();
   if(email){
