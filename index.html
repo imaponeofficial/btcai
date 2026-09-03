@@ -391,15 +391,15 @@ input[type=color]{display:none}
 <div id="sub-overlay"> <div class="sub-card">
   <button class="sub-close" onclick="closeSubCard()"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
   <div class="sub-badge"><span class="dotpulse"></span> IA ATIVA AGORA</div>
-  <div class="sub-title">Sinais de entrada em <span>tempo real</span> direto no gráfico BTC/XAU</div>
-  <div class="sub-sub">Assine e tenha acesso completo à análise automatizada: tendência, força do movimento e pontos de entrada calculados a cada vela.</div>
+  <div class="sub-title">Indicador de análise técnica em <span>tempo real</span> direto no gráfico BTC/XAU</div>
+  <div class="sub-sub">Assine e tenha acesso completo à análise automatizada: tendência, força do movimento e indicador de possíveis pontos de reversão calculados a cada vela.</div>
   <ul class="sub-features">
     <li><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Indicador de tendência plotado direto no gráfico</li>
-    <li><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Medidor de força compra x venda em tempo real</li>
-    <li><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Múltiplos timeframes (1m a 1D)</li>
+    <li><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Medidor técnico de força compradora x vendedora</li>
+    <li><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Timeframes 1M e 5M</li>
     <li><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Acesso via navegador, em qualquer dispositivo</li>
   </ul>
-  <div class="sub-price-row"><span class="sub-price">R$ 67,00</span><span class="sub-period">/ mês</span></div>
+  <div class="sub-price-row"><span class="sub-price">R$ 137,00</span><span class="sub-period">/ mês</span></div>
   <div class="sub-note">Cancele quando quiser, sem multa ou burocracia.</div>
   <a class="sub-cta" id="sub-cta-btn" href="#" target="_blank" rel="noopener" onclick="goToCheckout(event)">ASSINAR AGORA</a>
   <div class="sub-foot">🔒 Pagamento seguro &nbsp;•&nbsp; Acesso imediato</div>
@@ -410,11 +410,11 @@ input[type=color]{display:none}
   <button class="sub-close" onclick="closeFreeModeCard()"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
   <div class="sub-badge"><span class="dotpulse"></span> IA ATIVA AGORA</div>
   <div class="sub-title">Acesso <span>liberado</span> para todos por tempo limitado</div>
-  <div class="sub-sub">Os sinais de entrada em tempo real estão abertos para qualquer pessoa, sem necessidade de cadastro ou assinatura.</div>
+  <div class="sub-sub">O indicador de análise técnica em tempo real está aberto para qualquer pessoa, sem necessidade de cadastro ou assinatura.</div>
   <ul class="sub-features">
     <li><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Indicador de tendência plotado direto no gráfico</li>
-    <li><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Medidor de força compra x venda em tempo real</li>
-    <li><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Múltiplos timeframes (1m a 1D)</li>
+    <li><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Medidor técnico de força compradora x vendedora</li>
+    <li><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Timeframes 1M e 5M</li>
   </ul>
   <div class="sub-note" style="margin-bottom:0">Essa liberação é temporária e pode ser encerrada em breve. Aproveite enquanto está disponível.</div>
 </div></div>
@@ -2695,6 +2695,27 @@ function switchAuthTab(mode){
   document.getElementById('auth-register-hint').style.display=mode==='register'?'block':'none';
 }
 
+// Cria a linha em 'subscriptions' com status 'pending' assim que a conta é criada.
+// Isso garante que TODO usuário cadastrado sempre tenha uma linha na tabela,
+// mesmo sem nunca ter pago — permitindo liberação manual de suporte, cortesias
+// e promoções sem depender do webhook de pagamento ter disparado antes.
+async function ensurePendingSubscription(email, uid){
+  try{
+    // upsert com onConflict evita duplicar caso já exista (ex: webhook rápido demais)
+    await fetch(SUPA_URL+'/rest/v1/subscriptions?on_conflict=email',{
+      method:'POST',
+      headers:{
+        'Content-Type':'application/json',
+        'apikey':SUPA_KEY,
+        'Prefer':'resolution=ignore-duplicates,return=minimal'
+      },
+      body:JSON.stringify({email:email.toLowerCase().trim(), status:'pending', user_id:uid})
+    });
+  }catch(e){
+    console.warn('[ensurePendingSubscription] falhou (não bloqueia cadastro):',e);
+  }
+}
+
 async function doAuth(){
   const email=document.getElementById('auth-email').value.trim();
   const pass=document.getElementById('auth-pass').value;
@@ -2718,6 +2739,7 @@ async function doAuth(){
         btn.disabled=false;btn.textContent='ENTRAR';
         return;
       }
+      await ensurePendingSubscription(email, d.user.id);
       err.textContent='Conta criada! Faça login para continuar.';
       err.style.display='block';
       switchAuthTab('login');
@@ -2726,6 +2748,9 @@ async function doAuth(){
     }
     _session={access_token:d.access_token,refresh_token:d.refresh_token,user:d.user};
     localStorage.setItem('btcai_session',JSON.stringify(_session));
+    if(_authMode==='register' && d.user){
+      await ensurePendingSubscription(email, d.user.id);
+    }
     await onLogin();
     startTokenRefresh();
   }catch(e){
