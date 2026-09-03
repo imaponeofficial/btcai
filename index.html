@@ -2700,19 +2700,42 @@ function switchAuthTab(mode){
 // mesmo sem nunca ter pago — permitindo liberação manual de suporte, cortesias
 // e promoções sem depender do webhook de pagamento ter disparado antes.
 async function ensurePendingSubscription(email, uid){
+  const cleanEmail = email.toLowerCase().trim();
   try{
-    // upsert com onConflict evita duplicar caso já exista (ex: webhook rápido demais)
-    await fetch(SUPA_URL+'/rest/v1/subscriptions?on_conflict=email',{
+    // 1) Verifica se já existe linha com esse e-mail (evita duplicar caso o
+    //    webhook de pagamento já tenha criado a linha antes, ex: pagamento
+    //    muito rápido antes do primeiro login)
+    const checkRes = await fetch(
+      SUPA_URL+'/rest/v1/subscriptions?email=eq.'+encodeURIComponent(cleanEmail)+'&select=id',
+      { headers:{ 'apikey':SUPA_KEY, 'Content-Type':'application/json' } }
+    );
+    if(!checkRes.ok){
+      console.error('[ensurePendingSubscription] falha ao verificar existência:', checkRes.status, await checkRes.text());
+      return;
+    }
+    const existing = await checkRes.json();
+    if(existing && existing.length){
+      console.log('[ensurePendingSubscription] já existe linha para este e-mail, nada a fazer.');
+      return;
+    }
+    // 2) Não existe: cria a linha pending
+    const insertRes = await fetch(SUPA_URL+'/rest/v1/subscriptions',{
       method:'POST',
       headers:{
         'Content-Type':'application/json',
         'apikey':SUPA_KEY,
-        'Prefer':'resolution=ignore-duplicates,return=minimal'
+        'Prefer':'return=minimal'
       },
-      body:JSON.stringify({email:email.toLowerCase().trim(), status:'pending', user_id:uid})
+      body:JSON.stringify({email:cleanEmail, status:'pending', user_id:uid})
     });
+    if(!insertRes.ok){
+      const errText = await insertRes.text().catch(()=>'');
+      console.error('[ensurePendingSubscription] INSERT falhou:', insertRes.status, errText);
+    } else {
+      console.log('[ensurePendingSubscription] linha pending criada com sucesso.');
+    }
   }catch(e){
-    console.warn('[ensurePendingSubscription] falhou (não bloqueia cadastro):',e);
+    console.error('[ensurePendingSubscription] erro inesperado:',e);
   }
 }
 
