@@ -2806,8 +2806,11 @@ async function loadApiKeyFromDB(){
       const subRows=await supa(
         '/rest/v1/subscriptions?email=eq.'+encodeURIComponent(_session.user.email)+'&select=status',
         'GET',null,_session.access_token);
+      console.log('[DEBUG subscriptions] linhas retornadas:', subRows);
       if(subRows && subRows.length && subRows[0].status==='active'){
         realStatus='active';
+      } else if(subRows && subRows.length===0){
+        console.warn('[DEBUG subscriptions] Nenhuma linha retornada. Possível causa: RLS bloqueando SELECT (policy ausente/incorreta) ou email/user_id não batendo com auth.jwt().');
       }
     }catch(e){ console.warn('check subscriptions',e); }
 
@@ -2893,7 +2896,7 @@ function updateSubGate(){
   // ---- comportamento original, inalterado ----
   if(_session && _subActive){
     closeSubCard();
-    if(activeSection) activeSection.style.display='block';
+    if(activeSection) activeSection.style.display='flex';
     if(pendingSection) pendingSection.style.display='none';
   } else if(_session && !_subActive){
     openSubCard();
