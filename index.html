@@ -43,6 +43,24 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);fon
 .refresh-btn{padding:3px 8px;border:1px solid var(--border);background:transparent;color:var(--text2);
   border-radius:4px;cursor:pointer;font-size:10px;font-weight:700;letter-spacing:1px;transition:all .15s;white-space:nowrap;line-height:1}
 .refresh-btn:hover{border-color:var(--accent);color:var(--accent)}
+/* TOAST — conexão */
+#toast-wrap{position:fixed;top:10px;left:50%;transform:translateX(-50%);z-index:500;
+  display:flex;flex-direction:column;gap:6px;align-items:center;pointer-events:none;width:100%;padding:0 12px}
+.toast{pointer-events:auto;display:flex;align-items:center;gap:8px;
+  background:rgba(12,16,24,.96);border:1px solid var(--border);border-radius:8px;
+  padding:8px 14px;font-size:11px;font-weight:700;letter-spacing:.5px;color:var(--text);
+  box-shadow:0 4px 16px rgba(0,0,0,.4);opacity:0;transform:translateY(-8px);
+  transition:opacity .25s,transform .25s;max-width:340px}
+.toast.show{opacity:1;transform:translateY(0)}
+.toast-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+.toast.warn .toast-dot{background:var(--yellow);box-shadow:0 0 6px var(--yellow)}
+.toast.warn{border-color:rgba(255,214,0,.3)}
+.toast.ok .toast-dot{background:var(--green);box-shadow:0 0 6px var(--green)}
+.toast.ok{border-color:rgba(0,230,118,.3)}
+.toast.err .toast-dot{background:var(--red);box-shadow:0 0 6px var(--red)}
+.toast.err{border-color:rgba(255,23,68,.3)}
+.toast-refresh-btn{pointer-events:auto;background:var(--accent);color:#001018;border:none;
+  border-radius:5px;padding:3px 8px;font-size:10px;font-weight:800;cursor:pointer;flex-shrink:0}
 /* ASSET SELECTOR */
 .asset-btns{display:flex;gap:3px;flex-shrink:0}
 .asset-btn{padding:3px 10px;border:1px solid var(--border);background:transparent;color:var(--text2);
@@ -360,8 +378,8 @@ input[type=color]{display:none}
   <button id="ld-start-btn" onclick="doStartRefresh()">▶ INICIAR</button>
 </div>
 <div id="app"> <div id="hdr"> <div class="logo"> <div class="logo-ic">√</div> <div class="logo-nm">SCALPER<span>AI</span></div> </div> <div class="price-blk"> <div class="price-v" id="live-price">--,---</div> <div class="price-c up" id="price-chg">+0.00%</div> </div> <button id="login-btn" onclick="openAuth()"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:4px;vertical-align:middle"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>LOGIN</button> <div id="user-avatar" onclick="openUserModal()" title="Minha conta"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div>
-</div> <div id="tfbar"> <div class="tf-btns"> <button class="tf-btn" data-tf="1m">1M</button> <button class="tf-btn active" data-tf="5m">5M</button> <button class="tf-btn" data-tf="15m">15M</button> <button class="tf-btn" data-tf="1h">1H</button> <button class="tf-btn" data-tf="4h">4H</button> <button class="tf-btn" data-tf="1d">1D</button> </div> <div class="asset-sep"></div> <div class="asset-btns"> <button class="asset-btn active" data-asset="BTC" onclick="switchAsset('BTC')">BTC</button> <button class="asset-btn" data-asset="XAU" onclick="switchAsset('XAU')">XAU</button> </div> <div class="asset-sep"></div> <button id="refresh-candles-btn" class="refresh-btn" onclick="doManualRefresh()" title="Atualizar velas">ATUALIZAR</button>
-</div> <div id="chart-wrap" class="cursor-cross"> <canvas id="chart-canvas"></canvas> <div id="ch-tooltip"></div> <div id="ch-price-lbl"></div> <div id="ch-time-lbl"></div> </div> <div id="strength"> <div class="str-labels"> <span class="str-sell"> VENDA</span> <span style="font-size:8px;color:var(--text2);letter-spacing:2px">FORÇA</span> <span class="str-buy">COMPRA </span> </div> <div class="str-track"> <div class="sf-sell" id="sf-sell" style="width:0%"></div> <div class="sf-buy" id="sf-buy" style="width:0%"></div> <div class="str-mid"></div> <div class="str-needle" id="s-needle" style="left:calc(50% - 1.5px)"></div> </div> <div class="str-pcts"> <span class="pct-s" id="p-sell">50%</span> <span class="pct-b" id="p-buy">50%</span> </div>
+</div> <div id="tfbar"> <div class="tf-btns"> <button class="tf-btn active" data-tf="1m">1M</button> <button class="tf-btn" data-tf="5m">5M</button> </div> <div class="asset-sep"></div> <div class="asset-btns"> <button class="asset-btn active" data-asset="BTC" onclick="switchAsset('BTC')">BTC</button> <button class="asset-btn" data-asset="XAU" onclick="switchAsset('XAU')">XAU</button> </div>
+</div> <div id="toast-wrap"></div> <div id="chart-wrap" class="cursor-cross"> <canvas id="chart-canvas"></canvas> <div id="ch-tooltip"></div> <div id="ch-price-lbl"></div> <div id="ch-time-lbl"></div> </div> <div id="strength"> <div class="str-labels"> <span class="str-sell"> VENDA</span> <span style="font-size:8px;color:var(--text2);letter-spacing:2px">FORÇA</span> <span class="str-buy">COMPRA </span> </div> <div class="str-track"> <div class="sf-sell" id="sf-sell" style="width:0%"></div> <div class="sf-buy" id="sf-buy" style="width:0%"></div> <div class="str-mid"></div> <div class="str-needle" id="s-needle" style="left:calc(50% - 1.5px)"></div> </div> <div class="str-pcts"> <span class="pct-s" id="p-sell">50%</span> <span class="pct-b" id="p-buy">50%</span> </div>
 </div> <!--  HAMBURGER OVERLAY  -->
 
 </div> <div id="settings-modal"> <div class="modal-box"> <div class="modal-hdr"> <div class="modal-title"> CONFIGURAÇÕES</div> <button class="modal-close" onclick="closeSettings()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button> </div> <div class="modal-section"> <div class="sec-title"> INDICADORES NO GRÁFICO</div> <div id="ind-settings-list"></div> </div>
@@ -400,10 +418,36 @@ input[type=color]{display:none}
   </ul>
   <div class="sub-note" style="margin-bottom:0">Essa liberação é temporária e pode ser encerrada em breve. Aproveite enquanto está disponível.</div>
 </div></div>
-<div id="auth-modal"> <div class="auth-box"> <div class="auth-hdr"> <div class="auth-logo">√</div> <div class="auth-title">SCALPER<span style="color:var(--accent)">AI</span> TRADER</div> <div class="auth-sub">Faça login para acessar a IA</div> </div> <div class="auth-tabs"> <button class="auth-tab active" id="tab-login" onclick="switchAuthTab('login')">ENTRAR</button> <button class="auth-tab" id="tab-register" onclick="switchAuthTab('register')">CRIAR CONTA</button> </div> <div class="auth-form"> <div class="auth-field"> <div class="auth-label">E-MAIL</div> <input class="auth-input" id="auth-email" type="email" placeholder="seu@email.com" autocomplete="email"> </div> <div class="auth-field"> <div class="auth-label">SENHA</div> <input class="auth-input" id="auth-pass" type="password" placeholder="••••••••" autocomplete="current-password"> </div> <div class="auth-err" id="auth-err"></div> <button class="auth-btn" id="auth-submit" onclick="doAuth()">ENTRAR</button> <div id="auth-register-hint" style="display:none;margin-top:14px;padding:10px 12px;border-radius:8px;background:rgba(0,200,255,.08);border:1px solid rgba(0,200,255,.25);font-size:11px;line-height:1.5;color:var(--text2)">⚠️ Use o <strong>mesmo e-mail</strong> que você usou no pagamento da assinatura. É assim que liberamos seu acesso automaticamente.</div> </div> </div>
-</div> <!--  USER MODAL  -->
+<div id="auth-modal"> <div class="auth-box"> <div class="auth-hdr"> <div class="auth-logo">√</div> <div class="auth-title">SCALPER<span style="color:var(--accent)">AI</span> TRADER</div> <div class="auth-sub">Faça login para acessar a IA</div> </div> <div class="auth-tabs"> <button class="auth-tab active" id="tab-login" onclick="switchAuthTab('login')">ENTRAR</button> <button class="auth-tab" id="tab-register" onclick="switchAuthTab('register')">CRIAR CONTA</button> </div> <div class="auth-form"> <div class="auth-field"> <div class="auth-label">E-MAIL</div> <input class="auth-input" id="auth-email" type="email" placeholder="seu@email.com" autocomplete="email"> </div> <div class="auth-field"> <div class="auth-label">SENHA</div> <input class="auth-input" id="auth-pass" type="password" placeholder="••••••••" autocomplete="current-password"> </div> <div class="auth-err" id="auth-err"></div> <button class="auth-btn" id="auth-submit" onclick="doAuth()">ENTRAR</button> <div id="auth-register-hint" style="display:none;margin-top:14px;padding:10px 12px;border-radius:8px;background:rgba(0,200,255,.08);border:1px solid rgba(0,200,255,.25);font-size:11px;line-height:1.5;color:var(--text2)">⚠️ Use o <strong>mesmo e-mail</strong> que você usou no pagamento da assinatura. É assim que liberamos seu acesso automaticamente.</div> <button type="button" onclick="openFAQ()" style="width:100%;margin-top:14px;background:transparent;border:none;color:var(--text2);font-size:11px;text-decoration:underline;cursor:pointer;padding:4px">Dúvidas frequentes</button> </div> </div>
+</div>
+<!-- FAQ MODAL -->
+<div id="faq-modal" style="display:none;position:fixed;inset:0;z-index:250;background:rgba(0,0,0,.85);align-items:center;justify-content:center;backdrop-filter:blur(4px)"> <div class="modal-box" style="max-width:480px"> <div class="modal-hdr"> <div class="modal-title"> DÚVIDAS FREQUENTES</div> <button class="modal-close" onclick="closeFAQ()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button> </div>
+<div class="modal-section" style="display:flex;flex-direction:column;gap:14px">
+
+<div><div style="font-size:12px;font-weight:700;color:#fff;margin-bottom:4px">Como funciona o indicador?</div><div style="font-size:11px;color:var(--text2);line-height:1.6">O SCALPER AI é uma ferramenta de análise técnica automatizada. Ele sinaliza momentos de possível tendência de alta ou de baixa com base em indicadores de mercado. A decisão de entrar ou sair de uma operação é sempre sua — não fazemos recomendações de compra ou venda.</div></div>
+
+<div><div style="font-size:12px;font-weight:700;color:#fff;margin-bottom:4px">O indicador erra?</div><div style="font-size:11px;color:var(--text2);line-height:1.6">Sim, como qualquer ferramenta de análise técnica. Nenhum indicador acerta 100% do tempo. Podem ocorrer sequências de sinais desfavoráveis. Use sempre gerenciamento de risco e nunca opere valores que não pode perder.</div></div>
+
+<div><div style="font-size:12px;font-weight:700;color:#fff;margin-bottom:4px">Em qual timeframe o sinal é calculado?</div><div style="font-size:11px;color:var(--text2);line-height:1.6">O sinal é calculado com base no gráfico de 5 minutos (5M). O timeframe de 1 minuto (1M) é exibido apenas para visualização mais detalhada do movimento de preço.</div></div>
+
+<div><div style="font-size:12px;font-weight:700;color:#fff;margin-bottom:4px">Como cancelo minha assinatura?</div><div style="font-size:11px;color:var(--text2);line-height:1.6">O cancelamento é feito diretamente na plataforma de pagamento usada na assinatura (você recebeu o link por e-mail na confirmação da compra). Não é necessário nos contatar para cancelar.</div></div>
+
+<div><div style="font-size:12px;font-weight:700;color:#fff;margin-bottom:4px">Paguei mas meu acesso não foi liberado. O que fazer?</div><div style="font-size:11px;color:var(--text2);line-height:1.6">Confirme se criou sua conta usando exatamente o mesmo e-mail informado no pagamento. Se o problema persistir, entre em contato pelos canais abaixo.</div></div>
+
+<div><div style="font-size:12px;font-weight:700;color:#fff;margin-bottom:4px">O gráfico não carrega ou travou. O que fazer?</div><div style="font-size:11px;color:var(--text2);line-height:1.6">Atualize a página (F5 ou puxe para atualizar no celular). Isso resolve a grande maioria dos casos de instabilidade de conexão.</div></div>
+
+<div style="border-top:1px solid var(--border);padding-top:14px;margin-top:2px">
+<div style="font-size:9px;color:var(--text2);letter-spacing:2px;margin-bottom:10px;font-weight:700">AINDA PRECISA DE AJUDA?</div>
+<div style="display:flex;gap:8px">
+<a href="https://wa.me/5585996138679" target="_blank" rel="noopener" style="flex:1;display:flex;align-items:center;justify-content:center;gap:6px;padding:10px;background:rgba(0,230,118,.12);border:1px solid rgba(0,230,118,.3);color:var(--green);font-weight:800;font-size:11px;letter-spacing:.5px;border-radius:8px;text-decoration:none">WHATSAPP</a>
+<a href="mailto:takezlayer@gmail.com" style="flex:1;display:flex;align-items:center;justify-content:center;gap:6px;padding:10px;background:rgba(0,212,255,.1);border:1px solid rgba(0,212,255,.3);color:var(--accent);font-weight:800;font-size:11px;letter-spacing:.5px;border-radius:8px;text-decoration:none">E-MAIL</a>
+</div>
+</div>
+
+</div>
+</div></div> <!--  USER MODAL  -->
 <div id="user-modal" style="display:none;position:fixed;inset:0;z-index:200;background:rgba(0,0,0,.85);align-items:center;justify-content:center;backdrop-filter:blur(4px)"> <div class="auth-box"> <div class="modal-hdr"> <div class="modal-title"> MINHA CONTA</div> <button class="modal-close" onclick="closeUserModal()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button> </div> <div class="user-info-bar"> <span class="user-email">Logado como: <span id="user-email-show"></span></span> <button class="logout-btn" onclick="doLogout()">SAIR</button> </div>
-<div id="user-active-section" class="apikey-section" style="display:none"> <button class="icon-btn" onclick="openSettings()" style="width:100%;display:flex;align-items:center;justify-content:center;gap:6px;padding:8px"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg> CONFIGURAÇÕES</button> </div>
+<div id="user-active-section" class="apikey-section" style="display:none;flex-direction:column;gap:8px"> <button class="icon-btn" onclick="openSettings()" style="width:100%;display:flex;align-items:center;justify-content:center;gap:6px;padding:8px"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg> CONFIGURAÇÕES</button> <button class="icon-btn" onclick="openFAQ()" style="width:100%;display:flex;align-items:center;justify-content:center;gap:6px;padding:8px">? DÚVIDAS</button> </div>
 <div id="user-pending-section" class="apikey-section" style="display:none;flex-direction:column;gap:10px;padding:4px 0"> <div style="text-align:center;font-size:11px;color:var(--text2);line-height:1.6;padding:4px 8px">Você ainda não possui uma assinatura ativa.<br>Assine para liberar os sinais no gráfico.</div> <a href="#" onclick="goToCheckout(event);closeUserModal();" style="display:flex;align-items:center;justify-content:center;gap:6px;padding:10px;background:linear-gradient(135deg,var(--accent),#0099cc);color:#001018;font-weight:800;font-size:12px;letter-spacing:1px;border-radius:8px;text-decoration:none;width:100%;box-sizing:border-box">✦ ASSINAR AGORA</a> <div style="text-align:center;font-size:10px;color:var(--text2);line-height:1.5">Após o pagamento, volte e crie sua conta com o mesmo e-mail</div> </div>
 </div></div>
 </div> <script>
@@ -1779,7 +1823,7 @@ function detectFollowLineSignal(candles){
   return null;
 }
 
-let currentTF='5m', ws=null, livePrice=0, open24=0;
+let currentTF='1m', ws=null, livePrice=0, open24=0;
 let currentAsset='BTC'; // 'BTC' ou 'XAU'
 let candles5m = []; // candles M5 dedicados para o Follow Line PRO (independente do TF do gráfico)
 let _adxLength = 14;
@@ -1824,6 +1868,7 @@ function fmtP(v){return Number(v).toLocaleString('en-US',{minimumFractionDigits:
 function f(v){return fmtP(v);}
 
 let isLoadingMore=false;
+const MAX_CANDLES_HISTORY=5000; // teto de velas carregadas no histórico, evita travamento em dispositivos mais fracos
 // Converte interval style Binance → Bybit V5
 function bybitInterval(interval){
   const m={'1m':'1','5m':'5','15m':'15','30m':'30','1h':'60','4h':'240','1d':'D'};
@@ -1867,20 +1912,38 @@ async function fetchKlines(interval,limit=1000,endTime=null){
 
 async function loadMoreHistory(){
   if(isLoadingMore||!candles.length) return;
+  if(candles.length>=MAX_CANDLES_HISTORY){ showHistoryLimitToast(); return; }
   isLoadingMore=true;
   try{
     const oldest=candles[0].time*1000;
     const older=await fetchKlines(TF[currentTF].i,500,oldest-1); // já filtrado pelo fetchKlines
-    if(older.length){
-      const newC=older.filter(c=>c.time<candles[0].time);
+    let newC=older.filter(c=>c.time<candles[0].time);
+    if(newC.length){
+      // Não deixa passar do teto máximo, mesmo que a exchange retorne mais
+      const room=MAX_CANDLES_HISTORY-candles.length;
+      if(newC.length>room) newC=newC.slice(newC.length-room);
       const prevLen=candles.length;
       candles=[...newC,...candles];
       viewStart+=candles.length-prevLen;
       Object.keys(_emaCache).forEach(k=>delete _emaCache[k]);
       drawChart();
+      if(candles.length>=MAX_CANDLES_HISTORY) showHistoryLimitToast();
+    } else {
+      showHistoryLimitToast();
     }
   }catch(e){console.error('loadMoreHistory',e);}
   isLoadingMore=false;
+}
+
+let _historyLimitShown=false;
+function showHistoryLimitToast(){
+  if(_historyLimitShown) return;
+  _historyLimitShown=true;
+  const msg = candles.length>=MAX_CANDLES_HISTORY
+    ? `Limite de ${MAX_CANDLES_HISTORY.toLocaleString('pt-BR')} velas atingido.`
+    : 'Limite de histórico atingido — não há mais velas anteriores disponíveis.';
+  showToast('warn',msg,{key:'history-limit',duration:4500});
+  setTimeout(()=>{ _historyLimitShown=false; }, 8000); // permite mostrar de novo depois de um tempo, evita spam ao continuar arrastando
 }
 
 async function loadCandles(tf){
@@ -1982,6 +2045,83 @@ function startRenderLoop(){
 
 let ws5m = null; // WebSocket dedicado para candles M5 (Follow Line PRO)
 
+// 
+// FAQ MODAL
+// 
+function openFAQ(){
+  document.getElementById('faq-modal').style.display='flex';
+}
+function closeFAQ(){
+  document.getElementById('faq-modal').style.display='none';
+}
+
+// 
+// TOAST DE CONEXÃO
+// 
+let _toastReconnectAttempts = 0;
+let _toastStaleTimer = null;
+
+function showToast(type, text, opts){
+  opts = opts || {};
+  const wrap = document.getElementById('toast-wrap');
+  if(!wrap) return;
+  // Evita empilhar toasts repetidos do mesmo tipo
+  const existing = wrap.querySelector('.toast.'+type+'[data-key="'+(opts.key||type)+'"]');
+  if(existing){ existing.remove(); }
+  const el = document.createElement('div');
+  el.className = 'toast '+type;
+  el.dataset.key = opts.key || type;
+  el.innerHTML = '<span class="toast-dot"></span><span>'+text+'</span>';
+  if(opts.showRefresh){
+    const btn = document.createElement('button');
+    btn.className = 'toast-refresh-btn';
+    btn.textContent = 'ATUALIZAR';
+    btn.onclick = ()=>location.reload();
+    el.appendChild(btn);
+  }
+  wrap.appendChild(el);
+  requestAnimationFrame(()=>el.classList.add('show'));
+  if(!opts.persist){
+    setTimeout(()=>{
+      el.classList.remove('show');
+      setTimeout(()=>el.remove(), 300);
+    }, opts.duration || 3500);
+  }
+  return el;
+}
+
+function clearToast(type, key){
+  const wrap = document.getElementById('toast-wrap');
+  if(!wrap) return;
+  const el = wrap.querySelector('.toast.'+type+'[data-key="'+(key||type)+'"]');
+  if(el){ el.classList.remove('show'); setTimeout(()=>el.remove(),300); }
+}
+
+function onConnectionLost(){
+  clearToast('ok','conn');
+  showToast('warn','Conexão perdida. Tentando reconectar…',{key:'conn',persist:true});
+  _toastReconnectAttempts++;
+  // Depois de várias tentativas sem sucesso, sugere atualizar a página
+  if(_toastStaleTimer) clearTimeout(_toastStaleTimer);
+  _toastStaleTimer = setTimeout(()=>{
+    showToast('err','Não foi possível reconectar. Atualize a página.',{key:'stale',persist:true,showRefresh:true});
+  }, 15000);
+}
+
+function onConnectionRestored(){
+  if(_toastReconnectAttempts>0){
+    clearToast('warn','conn');
+    clearToast('err','stale');
+    if(_toastStaleTimer){ clearTimeout(_toastStaleTimer); _toastStaleTimer=null; }
+    showToast('ok','Conexão restabelecida',{key:'conn'});
+  }
+  _toastReconnectAttempts = 0;
+}
+
+// Detecta perda de rede pelo próprio navegador (mais rápido que esperar o WS cair)
+window.addEventListener('offline', onConnectionLost);
+window.addEventListener('online', onConnectionRestored);
+
 function connectWS(tf){
   tf = tf || currentTF || '5m';
   if(!TF[tf]) return;
@@ -1989,8 +2129,9 @@ function connectWS(tf){
   const bvInt=bybitInterval(TF[tf].i);
   const sym=bybitSymbol(currentAsset);
   ws=new WebSocket('wss://stream.bybit.com/v5/public/linear');
-  ws.onopen=()=>{ ws.send(JSON.stringify({op:'subscribe',args:[`kline.${bvInt}.${sym}`]})); startRenderLoop(); };
-  ws.onclose=e=>{if(e.code!==1000)setTimeout(()=>connectWS(currentTF||tf),3000);};
+  ws.onopen=()=>{ ws.send(JSON.stringify({op:'subscribe',args:[`kline.${bvInt}.${sym}`]})); startRenderLoop(); onConnectionRestored(); };
+  ws.onclose=e=>{ if(e.code!==1000){ onConnectionLost(); setTimeout(()=>connectWS(currentTF||tf),3000); } };
+  ws.onerror=()=>{ onConnectionLost(); };
   ws.onmessage=evt=>{
     const msg=JSON.parse(evt.data);
     if(!msg.data||!msg.topic?.startsWith('kline.')) return;
@@ -2750,32 +2891,13 @@ async function saveSettingsToDB(){
   }catch(e){console.warn('[DB] saveSettings erro:',e.message);}
 }
 
-// 
-// BOTÃO DE ATUALIZAÇÃO MANUAL (fixo na barra de ativos)
-// 
-let _isRefreshing = false;
-
-async function doManualRefresh(){
-  if(_isRefreshing) return;
-  _isRefreshing = true;
-  const btn = document.getElementById('refresh-candles-btn');
-  if(btn){ btn.style.opacity='0.5'; btn.style.pointerEvents='none'; }
-  const tf = currentTF || '5m';
-  try{
-    await Promise.all([loadCandles(tf), load24h()]);
-    connectWS(tf);
-  }catch(e){ console.warn('[Refresh] erro:',e); }
-  if(btn){ btn.style.opacity='1'; btn.style.pointerEvents=''; }
-  _isRefreshing = false;
-}
-
 window.addEventListener('load',async()=>{
   loadTimeWindowSetting();
-  await Promise.all([loadCandles('5m'),load24h()]);
+  await Promise.all([loadCandles(currentTF),load24h()]);
   setInterval(load24h,30000);
   await loadFreeMode();
   await initAuth();
-  connectWS('5m');
+  connectWS(currentTF);
   if(_freeMode){
     openFreeModeCard();
   } else if(!_session){
