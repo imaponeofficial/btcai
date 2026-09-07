@@ -360,6 +360,26 @@ input[type=color]{display:none}
 .sub-foot{display:flex;align-items:center;justify-content:center;gap:14px;margin-top:12px;
   font-size:9px;color:var(--text2)}
 
+/* PREVIEW CARD — carrossel de prints do gráfico com sinais */
+#preview-overlay{position:fixed;inset:0;z-index:300;background:rgba(5,8,14,.78);
+  backdrop-filter:blur(6px);display:none;align-items:center;justify-content:center;padding:16px}
+#preview-overlay.open{display:flex}
+.preview-card{max-width:400px}
+.preview-carousel{position:relative;width:100%;border-radius:10px;overflow:hidden;
+  background:var(--bg3);border:1px solid var(--border);aspect-ratio:1/1}
+.preview-track{display:flex;height:100%;transition:transform .35s ease}
+.preview-img{width:100%;height:100%;object-fit:cover;flex-shrink:0;display:block;background:var(--bg3)}
+.preview-arrow{position:absolute;top:50%;transform:translateY(-50%);width:30px;height:30px;
+  border-radius:50%;background:rgba(7,9,15,.65);border:1px solid rgba(255,255,255,.15);
+  color:#fff;font-size:18px;line-height:1;cursor:pointer;display:flex;align-items:center;
+  justify-content:center;transition:background .2s}
+.preview-arrow:hover{background:rgba(0,212,255,.35)}
+.preview-arrow-l{left:8px}
+.preview-arrow-r{right:8px}
+.preview-dots{display:flex;justify-content:center;gap:6px;margin-top:10px}
+.preview-dot{width:6px;height:6px;border-radius:50%;background:var(--border);cursor:pointer;transition:all .2s}
+.preview-dot.active{background:var(--accent);width:16px;border-radius:3px}
+
 /* FREE MODE CARD — mesmo visual do sub-overlay, overlay independente */
 #free-mode-overlay{position:fixed;inset:0;z-index:300;background:rgba(5,8,14,.78);
   backdrop-filter:blur(6px);display:none;align-items:center;justify-content:center;padding:16px}
@@ -387,6 +407,30 @@ input[type=color]{display:none}
   <div class="ind-toggle-row"> <div class="ind-toggle-left"> <div style="width:10px;height:10px;border-radius:50%;background:var(--accent);flex-shrink:0"></div> <div class="ind-toggle-name">Janela Horária (05:00–17:00 UTC)</div> </div> <div class="ind-toggle-right"> <label class="toggle"> <input type="checkbox" id="toggle-time-window" checked onchange="setTimeWindowEnabled(this.checked)"> <span class="toggle-slider"></span> </label> </div> </div>
   <div style="font-size:9px;color:var(--text2);margin-top:6px;line-height:1.5;padding:0 2px">Ativado: sinais só aparecem das 05:00 às 17:00 UTC.<br>Desativado: sinais visíveis a qualquer hora.</div>
  </div>
+</div></div>
+<!-- PREVIEW CARD — mostra prints do gráfico com sinais antes da tela de assinatura -->
+<div id="preview-overlay"> <div class="sub-card preview-card">
+  <button class="sub-close" onclick="closePreviewCard()"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+  <div class="sub-badge"><span class="dotpulse"></span> VEJA COMO FUNCIONA</div>
+  <div class="sub-title">Veja o indicador <span>funcionando de verdade</span> no gráfico</div>
+  <div class="preview-carousel" id="preview-carousel">
+    <div class="preview-track" id="preview-track">
+      <img class="preview-img" src="preview-1.jpg" alt="Exemplo de sinal 1" onerror="this.parentElement.parentElement.parentElement.style.display='none'">
+      <img class="preview-img" src="preview-2.jpg" alt="Exemplo de sinal 2">
+      <img class="preview-img" src="preview-3.jpg" alt="Exemplo de sinal 3">
+      <img class="preview-img" src="preview-4.jpg" alt="Exemplo de sinal 4">
+    </div>
+    <button class="preview-arrow preview-arrow-l" onclick="previewGo(-1)" aria-label="Anterior">‹</button>
+    <button class="preview-arrow preview-arrow-r" onclick="previewGo(1)" aria-label="Próxima">›</button>
+  </div>
+  <div class="preview-dots" id="preview-dots">
+    <span class="preview-dot active" onclick="previewGoTo(0)"></span>
+    <span class="preview-dot" onclick="previewGoTo(1)"></span>
+    <span class="preview-dot" onclick="previewGoTo(2)"></span>
+    <span class="preview-dot" onclick="previewGoTo(3)"></span>
+  </div>
+  <div class="sub-sub" style="margin-top:14px">Sinais reais de tendência, força de mercado e pontos de possível reversão, plotados automaticamente a cada vela.</div>
+  <button class="sub-cta" onclick="closePreviewCard()">CONTINUAR</button>
 </div></div>
 <div id="sub-overlay"> <div class="sub-card">
   <button class="sub-close" onclick="closeSubCard()"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
@@ -2724,6 +2768,68 @@ function openSubCard(){
 function closeSubCard(){
   document.getElementById('sub-overlay').classList.remove('open');
 }
+
+// 
+// PREVIEW CARD — carrossel de prints do gráfico com sinais, mostrado
+// antes do card de assinatura para o usuário ver o produto funcionando.
+// Aparece só uma vez por sessão de navegador (não incomoda a cada reconexão).
+// 
+let _previewIndex = 0;
+const PREVIEW_SLIDE_COUNT = 4;
+
+function openPreviewCard(){
+  _previewIndex = 0;
+  previewRender();
+  document.getElementById('preview-overlay').classList.add('open');
+}
+function closePreviewCard(alsoOpenPaywall){
+  document.getElementById('preview-overlay').classList.remove('open');
+  // Fechar o preview (pelo X ou pelo botão Continuar) sempre leva ao card de
+  // assinatura, exceto quando o usuário já conseguiu assinatura ativa nesse meio tempo.
+  if(alsoOpenPaywall!==false && !(_session && _subActive) && !_freeMode){
+    openSubCard();
+  }
+}
+function previewRender(){
+  const track = document.getElementById('preview-track');
+  if(track) track.style.transform = 'translateX(-'+(_previewIndex*100)+'%)';
+  document.querySelectorAll('#preview-dots .preview-dot').forEach((d,i)=>{
+    d.classList.toggle('active', i===_previewIndex);
+  });
+}
+function previewGoTo(i){
+  _previewIndex = Math.max(0, Math.min(PREVIEW_SLIDE_COUNT-1, i));
+  previewRender();
+}
+function previewGo(dir){
+  previewGoTo(_previewIndex + dir);
+}
+
+// Mostra o preview antes do paywall — só na primeira vez desta aba/sessão.
+// Depois de fechado (X ou "Continuar"), vai direto para o card de assinatura.
+function showSubPaywall(){
+  if(!sessionStorage.getItem('btcai_preview_seen')){
+    sessionStorage.setItem('btcai_preview_seen','1');
+    openPreviewCard();
+  } else {
+    openSubCard();
+  }
+}
+
+// Swipe (arraste) no carrossel para trocar de slide no celular
+(function initPreviewSwipe(){
+  const el = document.getElementById('preview-carousel');
+  if(!el) return;
+  let startX = 0, dragging = false;
+  el.addEventListener('pointerdown', e=>{ dragging=true; startX=e.clientX; el.setPointerCapture(e.pointerId); });
+  el.addEventListener('pointerup', e=>{
+    if(!dragging) return;
+    dragging=false;
+    const diff = e.clientX - startX;
+    if(Math.abs(diff) > 40){ previewGo(diff < 0 ? 1 : -1); }
+  });
+})();
+
 function goToCheckout(e){
   e.preventDefault();
   let url = PERFECTPAY_CHECKOUT_URL;
@@ -3049,7 +3155,7 @@ function updateSubGate(){
     if(activeSection) activeSection.style.display='flex';
     if(pendingSection) pendingSection.style.display='none';
   } else if(_session && !_subActive){
-    openSubCard();
+    showSubPaywall();
     if(activeSection) activeSection.style.display='none';
     if(pendingSection) pendingSection.style.display='flex';
   } else {
@@ -3079,7 +3185,7 @@ window.addEventListener('load',async()=>{
   if(_freeMode){
     openFreeModeCard();
   } else if(!_session){
-    openSubCard();
+    showSubPaywall();
   }
 
   // Ao terminar de carregar: esconde spinner/msg e mostra botão INICIAR
