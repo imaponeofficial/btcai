@@ -43,7 +43,7 @@ footer a{color:var(--text2)}
   <div class="top">
     <div class="logo-ic">√</div>
     <div class="logo-nm">SCALPER<span>AI</span></div>
-    <a class="back" href="javascript:history.back()">← VOLTAR</a>
+    <a class="back" href="#" onclick="goBackOrClose(event)">← VOLTAR</a>
   </div>
 
   <h1>Dúvidas Frequentes</h1>
@@ -97,5 +97,26 @@ footer a{color:var(--text2)}
   </footer>
 
 </div>
+<script>
+function goBackOrClose(e){
+  e.preventDefault();
+  // Se a página tem histórico próprio (foi navegada dentro da mesma aba), volta.
+  // Se foi aberta em nova aba (target="_blank"), history.length é 1 e não há
+  // para onde voltar — nesse caso tentamos fechar a aba.
+  if(window.history.length>1){
+    window.history.back();
+    return;
+  }
+  window.close();
+  // Alguns navegadores bloqueiam window.close() em abas que o usuário abriu
+  // manualmente (não via script). Se a aba continuar aberta após a tentativa,
+  // avisa a pessoa a fechar manualmente.
+  setTimeout(()=>{
+    if(!window.closed){
+      alert('Pode fechar esta aba para voltar ao aplicativo.');
+    }
+  }, 300);
+}
+</script>
 </body>
 </html>

@@ -55,7 +55,7 @@ footer{text-align:center;color:var(--text2);font-size:10.5px;margin-top:30px;pad
   <div class="top">
     <div class="logo-ic">√</div>
     <div class="logo-nm">SCALPER<span>AI</span></div>
-    <a class="back" href="javascript:history.back()">← VOLTAR</a>
+    <a class="back" href="#" onclick="goBackOrClose(event)">← VOLTAR</a>
   </div>
 
   <h1>Termos de Uso e Política de Privacidade</h1>
@@ -264,5 +264,20 @@ footer{text-align:center;color:var(--text2);font-size:10.5px;margin-top:30px;pad
   </footer>
 
 </div>
+<script>
+function goBackOrClose(e){
+  e.preventDefault();
+  if(window.history.length>1){
+    window.history.back();
+    return;
+  }
+  window.close();
+  setTimeout(()=>{
+    if(!window.closed){
+      alert('Pode fechar esta aba para voltar ao aplicativo.');
+    }
+  }, 300);
+}
+</script>
 </body>
 </html>
