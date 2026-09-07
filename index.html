@@ -223,7 +223,7 @@ input[type=color]{display:none}
   align-items:center;justify-content:center;backdrop-filter:blur(4px)}
 #auth-modal.open{display:flex}
 .auth-box{background:var(--bg2);border:1px solid var(--border);border-radius:16px;
-  width:min(380px,95vw);padding:0;overflow:hidden;animation:slideUp .25s ease}
+  width:min(380px,95vw);padding:0;overflow:hidden;animation:slideUp .25s ease;position:relative}
 @keyframes slideUp{from{transform:translateY(20px);opacity:0}to{transform:translateY(0);opacity:1}}
 .auth-hdr{padding:20px 20px 0;text-align:center}
 .auth-logo{font-size:32px;margin-bottom:8px}
@@ -404,6 +404,7 @@ input[type=color]{display:none}
   <a class="sub-cta" id="sub-cta-btn" href="#" target="_blank" rel="noopener" onclick="goToCheckout(event)">ASSINAR AGORA</a>
   <div class="sub-foot">🔒 Pagamento seguro &nbsp;•&nbsp; Acesso imediato</div>
   <div style="text-align:center;font-size:10px;color:var(--text2);margin-top:8px;line-height:1.5">Após o pagamento, volte aqui e crie sua conta com o mesmo e-mail</div>
+  <div style="text-align:center;font-size:9.5px;color:var(--text2);margin-top:10px;line-height:1.5">Este produto é uma ferramenta de análise técnica e não constitui indicação financeira.<br><a href="legal.html" target="_blank" rel="noopener" style="color:var(--text2);text-decoration:underline">Termos de Uso e Política de Privacidade</a></div>
 </div></div>
 <!-- FREE MODE CARD — aparece só quando free_mode=true no banco -->
 <div id="free-mode-overlay"> <div class="sub-card">
@@ -418,38 +419,16 @@ input[type=color]{display:none}
   </ul>
   <div class="sub-note" style="margin-bottom:0">Essa liberação é temporária e pode ser encerrada em breve. Aproveite enquanto está disponível.</div>
 </div></div>
-<div id="auth-modal"> <div class="auth-box"> <div class="auth-hdr"> <div class="auth-logo">√</div> <div class="auth-title">SCALPER<span style="color:var(--accent)">AI</span> TRADER</div> <div class="auth-sub">Faça login para acessar a IA</div> </div> <div class="auth-tabs"> <button class="auth-tab active" id="tab-login" onclick="switchAuthTab('login')">ENTRAR</button> <button class="auth-tab" id="tab-register" onclick="switchAuthTab('register')">CRIAR CONTA</button> </div> <div class="auth-form"> <div class="auth-field"> <div class="auth-label">E-MAIL</div> <input class="auth-input" id="auth-email" type="email" placeholder="seu@email.com" autocomplete="email"> </div> <div class="auth-field"> <div class="auth-label">SENHA</div> <input class="auth-input" id="auth-pass" type="password" placeholder="••••••••" autocomplete="current-password"> </div> <div class="auth-err" id="auth-err"></div> <button class="auth-btn" id="auth-submit" onclick="doAuth()">ENTRAR</button> <div id="auth-register-hint" style="display:none;margin-top:14px;padding:10px 12px;border-radius:8px;background:rgba(0,200,255,.08);border:1px solid rgba(0,200,255,.25);font-size:11px;line-height:1.5;color:var(--text2)">⚠️ Use o <strong>mesmo e-mail</strong> que você usou no pagamento da assinatura. É assim que liberamos seu acesso automaticamente.</div> <button type="button" onclick="openFAQ()" style="width:100%;margin-top:14px;background:transparent;border:none;color:var(--text2);font-size:11px;text-decoration:underline;cursor:pointer;padding:4px">Dúvidas frequentes</button> </div> </div>
+<div id="auth-modal"> <div class="auth-box"> <button class="modal-close" onclick="closeAuth()" style="position:absolute;top:10px;right:10px;z-index:1"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button> <div class="auth-hdr"> <div class="auth-logo">√</div> <div class="auth-title">SCALPER<span style="color:var(--accent)">AI</span> TRADER</div> <div class="auth-sub">Faça login para acessar a IA</div> </div> <div class="auth-tabs"> <button class="auth-tab active" id="tab-login" onclick="switchAuthTab('login')">ENTRAR</button> <button class="auth-tab" id="tab-register" onclick="switchAuthTab('register')">CRIAR CONTA</button> </div> <div class="auth-form"> <div class="auth-field"> <div class="auth-label">E-MAIL</div> <input class="auth-input" id="auth-email" type="email" placeholder="seu@email.com" autocomplete="email"> </div> <div class="auth-field"> <div class="auth-label">SENHA</div> <input class="auth-input" id="auth-pass" type="password" placeholder="••••••••" autocomplete="current-password"> </div> <div class="auth-err" id="auth-err"></div> <button class="auth-btn" id="auth-submit" onclick="doAuth()">ENTRAR</button> <div id="auth-register-hint" style="display:none;margin-top:14px;padding:10px 12px;border-radius:8px;background:rgba(0,200,255,.08);border:1px solid rgba(0,200,255,.25);font-size:11px;line-height:1.5;color:var(--text2)">⚠️ Use o <strong>mesmo e-mail</strong> que você usou no pagamento da assinatura. É assim que liberamos seu acesso automaticamente.</div> <a href="faq.html" target="_blank" rel="noopener" style="display:block;width:100%;margin-top:14px;background:transparent;border:none;color:var(--text2);font-size:11px;text-decoration:underline;cursor:pointer;padding:4px;text-align:center">Dúvidas frequentes</a> <div style="text-align:center;font-size:9.5px;color:var(--text2);margin-top:4px;line-height:1.5">Ao continuar, você concorda com os <a href="legal.html" target="_blank" rel="noopener" style="color:var(--text2)">Termos de Uso e Política de Privacidade</a></div> </div> </div>
 </div>
-<!-- FAQ MODAL -->
-<div id="faq-modal" style="display:none;position:fixed;inset:0;z-index:250;background:rgba(0,0,0,.85);align-items:center;justify-content:center;backdrop-filter:blur(4px)"> <div class="modal-box" style="max-width:480px"> <div class="modal-hdr"> <div class="modal-title"> DÚVIDAS FREQUENTES</div> <button class="modal-close" onclick="closeFAQ()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button> </div>
-<div class="modal-section" style="display:flex;flex-direction:column;gap:14px">
-
-<div><div style="font-size:12px;font-weight:700;color:#fff;margin-bottom:4px">Como funciona o indicador?</div><div style="font-size:11px;color:var(--text2);line-height:1.6">O SCALPER AI é uma ferramenta de análise técnica automatizada. Ele sinaliza momentos de possível tendência de alta ou de baixa com base em indicadores de mercado. A decisão de entrar ou sair de uma operação é sempre sua — não fazemos recomendações de compra ou venda.</div></div>
-
-<div><div style="font-size:12px;font-weight:700;color:#fff;margin-bottom:4px">O indicador erra?</div><div style="font-size:11px;color:var(--text2);line-height:1.6">Sim, como qualquer ferramenta de análise técnica. Nenhum indicador acerta 100% do tempo. Podem ocorrer sequências de sinais desfavoráveis. Use sempre gerenciamento de risco e nunca opere valores que não pode perder.</div></div>
-
-<div><div style="font-size:12px;font-weight:700;color:#fff;margin-bottom:4px">Em qual timeframe o sinal é calculado?</div><div style="font-size:11px;color:var(--text2);line-height:1.6">O sinal é calculado com base no gráfico de 5 minutos (5M). O timeframe de 1 minuto (1M) é exibido apenas para visualização mais detalhada do movimento de preço.</div></div>
-
-<div><div style="font-size:12px;font-weight:700;color:#fff;margin-bottom:4px">Como cancelo minha assinatura?</div><div style="font-size:11px;color:var(--text2);line-height:1.6">O cancelamento é feito diretamente na plataforma de pagamento usada na assinatura (você recebeu o link por e-mail na confirmação da compra). Não é necessário nos contatar para cancelar.</div></div>
-
-<div><div style="font-size:12px;font-weight:700;color:#fff;margin-bottom:4px">Paguei mas meu acesso não foi liberado. O que fazer?</div><div style="font-size:11px;color:var(--text2);line-height:1.6">Confirme se criou sua conta usando exatamente o mesmo e-mail informado no pagamento. Se o problema persistir, entre em contato pelos canais abaixo.</div></div>
-
-<div><div style="font-size:12px;font-weight:700;color:#fff;margin-bottom:4px">O gráfico não carrega ou travou. O que fazer?</div><div style="font-size:11px;color:var(--text2);line-height:1.6">Atualize a página (F5 ou puxe para atualizar no celular). Isso resolve a grande maioria dos casos de instabilidade de conexão.</div></div>
-
-<div style="border-top:1px solid var(--border);padding-top:14px;margin-top:2px">
-<div style="font-size:9px;color:var(--text2);letter-spacing:2px;margin-bottom:10px;font-weight:700">AINDA PRECISA DE AJUDA?</div>
-<div style="display:flex;gap:8px">
-<a href="https://wa.me/5585996138679" target="_blank" rel="noopener" style="flex:1;display:flex;align-items:center;justify-content:center;gap:6px;padding:10px;background:rgba(0,230,118,.12);border:1px solid rgba(0,230,118,.3);color:var(--green);font-weight:800;font-size:11px;letter-spacing:.5px;border-radius:8px;text-decoration:none">WHATSAPP</a>
-<a href="mailto:takezlayer@gmail.com" style="flex:1;display:flex;align-items:center;justify-content:center;gap:6px;padding:10px;background:rgba(0,212,255,.1);border:1px solid rgba(0,212,255,.3);color:var(--accent);font-weight:800;font-size:11px;letter-spacing:.5px;border-radius:8px;text-decoration:none">E-MAIL</a>
-</div>
-</div>
-
-</div>
-</div></div> <!--  USER MODAL  -->
+<!--  USER MODAL  -->
 <div id="user-modal" style="display:none;position:fixed;inset:0;z-index:200;background:rgba(0,0,0,.85);align-items:center;justify-content:center;backdrop-filter:blur(4px)"> <div class="auth-box"> <div class="modal-hdr"> <div class="modal-title"> MINHA CONTA</div> <button class="modal-close" onclick="closeUserModal()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button> </div> <div class="user-info-bar"> <span class="user-email">Logado como: <span id="user-email-show"></span></span> <button class="logout-btn" onclick="doLogout()">SAIR</button> </div>
-<div id="user-active-section" class="apikey-section" style="display:none;flex-direction:column;gap:8px"> <button class="icon-btn" onclick="openSettings()" style="width:100%;display:flex;align-items:center;justify-content:center;gap:6px;padding:8px"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg> CONFIGURAÇÕES</button> <button class="icon-btn" onclick="openFAQ()" style="width:100%;display:flex;align-items:center;justify-content:center;gap:6px;padding:8px">? DÚVIDAS</button> </div>
+<div id="user-active-section" class="apikey-section" style="display:none;flex-direction:column;gap:8px"> <button class="icon-btn" onclick="openSettings()" style="width:100%;display:flex;align-items:center;justify-content:center;gap:6px;padding:8px"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg> CONFIGURAÇÕES</button> <button class="icon-btn" onclick="openChangePass()" style="width:100%;display:flex;align-items:center;justify-content:center;gap:6px;padding:8px"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg> TROCAR SENHA</button> <a class="icon-btn" href="faq.html" target="_blank" rel="noopener" style="width:100%;display:flex;align-items:center;justify-content:center;gap:6px;padding:8px;text-decoration:none">? DÚVIDAS</a> </div>
 <div id="user-pending-section" class="apikey-section" style="display:none;flex-direction:column;gap:10px;padding:4px 0"> <div style="text-align:center;font-size:11px;color:var(--text2);line-height:1.6;padding:4px 8px">Você ainda não possui uma assinatura ativa.<br>Assine para liberar os sinais no gráfico.</div> <a href="#" onclick="goToCheckout(event);closeUserModal();" style="display:flex;align-items:center;justify-content:center;gap:6px;padding:10px;background:linear-gradient(135deg,var(--accent),#0099cc);color:#001018;font-weight:800;font-size:12px;letter-spacing:1px;border-radius:8px;text-decoration:none;width:100%;box-sizing:border-box">✦ ASSINAR AGORA</a> <div style="text-align:center;font-size:10px;color:var(--text2);line-height:1.5">Após o pagamento, volte e crie sua conta com o mesmo e-mail</div> </div>
 </div></div>
+<!-- CHANGE PASSWORD MODAL -->
+<div id="changepass-modal" style="display:none;position:fixed;inset:0;z-index:210;background:rgba(0,0,0,.85);align-items:center;justify-content:center;backdrop-filter:blur(4px)"> <div class="auth-box"> <button class="modal-close" onclick="closeChangePass()" style="position:absolute;top:10px;right:10px;z-index:1"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button> <div class="auth-hdr"> <div class="auth-logo">🔒</div> <div class="auth-title">TROCAR SENHA</div> <div class="auth-sub">Defina uma nova senha de acesso</div> </div> <div class="auth-form"> <div class="auth-field"> <div class="auth-label">NOVA SENHA</div> <input class="auth-input" id="newpass-1" type="password" placeholder="••••••••" autocomplete="new-password"> </div> <div class="auth-field"> <div class="auth-label">CONFIRMAR NOVA SENHA</div> <input class="auth-input" id="newpass-2" type="password" placeholder="••••••••" autocomplete="new-password"> </div> <div class="auth-err" id="changepass-err"></div> <div class="auth-err" id="changepass-ok" style="display:none;color:var(--green)"></div> <button class="auth-btn" id="changepass-submit" onclick="doChangePassword()">SALVAR NOVA SENHA</button> </div> </div>
+</div>
 </div> <script>
 // 
 // SETTINGS STATE
@@ -2046,16 +2025,6 @@ function startRenderLoop(){
 let ws5m = null; // WebSocket dedicado para candles M5 (Follow Line PRO)
 
 // 
-// FAQ MODAL
-// 
-function openFAQ(){
-  document.getElementById('faq-modal').style.display='flex';
-}
-function closeFAQ(){
-  document.getElementById('faq-modal').style.display='none';
-}
-
-// 
 // TOAST DE CONEXÃO
 // 
 let _toastReconnectAttempts = 0;
@@ -2097,7 +2066,15 @@ function clearToast(type, key){
   if(el){ el.classList.remove('show'); setTimeout(()=>el.remove(),300); }
 }
 
+// Só considera "queda real" quando o WS cai e o navegador está de fato sem internet,
+// ou quando o WS cai inesperadamente (código!==1000) sem ter sido um close manual
+// (troca de ativo/timeframe, que fecha com code 1000 e não deve gerar toast nenhum).
+let _wsIntentionalClose = false; // marca fechamentos manuais (troca de ativo/TF)
+let _connIsDown = false; // evita disparar "perdida" repetidamente
+
 function onConnectionLost(){
+  if(_connIsDown) { _toastReconnectAttempts++; return; }
+  _connIsDown = true;
   clearToast('ok','conn');
   showToast('warn','Conexão perdida. Tentando reconectar…',{key:'conn',persist:true});
   _toastReconnectAttempts++;
@@ -2109,13 +2086,14 @@ function onConnectionLost(){
 }
 
 function onConnectionRestored(){
-  if(_toastReconnectAttempts>0){
+  if(_connIsDown || _toastReconnectAttempts>0){
     clearToast('warn','conn');
     clearToast('err','stale');
     if(_toastStaleTimer){ clearTimeout(_toastStaleTimer); _toastStaleTimer=null; }
     showToast('ok','Conexão restabelecida',{key:'conn'});
   }
   _toastReconnectAttempts = 0;
+  _connIsDown = false;
 }
 
 // Detecta perda de rede pelo próprio navegador (mais rápido que esperar o WS cair)
@@ -2125,13 +2103,25 @@ window.addEventListener('online', onConnectionRestored);
 function connectWS(tf){
   tf = tf || currentTF || '5m';
   if(!TF[tf]) return;
-  if(ws){try{ws.close(1000);}catch(_){}ws=null;}
+  if(ws){ _wsIntentionalClose = true; try{ws.close(1000);}catch(_){}ws=null;}
   const bvInt=bybitInterval(TF[tf].i);
   const sym=bybitSymbol(currentAsset);
   ws=new WebSocket('wss://stream.bybit.com/v5/public/linear');
-  ws.onopen=()=>{ ws.send(JSON.stringify({op:'subscribe',args:[`kline.${bvInt}.${sym}`]})); startRenderLoop(); onConnectionRestored(); };
-  ws.onclose=e=>{ if(e.code!==1000){ onConnectionLost(); setTimeout(()=>connectWS(currentTF||tf),3000); } };
-  ws.onerror=()=>{ onConnectionLost(); };
+  ws.onopen=()=>{
+    ws.send(JSON.stringify({op:'subscribe',args:[`kline.${bvInt}.${sym}`]}));
+    startRenderLoop();
+    // Só mostra "restabelecida" se havia mesmo uma queda real em andamento
+    if(_connIsDown || _toastReconnectAttempts>0) onConnectionRestored();
+    _wsIntentionalClose = false;
+  };
+  ws.onclose=e=>{
+    const wasIntentional = _wsIntentionalClose;
+    _wsIntentionalClose = false;
+    // code 1000 = fechamento normal (troca de ativo/TF); nunca é queda real
+    if(e.code!==1000 && !wasIntentional && navigator.onLine){ onConnectionLost(); }
+    if(e.code!==1000){ setTimeout(()=>connectWS(currentTF||tf),3000); }
+  };
+  ws.onerror=()=>{ if(navigator.onLine && !_wsIntentionalClose) onConnectionLost(); };
   ws.onmessage=evt=>{
     const msg=JSON.parse(evt.data);
     if(!msg.data||!msg.topic?.startsWith('kline.')) return;
@@ -2608,6 +2598,71 @@ async function supaAuth(path,body){
 // 
 let _session=null; // {access_token, user:{id,email}}
 
+// 
+// DEVICE LOCK — impede a mesma conta logada em 2 dispositivos ao mesmo tempo.
+// Cada navegador guarda um ID próprio (btcai_device_id). Ao logar, esse ID é
+// gravado em user_settings.active_device_id, sobrescrevendo o anterior. Um
+// polling periódico verifica se o ID salvo no banco ainda é o deste
+// dispositivo; se não for, outro aparelho assumiu a conta e este é desconectado.
+// 
+function getDeviceId(){
+  let id=localStorage.getItem('btcai_device_id');
+  if(!id){
+    id='dev_'+Date.now().toString(36)+'_'+Math.random().toString(36).slice(2,10);
+    localStorage.setItem('btcai_device_id',id);
+  }
+  return id;
+}
+
+let _deviceCheckTimer=null;
+
+async function claimDevice(){
+  // Grava este dispositivo como o "dono" atual da sessão (chamado no login manual)
+  if(!_session) return;
+  try{
+    await supaUpsertSettings({
+      active_device_id:getDeviceId(),
+      active_device_at:new Date().toISOString()
+    });
+  }catch(e){ console.warn('[DeviceLock] falha ao registrar dispositivo:',e.message); }
+}
+
+async function checkDeviceStillActive(){
+  if(!_session) return;
+  try{
+    const rows=await supa(
+      '/rest/v1/user_settings?user_id=eq.'+_session.user.id+'&select=active_device_id',
+      'GET',null,_session.access_token);
+    const remoteId = rows && rows.length ? rows[0].active_device_id : null;
+    // Se ainda não há device_id salvo no banco (conta antiga/coluna recém-criada),
+    // não força logout — apenas assume este dispositivo como dono.
+    if(!remoteId){ await claimDevice(); return; }
+    if(remoteId !== getDeviceId()){
+      forceLogoutOtherDevice();
+    }
+  }catch(e){ console.warn('[DeviceLock] falha ao verificar dispositivo:',e.message); }
+}
+
+function startDeviceCheck(){
+  if(_deviceCheckTimer) clearInterval(_deviceCheckTimer);
+  _deviceCheckTimer = setInterval(checkDeviceStillActive, 20000); // a cada 20s
+}
+function stopDeviceCheck(){
+  if(_deviceCheckTimer){ clearInterval(_deviceCheckTimer); _deviceCheckTimer=null; }
+}
+
+function forceLogoutOtherDevice(){
+  stopDeviceCheck();
+  if(_tokenRefreshTimer){ clearInterval(_tokenRefreshTimer); _tokenRefreshTimer=null; }
+  _session=null; localStorage.removeItem('btcai_session');
+  document.getElementById('login-btn').style.display='';
+  document.getElementById('user-avatar').classList.remove('visible');
+  document.getElementById('user-modal').style.display='none';
+  document.getElementById('changepass-modal').style.display='none';
+  showToast('err','Sua conta foi acessada em outro dispositivo. Sessão encerrada aqui.',{key:'device',persist:true,showRefresh:true});
+  openAuth();
+}
+
 async function initAuth(){
   const saved=localStorage.getItem('btcai_session');
   if(!saved) return;
@@ -2616,8 +2671,13 @@ async function initAuth(){
     const d=await supaAuth('/token?grant_type=refresh_token',{refresh_token:s.refresh_token});
     _session={access_token:d.access_token,refresh_token:d.refresh_token,user:d.user};
     localStorage.setItem('btcai_session',JSON.stringify(_session));
+    // Ao restaurar sessão (ex: reabrir o app), NÃO reivindica o dispositivo à força —
+    // apenas confere se este ainda é o dispositivo autorizado.
+    await checkDeviceStillActive();
+    if(!_session) return; // pode ter sido derrubado pelo check acima
     await onLogin(); // await garante que tudo carrega antes de restaurar IA
     startTokenRefresh(); // inicia renovação automática do JWT
+    startDeviceCheck(); // inicia verificação periódica de dispositivo único
   }catch(e){localStorage.removeItem('btcai_session');}
 }
 
@@ -2637,7 +2697,8 @@ function startTokenRefresh(){
       // Se falhou, limpa sessão e pede login
       _session=null; localStorage.removeItem('btcai_session');
       clearInterval(_tokenRefreshTimer);
-      showToast(' Sessão expirada. Faça login novamente.','var(--red)');
+      stopDeviceCheck();
+      showToast('err','Sessão expirada. Faça login novamente.',{key:'session-expired'});
       openAuth();
     }
   }, 45*60*1000); // 45 minutos
@@ -2775,7 +2836,9 @@ async function doAuth(){
       await ensurePendingSubscription(email, d.user.id);
     }
     await onLogin();
+    await claimDevice(); // login manual: este dispositivo passa a ser o único autorizado
     startTokenRefresh();
+    startDeviceCheck();
   }catch(e){
     const code=(e.code||'').toLowerCase();
     const msg=(e.message||'').toLowerCase();
@@ -2811,13 +2874,77 @@ async function doAuth(){
 ['auth-email','auth-pass'].forEach(id=>document.getElementById(id)?.addEventListener('keydown',e=>{if(e.key==='Enter')doAuth();}));
 
 async function doLogout(){
+  // Libera o "slot" de dispositivo para não bloquear um próximo login em outro aparelho
+  if(_session){
+    try{ await supaUpsertSettings({active_device_id:null}); }catch(_){}
+  }
   try{await supaAuth('/logout',{});} catch(_){}
+  stopDeviceCheck();
   _session=null;localStorage.removeItem('btcai_session');
   if(_tokenRefreshTimer){ clearInterval(_tokenRefreshTimer); _tokenRefreshTimer=null; }
   document.getElementById('login-btn').style.display='';
   document.getElementById('user-avatar').classList.remove('visible');
   document.getElementById('user-modal').style.display='none';
 }
+
+// 
+// TROCAR SENHA
+// 
+function openChangePass(){
+  if(!_session) return;
+  document.getElementById('newpass-1').value='';
+  document.getElementById('newpass-2').value='';
+  document.getElementById('changepass-err').style.display='none';
+  document.getElementById('changepass-ok').style.display='none';
+  document.getElementById('changepass-modal').style.display='flex';
+}
+function closeChangePass(){
+  document.getElementById('changepass-modal').style.display='none';
+}
+document.getElementById('changepass-modal')?.addEventListener('click',e=>{if(e.target===document.getElementById('changepass-modal'))closeChangePass();});
+
+async function doChangePassword(){
+  const p1=document.getElementById('newpass-1').value;
+  const p2=document.getElementById('newpass-2').value;
+  const err=document.getElementById('changepass-err');
+  const ok=document.getElementById('changepass-ok');
+  const btn=document.getElementById('changepass-submit');
+  err.style.display='none'; ok.style.display='none';
+  if(!p1||!p2){ err.textContent='Preencha os dois campos.'; err.style.display='block'; return; }
+  if(p1.length<6){ err.textContent='A senha deve ter pelo menos 6 caracteres.'; err.style.display='block'; return; }
+  if(p1!==p2){ err.textContent='As senhas não coincidem.'; err.style.display='block'; return; }
+  if(!_session?.access_token){ err.textContent='Sessão expirada. Faça login novamente.'; err.style.display='block'; return; }
+  btn.disabled=true; btn.textContent='SALVANDO...';
+  try{
+    const r=await fetch(SUPA_URL+'/auth/v1/user',{
+      method:'PUT',
+      headers:{
+        'Content-Type':'application/json',
+        'apikey':SUPA_KEY,
+        'Authorization':'Bearer '+_session.access_token
+      },
+      body:JSON.stringify({password:p1})
+    });
+    const d=await r.json().catch(()=>({}));
+    if(!r.ok){
+      const msg=(d.msg||d.error_description||d.message||'').toLowerCase();
+      let friendly='Não foi possível trocar a senha. Tente novamente.';
+      if(msg.includes('weak') || msg.includes('password')) friendly='Senha fraca. Use pelo menos 6 caracteres, misturando letras e números.';
+      if(msg.includes('same') || msg.includes('should be different')) friendly='A nova senha deve ser diferente da atual.';
+      throw new Error(friendly);
+    }
+    ok.textContent='Senha alterada com sucesso!';
+    ok.style.display='block';
+    document.getElementById('newpass-1').value='';
+    document.getElementById('newpass-2').value='';
+    setTimeout(closeChangePass, 1600);
+  }catch(e){
+    err.textContent=e.message||'Erro ao trocar senha.';
+    err.style.display='block';
+  }
+  btn.disabled=false; btn.textContent='SALVAR NOVA SENHA';
+}
+['newpass-1','newpass-2'].forEach(id=>document.getElementById(id)?.addEventListener('keydown',e=>{if(e.key==='Enter')doChangePassword();}));
 
 //  SETTINGS DB (cores e indicadores) 
 async function loadApiKeyFromDB(){
