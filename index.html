@@ -120,8 +120,7 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);fon
 .ind-s.buy{color:var(--green)}.ind-s.sell{color:var(--red)}.ind-s.neu{color:var(--yellow)}
 
 /* SETTINGS MODAL */
-#settings-modal{display:none;position:fixed;inset:0;z-index:300;background:rgba(0,0,0,.8);align-items:center;justify-content:center}
-#settings-modal.open{display:flex}
+
 .modal-box{background:var(--bg2);border:1px solid var(--border);border-radius:12px;
   width:min(420px,95vw);max-height:85vh;overflow-y:auto;padding:0}
 .modal-hdr{display:flex;align-items:center;justify-content:space-between;
@@ -280,6 +279,7 @@ input[type=color]{display:none}
 .drawer-item.danger{color:var(--red)}
 .drawer-item.danger svg{color:var(--red)}
 .drawer-sep{height:1px;background:var(--border);margin:8px 10px}
+.drawer-sec-title{font-size:9px;color:var(--text2);letter-spacing:2px;margin-bottom:10px;font-weight:700}
 .drawer-lang-row{display:flex;align-items:center;justify-content:space-between;padding:12px 10px;margin:0 0}
 .drawer-lang-label{display:flex;align-items:center;gap:10px;font-size:12.5px;font-weight:700;color:var(--text)}
 .lang-toggle{display:flex;border:1px solid var(--border);border-radius:7px;overflow:hidden;flex-shrink:0}
@@ -426,14 +426,7 @@ input[type=color]{display:none}
 <div id="app"> <div id="hdr"> <div class="logo"> <div class="logo-ic">√</div> <div class="logo-nm">SCALPER<span>AI</span></div> </div> <div class="price-blk"> <div class="price-v" id="live-price">--,---</div> <div class="price-c up" id="price-chg">+0.00%</div> </div> <button id="menu-btn" onclick="openUserModal()" data-i18n-title="menuTitle" title="Menu"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round"><line x1="4" y1="7" x2="20" y2="7"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="17" x2="20" y2="17"/></svg></button>
 </div> <div id="tfbar"> <div class="tf-btns"> <button class="tf-btn active" data-tf="1m">1M</button> <button class="tf-btn" data-tf="5m">5M</button> </div> <div class="asset-sep"></div> <div class="asset-btns"> <button class="asset-btn active" data-asset="BTC" onclick="switchAsset('BTC')">BTC</button> <button class="asset-btn" data-asset="XAU" onclick="switchAsset('XAU')">XAU</button> </div>
 </div> <div id="toast-wrap"></div> <div id="chart-wrap" class="cursor-cross"> <canvas id="chart-canvas"></canvas> <div id="ch-tooltip"></div> <div id="ch-price-lbl"></div> <div id="ch-time-lbl"></div> </div> <div id="strength"> <div class="str-labels"> <span class="str-sell" data-i18n="sell"> VENDA</span> <span style="font-size:8px;color:var(--text2);letter-spacing:2px" data-i18n="strength">FORÇA</span> <span class="str-buy" data-i18n="buy">COMPRA </span> </div> <div class="str-track"> <div class="sf-sell" id="sf-sell" style="width:0%"></div> <div class="sf-buy" id="sf-buy" style="width:0%"></div> <div class="str-mid"></div> <div class="str-needle" id="s-needle" style="left:calc(50% - 1.5px)"></div> </div> <div class="str-pcts"> <span class="pct-s" id="p-sell">50%</span> <span class="pct-b" id="p-buy">50%</span> </div>
-</div> <!--  HAMBURGER OVERLAY  -->
-
-</div> <div id="settings-modal"> <div class="modal-box"> <div class="modal-hdr"> <div class="modal-title" data-i18n="settings"> CONFIGURAÇÕES</div> <button class="modal-close" onclick="closeSettings()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button> </div> <div class="modal-section"> <div class="sec-title" data-i18n="indicatorsOnChart"> INDICADORES NO GRÁFICO</div> <div id="ind-settings-list"></div> </div>
- <div class="modal-section"> <div class="sec-title" data-i18n="operatingWindow"> JANELA OPERACIONAL</div>
-  <div class="ind-toggle-row"> <div class="ind-toggle-left"> <div style="width:10px;height:10px;border-radius:50%;background:var(--accent);flex-shrink:0"></div> <div class="ind-toggle-name" data-i18n="timeWindowName">Janela Horária (05:00–17:00 UTC)</div> </div> <div class="ind-toggle-right"> <label class="toggle"> <input type="checkbox" id="toggle-time-window" checked onchange="setTimeWindowEnabled(this.checked)"> <span class="toggle-slider"></span> </label> </div> </div>
-  <div style="font-size:9px;color:var(--text2);margin-top:6px;line-height:1.5;padding:0 2px" data-i18n="timeWindowDesc">Ativado: sinais só aparecem das 05:00 às 17:00 UTC.<br>Desativado: sinais visíveis a qualquer hora.</div>
- </div>
-</div></div>
+</div>
 <!-- PREVIEW CARD — mostra prints do gráfico com sinais antes da tela de assinatura -->
 <div id="preview-overlay"> <div class="sub-card preview-card">
   <button class="sub-close" onclick="closePreviewCard()"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
@@ -508,7 +501,20 @@ input[type=color]{display:none}
       <a class="drawer-item" href="faq.html" target="_blank" rel="noopener"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg> <span data-i18n="faq">DÚVIDAS</span></a>
     </div>
     <div id="user-active-section" class="drawer-nav" style="display:none">
-      <button class="drawer-item" onclick="openSettings()"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg> <span data-i18n="settings">CONFIGURAÇÕES</span></button>
+      <button class="drawer-item" onclick="toggleSettingsAccordion()"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg> <span data-i18n="settings" style="flex:1">CONFIGURAÇÕES</span> <svg id="settings-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="transition:transform .2s;flex-shrink:0"><polyline points="6 9 12 15 18 9"/></svg></button>
+      <div id="settings-accordion" style="max-height:0;overflow:hidden;transition:max-height .25s ease">
+        <div style="padding:4px 10px 14px 10px;display:flex;flex-direction:column;gap:14px">
+          <div>
+            <div class="drawer-sec-title" data-i18n="indicatorsOnChart">INDICADORES NO GRÁFICO</div>
+            <div id="ind-settings-list"></div>
+          </div>
+          <div>
+            <div class="drawer-sec-title" data-i18n="operatingWindow">JANELA OPERACIONAL</div>
+            <div class="ind-toggle-row"> <div class="ind-toggle-left"> <div style="width:10px;height:10px;border-radius:50%;background:var(--accent);flex-shrink:0"></div> <div class="ind-toggle-name" data-i18n="timeWindowName">Janela Horária (05:00–17:00 UTC)</div> </div> <div class="ind-toggle-right"> <label class="toggle"> <input type="checkbox" id="toggle-time-window" checked onchange="setTimeWindowEnabled(this.checked)"> <span class="toggle-slider"></span> </label> </div> </div>
+            <div style="font-size:9px;color:var(--text2);margin-top:6px;line-height:1.5;padding:0 2px" data-i18n="timeWindowDesc">Ativado: sinais só aparecem das 05:00 às 17:00 UTC.<br>Desativado: sinais visíveis a qualquer hora.</div>
+          </div>
+        </div>
+      </div>
       <button class="drawer-item" onclick="openChangePass()"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg> <span data-i18n="changePassword">TROCAR SENHA</span></button>
       <a class="drawer-item" href="faq.html" target="_blank" rel="noopener"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg> <span data-i18n="faq">DÚVIDAS</span></a>
       <div class="drawer-sep"></div>
@@ -793,6 +799,7 @@ function applyI18n(){
   document.getElementById('lang-opt-en')?.classList.toggle('active', _lang==='en');
   // Reconstrói partes com texto dinâmico gerado via JS
   try{ buildIndSettings(); }catch(e){}
+  try{ refreshSettingsAccordionHeight(); }catch(e){}
   try{ drawChart(); }catch(e){}
   // Re-renderiza textos de auth conforme a aba/modo atual
   try{ refreshAuthModeTexts(); }catch(e){}
@@ -962,11 +969,32 @@ function buildIndSettings(){
       </div> <div class="ind-toggle-right"> <label class="toggle"> <input type="checkbox" ${ind.enabled?'checked':''} onchange="INDS_CONFIG[${INDS_CONFIG.indexOf(ind)}].enabled=this.checked;drawChart();clearTimeout(_saveSettingsTimer);_saveSettingsTimer=setTimeout(saveSettingsToDB,800)"> <span class="toggle-slider"></span> </label> </div> </div>`;
   }
   el.innerHTML = INDS_CONFIG.map((ind,i)=>row(ind,i)).join('');
+  refreshSettingsAccordionHeight();
+}
+// Recalcula a altura do accordion de configurações se ele estiver aberto no momento
+// (necessário após reconstruir a lista de indicadores ou trocar de idioma).
+function refreshSettingsAccordionHeight(){
+  const acc = document.getElementById('settings-accordion');
+  if(acc && acc.dataset.open==='1'){ acc.style.maxHeight = acc.scrollHeight+'px'; }
 }
 
-function openSettings(){ closeUserModal(); buildIndSettings(); loadAppearanceSettings(); buildAllIconPickers(); loadTimeWindowSetting(); document.getElementById('settings-modal').classList.add('open'); }
-function closeSettings(){ document.getElementById('settings-modal').classList.remove('open'); }
-document.getElementById('settings-modal')?.addEventListener('click',e=>{ if(e.target===document.getElementById('settings-modal'))closeSettings(); });
+// Accordion de Configurações embutido no drawer lateral (substitui o antigo modal)
+function toggleSettingsAccordion(){
+  const acc = document.getElementById('settings-accordion');
+  const chevron = document.getElementById('settings-chevron');
+  if(!acc) return;
+  const isOpen = acc.dataset.open==='1';
+  if(isOpen){
+    acc.style.maxHeight='0px';
+    acc.dataset.open='0';
+    if(chevron) chevron.style.transform='rotate(0deg)';
+  } else {
+    buildIndSettings(); loadAppearanceSettings(); buildAllIconPickers(); loadTimeWindowSetting();
+    acc.style.maxHeight=acc.scrollHeight+'px';
+    acc.dataset.open='1';
+    if(chevron) chevron.style.transform='rotate(180deg)';
+  }
+}
 
 let _saveSettingsTimer=null;
 
@@ -3197,6 +3225,8 @@ function closeUserModal(){document.getElementById('user-drawer-overlay').classLi
 function updateDrawerLoginState(){
   const loggedOut = document.getElementById('user-loggedout-section');
   const userBar = document.getElementById('drawer-user-bar');
+  const activeSection = document.getElementById('user-active-section');
+  const pendingSection = document.getElementById('user-pending-section');
   if(!loggedOut) return;
   if(_session){
     loggedOut.style.display='none';
@@ -3204,6 +3234,10 @@ function updateDrawerLoginState(){
   } else {
     loggedOut.style.display='flex';
     if(userBar) userBar.style.display='none';
+    // Sem sessão: nunca mostra os blocos de conta ativa/pendente, mesmo que
+    // tenham ficado marcados como visíveis antes do logout.
+    if(activeSection) activeSection.style.display='none';
+    if(pendingSection) pendingSection.style.display='none';
   }
 }
 
