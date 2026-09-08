@@ -256,6 +256,37 @@ input[type=color]{display:none}
   color:var(--text2);cursor:pointer;font-size:10px;font-family:'Exo 2',sans-serif;transition:all .2s}
 .logout-btn:hover{border-color:var(--red);color:var(--red)}
 
+/*  USER DRAWER (lateral, desliza da direita)  */
+#user-drawer-overlay{display:none;position:fixed;inset:0;z-index:200;background:rgba(0,0,0,.6);
+  backdrop-filter:blur(2px)}
+#user-drawer-overlay.open{display:block}
+#user-drawer{position:fixed;top:0;right:0;height:100%;height:100dvh;width:min(320px,86vw);
+  background:var(--bg2);border-left:1px solid var(--border);z-index:201;
+  display:flex;flex-direction:column;transform:translateX(100%);transition:transform .25s ease}
+#user-drawer-overlay.open #user-drawer{transform:translateX(0)}
+.drawer-hdr{display:flex;align-items:center;justify-content:space-between;padding:16px 18px;
+  border-bottom:1px solid var(--border);flex-shrink:0}
+.drawer-title{font-size:12px;font-weight:900;letter-spacing:1.5px;color:#fff}
+.drawer-body{flex:1;overflow-y:auto;display:flex;flex-direction:column}
+.drawer-user-bar{display:flex;flex-direction:column;gap:8px;padding:16px 18px;border-bottom:1px solid var(--border)}
+.drawer-email{font-size:10.5px;color:var(--text2);font-family:'Share Tech Mono',monospace;word-break:break-all}
+.drawer-email span{color:var(--accent)}
+.drawer-nav{display:flex;flex-direction:column;padding:8px 10px}
+.drawer-item{display:flex;align-items:center;gap:10px;padding:12px 10px;border-radius:8px;
+  background:transparent;border:none;color:var(--text);font-family:'Exo 2',sans-serif;font-size:12.5px;
+  font-weight:700;letter-spacing:.4px;cursor:pointer;text-align:left;text-decoration:none;transition:background .15s}
+.drawer-item:hover{background:rgba(0,212,255,.08)}
+.drawer-item svg{flex-shrink:0;color:var(--accent)}
+.drawer-item.danger{color:var(--red)}
+.drawer-item.danger svg{color:var(--red)}
+.drawer-sep{height:1px;background:var(--border);margin:8px 10px}
+.drawer-lang-row{display:flex;align-items:center;justify-content:space-between;padding:12px 10px;margin:0 0}
+.drawer-lang-label{display:flex;align-items:center;gap:10px;font-size:12.5px;font-weight:700;color:var(--text)}
+.lang-toggle{display:flex;border:1px solid var(--border);border-radius:7px;overflow:hidden;flex-shrink:0}
+.lang-opt{padding:6px 11px;background:transparent;border:none;color:var(--text2);font-family:'Exo 2',sans-serif;
+  font-size:10.5px;font-weight:800;letter-spacing:.5px;cursor:pointer;transition:all .15s}
+.lang-opt.active{background:var(--accent);color:#001018}
+.drawer-foot{margin-top:auto;padding:14px 18px;border-top:1px solid var(--border)}
 
 /* Posição aberta — banner */
 .open-pos-banner{background:rgba(255,214,0,.06);border:1px solid rgba(255,214,0,.3);border-radius:7px;
@@ -314,14 +345,9 @@ input[type=color]{display:none}
 #ld-start-btn:active{transform:scale(.97)}
 @keyframes ld-btn-pop{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
 
-#login-btn{padding:4px 10px;background:rgba(0,212,255,.1);border:1px solid var(--accent);
-  border-radius:5px;color:var(--accent);cursor:pointer;font-family:'Exo 2',sans-serif;
-  font-size:10px;font-weight:700;letter-spacing:1px;transition:all .2s;flex-shrink:0}
-#login-btn:hover{background:rgba(0,212,255,.2)}
-#user-avatar{width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,#00d4ff,#0055aa);
-  display:none;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#fff;
-  cursor:pointer;flex-shrink:0}
-#user-avatar.visible{display:flex}
+#menu-btn{width:32px;height:32px;border-radius:8px;background:rgba(0,212,255,.1);border:1px solid var(--border);
+  display:flex;align-items:center;justify-content:center;color:var(--text);cursor:pointer;flex-shrink:0;transition:all .2s}
+#menu-btn:hover{border-color:var(--accent);color:var(--accent)}
 
 /* SUBSCRIPTION PAYWALL CARD */
 #sub-overlay{position:fixed;inset:0;z-index:300;background:rgba(5,8,14,.78);
@@ -394,25 +420,25 @@ input[type=color]{display:none}
     <div class="ld-logo-nm">SCALPER<span>AI</span></div>
   </div>
   <div class="ld-spinner" id="ld-spinner"></div>
-  <div class="ld-msg" id="ld-msg">CARREGANDO...</div>
-  <button id="ld-start-btn" onclick="doStartRefresh()">▶ INICIAR</button>
+  <div class="ld-msg" id="ld-msg" data-i18n="loading">CARREGANDO...</div>
+  <button id="ld-start-btn" onclick="doStartRefresh()" data-i18n="start">▶ INICIAR</button>
 </div>
-<div id="app"> <div id="hdr"> <div class="logo"> <div class="logo-ic">√</div> <div class="logo-nm">SCALPER<span>AI</span></div> </div> <div class="price-blk"> <div class="price-v" id="live-price">--,---</div> <div class="price-c up" id="price-chg">+0.00%</div> </div> <button id="login-btn" onclick="openAuth()"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:4px;vertical-align:middle"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>LOGIN</button> <div id="user-avatar" onclick="openUserModal()" title="Minha conta"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div>
+<div id="app"> <div id="hdr"> <div class="logo"> <div class="logo-ic">√</div> <div class="logo-nm">SCALPER<span>AI</span></div> </div> <div class="price-blk"> <div class="price-v" id="live-price">--,---</div> <div class="price-c up" id="price-chg">+0.00%</div> </div> <button id="menu-btn" onclick="openUserModal()" data-i18n-title="menuTitle" title="Menu"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round"><line x1="4" y1="7" x2="20" y2="7"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="17" x2="20" y2="17"/></svg></button>
 </div> <div id="tfbar"> <div class="tf-btns"> <button class="tf-btn active" data-tf="1m">1M</button> <button class="tf-btn" data-tf="5m">5M</button> </div> <div class="asset-sep"></div> <div class="asset-btns"> <button class="asset-btn active" data-asset="BTC" onclick="switchAsset('BTC')">BTC</button> <button class="asset-btn" data-asset="XAU" onclick="switchAsset('XAU')">XAU</button> </div>
-</div> <div id="toast-wrap"></div> <div id="chart-wrap" class="cursor-cross"> <canvas id="chart-canvas"></canvas> <div id="ch-tooltip"></div> <div id="ch-price-lbl"></div> <div id="ch-time-lbl"></div> </div> <div id="strength"> <div class="str-labels"> <span class="str-sell"> VENDA</span> <span style="font-size:8px;color:var(--text2);letter-spacing:2px">FORÇA</span> <span class="str-buy">COMPRA </span> </div> <div class="str-track"> <div class="sf-sell" id="sf-sell" style="width:0%"></div> <div class="sf-buy" id="sf-buy" style="width:0%"></div> <div class="str-mid"></div> <div class="str-needle" id="s-needle" style="left:calc(50% - 1.5px)"></div> </div> <div class="str-pcts"> <span class="pct-s" id="p-sell">50%</span> <span class="pct-b" id="p-buy">50%</span> </div>
+</div> <div id="toast-wrap"></div> <div id="chart-wrap" class="cursor-cross"> <canvas id="chart-canvas"></canvas> <div id="ch-tooltip"></div> <div id="ch-price-lbl"></div> <div id="ch-time-lbl"></div> </div> <div id="strength"> <div class="str-labels"> <span class="str-sell" data-i18n="sell"> VENDA</span> <span style="font-size:8px;color:var(--text2);letter-spacing:2px" data-i18n="strength">FORÇA</span> <span class="str-buy" data-i18n="buy">COMPRA </span> </div> <div class="str-track"> <div class="sf-sell" id="sf-sell" style="width:0%"></div> <div class="sf-buy" id="sf-buy" style="width:0%"></div> <div class="str-mid"></div> <div class="str-needle" id="s-needle" style="left:calc(50% - 1.5px)"></div> </div> <div class="str-pcts"> <span class="pct-s" id="p-sell">50%</span> <span class="pct-b" id="p-buy">50%</span> </div>
 </div> <!--  HAMBURGER OVERLAY  -->
 
-</div> <div id="settings-modal"> <div class="modal-box"> <div class="modal-hdr"> <div class="modal-title"> CONFIGURAÇÕES</div> <button class="modal-close" onclick="closeSettings()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button> </div> <div class="modal-section"> <div class="sec-title"> INDICADORES NO GRÁFICO</div> <div id="ind-settings-list"></div> </div>
- <div class="modal-section"> <div class="sec-title"> JANELA OPERACIONAL</div>
-  <div class="ind-toggle-row"> <div class="ind-toggle-left"> <div style="width:10px;height:10px;border-radius:50%;background:var(--accent);flex-shrink:0"></div> <div class="ind-toggle-name">Janela Horária (05:00–17:00 UTC)</div> </div> <div class="ind-toggle-right"> <label class="toggle"> <input type="checkbox" id="toggle-time-window" checked onchange="setTimeWindowEnabled(this.checked)"> <span class="toggle-slider"></span> </label> </div> </div>
-  <div style="font-size:9px;color:var(--text2);margin-top:6px;line-height:1.5;padding:0 2px">Ativado: sinais só aparecem das 05:00 às 17:00 UTC.<br>Desativado: sinais visíveis a qualquer hora.</div>
+</div> <div id="settings-modal"> <div class="modal-box"> <div class="modal-hdr"> <div class="modal-title" data-i18n="settings"> CONFIGURAÇÕES</div> <button class="modal-close" onclick="closeSettings()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button> </div> <div class="modal-section"> <div class="sec-title" data-i18n="indicatorsOnChart"> INDICADORES NO GRÁFICO</div> <div id="ind-settings-list"></div> </div>
+ <div class="modal-section"> <div class="sec-title" data-i18n="operatingWindow"> JANELA OPERACIONAL</div>
+  <div class="ind-toggle-row"> <div class="ind-toggle-left"> <div style="width:10px;height:10px;border-radius:50%;background:var(--accent);flex-shrink:0"></div> <div class="ind-toggle-name" data-i18n="timeWindowName">Janela Horária (05:00–17:00 UTC)</div> </div> <div class="ind-toggle-right"> <label class="toggle"> <input type="checkbox" id="toggle-time-window" checked onchange="setTimeWindowEnabled(this.checked)"> <span class="toggle-slider"></span> </label> </div> </div>
+  <div style="font-size:9px;color:var(--text2);margin-top:6px;line-height:1.5;padding:0 2px" data-i18n="timeWindowDesc">Ativado: sinais só aparecem das 05:00 às 17:00 UTC.<br>Desativado: sinais visíveis a qualquer hora.</div>
  </div>
 </div></div>
 <!-- PREVIEW CARD — mostra prints do gráfico com sinais antes da tela de assinatura -->
 <div id="preview-overlay"> <div class="sub-card preview-card">
   <button class="sub-close" onclick="closePreviewCard()"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
-  <div class="sub-badge"><span class="dotpulse"></span> VEJA COMO FUNCIONA</div>
-  <div class="sub-title">Veja o indicador <span>funcionando de verdade</span> no gráfico</div>
+  <div class="sub-badge"><span class="dotpulse"></span> <span data-i18n="seeHowItWorks">VEJA COMO FUNCIONA</span></div>
+  <div class="sub-title" data-i18n="seeIndicatorWorking">Veja o indicador <span>funcionando de verdade</span> no gráfico</div>
   <div class="preview-carousel" id="preview-carousel">
     <div class="preview-track" id="preview-track">
       <img class="preview-img" src="preview-1.jpg" alt="Exemplo de sinal 1" onerror="this.parentElement.parentElement.parentElement.style.display='none'">
@@ -420,8 +446,8 @@ input[type=color]{display:none}
       <img class="preview-img" src="preview-3.jpg" alt="Exemplo de sinal 3">
       <img class="preview-img" src="preview-4.jpg" alt="Exemplo de sinal 4">
     </div>
-    <button class="preview-arrow preview-arrow-l" onclick="previewGo(-1)" aria-label="Anterior">‹</button>
-    <button class="preview-arrow preview-arrow-r" onclick="previewGo(1)" aria-label="Próxima">›</button>
+    <button class="preview-arrow preview-arrow-l" onclick="previewGo(-1)" data-i18n-title="previousSlide" data-i18n-aria="previousSlide" aria-label="Anterior">‹</button>
+    <button class="preview-arrow preview-arrow-r" onclick="previewGo(1)" data-i18n-title="nextSlide" data-i18n-aria="nextSlide" aria-label="Próxima">›</button>
   </div>
   <div class="preview-dots" id="preview-dots">
     <span class="preview-dot active" onclick="previewGoTo(0)"></span>
@@ -429,51 +455,368 @@ input[type=color]{display:none}
     <span class="preview-dot" onclick="previewGoTo(2)"></span>
     <span class="preview-dot" onclick="previewGoTo(3)"></span>
   </div>
-  <div class="sub-sub" style="margin-top:14px">Sinais reais de tendência, força de mercado e pontos de possível reversão, plotados automaticamente a cada vela.</div>
-  <button class="sub-cta" onclick="closePreviewCard()">CONTINUAR</button>
+  <div class="sub-sub" style="margin-top:14px" data-i18n="previewDesc">Sinais reais de tendência, força de mercado e pontos de possível reversão, plotados automaticamente a cada vela.</div>
+  <button class="sub-cta" onclick="closePreviewCard()" data-i18n="continueBtn">CONTINUAR</button>
 </div></div>
 <div id="sub-overlay"> <div class="sub-card">
   <button class="sub-close" onclick="closeSubCard()"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
-  <div class="sub-badge"><span class="dotpulse"></span> IA ATIVA AGORA</div>
-  <div class="sub-title">Indicador de análise técnica em <span>tempo real</span> direto no gráfico BTC/XAU</div>
-  <div class="sub-sub">Assine e tenha acesso completo à análise automatizada: tendência, força do movimento e indicador de possíveis pontos de reversão calculados a cada vela.</div>
+  <div class="sub-badge"><span class="dotpulse"></span> <span data-i18n="aiActiveNow">IA ATIVA AGORA</span></div>
+  <div class="sub-title" data-i18n="subTitle">Indicador de análise técnica em <span>tempo real</span> direto no gráfico BTC/XAU</div>
+  <div class="sub-sub" data-i18n="subDesc">Assine e tenha acesso completo à análise automatizada: tendência, força do movimento e indicador de possíveis pontos de reversão calculados a cada vela.</div>
   <ul class="sub-features">
-    <li><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Indicador de tendência plotado direto no gráfico</li>
-    <li><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Medidor técnico de força compradora x vendedora</li>
-    <li><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Timeframes 1M e 5M</li>
-    <li><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Acesso via navegador, em qualquer dispositivo</li>
+    <li><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> <span data-i18n="featTrend">Indicador de tendência plotado direto no gráfico</span></li>
+    <li><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> <span data-i18n="featStrength">Medidor técnico de força compradora x vendedora</span></li>
+    <li><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> <span data-i18n="featTimeframes">Timeframes 1M e 5M</span></li>
+    <li><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> <span data-i18n="featAnyDevice">Acesso via navegador, em qualquer dispositivo</span></li>
   </ul>
-  <div class="sub-price-row"><span class="sub-price">R$ 137,00</span><span class="sub-period">/ mês</span></div>
-  <div class="sub-note">Cancele quando quiser, sem multa ou burocracia.</div>
-  <a class="sub-cta" id="sub-cta-btn" href="#" target="_blank" rel="noopener" onclick="goToCheckout(event)">ASSINAR AGORA</a>
-  <div class="sub-foot">🔒 Pagamento seguro &nbsp;•&nbsp; Acesso imediato</div>
-  <div style="text-align:center;font-size:10px;color:var(--text2);margin-top:8px;line-height:1.5">Após o pagamento, volte aqui e crie sua conta com o mesmo e-mail</div>
-  <div style="text-align:center;font-size:9.5px;color:var(--text2);margin-top:10px;line-height:1.5">Este produto é uma ferramenta de análise técnica e não constitui indicação financeira.<br><a href="legal.html" target="_blank" rel="noopener" style="color:var(--text2);text-decoration:underline">Termos de Uso e Política de Privacidade</a></div>
+  <div class="sub-price-row"><span class="sub-price">R$ 137,00</span><span class="sub-period" data-i18n="perMonth">/ mês</span></div>
+  <div class="sub-note" data-i18n="cancelAnytime">Cancele quando quiser, sem multa ou burocracia.</div>
+  <a class="sub-cta" id="sub-cta-btn" href="#" target="_blank" rel="noopener" onclick="goToCheckout(event)" data-i18n="subscribeCta">ASSINAR AGORA</a>
+  <div class="sub-foot" data-i18n="securePayment">🔒 Pagamento seguro &nbsp;•&nbsp; Acesso imediato</div>
+  <div style="text-align:center;font-size:10px;color:var(--text2);margin-top:8px;line-height:1.5" data-i18n="afterPaymentCreateAccount2">Após o pagamento, volte aqui e crie sua conta com o mesmo e-mail</div>
+  <div style="text-align:center;font-size:9.5px;color:var(--text2);margin-top:10px;line-height:1.5"><span data-i18n="notFinancialAdvice">Este produto é uma ferramenta de análise técnica e não constitui indicação financeira.</span><br><a href="legal.html" target="_blank" rel="noopener" style="color:var(--text2);text-decoration:underline" data-i18n="termsLink">Termos de Uso e Política de Privacidade</a></div>
 </div></div>
 <!-- FREE MODE CARD — aparece só quando free_mode=true no banco -->
 <div id="free-mode-overlay"> <div class="sub-card">
   <button class="sub-close" onclick="closeFreeModeCard()"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
-  <div class="sub-badge"><span class="dotpulse"></span> IA ATIVA AGORA</div>
-  <div class="sub-title">Acesso <span>liberado</span> para todos por tempo limitado</div>
-  <div class="sub-sub">O indicador de análise técnica em tempo real está aberto para qualquer pessoa, sem necessidade de cadastro ou assinatura.</div>
+  <div class="sub-badge"><span class="dotpulse"></span> <span data-i18n="aiActiveNow">IA ATIVA AGORA</span></div>
+  <div class="sub-title" data-i18n="freeAccessTitle">Acesso <span>liberado</span> para todos por tempo limitado</div>
+  <div class="sub-sub" data-i18n="freeAccessDesc">O indicador de análise técnica em tempo real está aberto para qualquer pessoa, sem necessidade de cadastro ou assinatura.</div>
   <ul class="sub-features">
-    <li><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Indicador de tendência plotado direto no gráfico</li>
-    <li><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Medidor técnico de força compradora x vendedora</li>
-    <li><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Timeframes 1M e 5M</li>
+    <li><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> <span data-i18n="featTrend">Indicador de tendência plotado direto no gráfico</span></li>
+    <li><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> <span data-i18n="featStrength">Medidor técnico de força compradora x vendedora</span></li>
+    <li><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> <span data-i18n="featTimeframes">Timeframes 1M e 5M</span></li>
   </ul>
-  <div class="sub-note" style="margin-bottom:0">Essa liberação é temporária e pode ser encerrada em breve. Aproveite enquanto está disponível.</div>
+  <div class="sub-note" style="margin-bottom:0" data-i18n="freeAccessNote">Essa liberação é temporária e pode ser encerrada em breve. Aproveite enquanto está disponível.</div>
 </div></div>
-<div id="auth-modal"> <div class="auth-box"> <button class="modal-close" onclick="closeAuth()" style="position:absolute;top:10px;right:10px;z-index:1"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button> <div class="auth-hdr"> <div class="auth-logo">√</div> <div class="auth-title">SCALPER<span style="color:var(--accent)">AI</span> TRADER</div> <div class="auth-sub">Faça login para acessar a IA</div> </div> <div class="auth-tabs"> <button class="auth-tab active" id="tab-login" onclick="switchAuthTab('login')">ENTRAR</button> <button class="auth-tab" id="tab-register" onclick="switchAuthTab('register')">CRIAR CONTA</button> </div> <div class="auth-form"> <div class="auth-field"> <div class="auth-label">E-MAIL</div> <input class="auth-input" id="auth-email" type="email" placeholder="seu@email.com" autocomplete="email"> </div> <div class="auth-field"> <div class="auth-label">SENHA</div> <input class="auth-input" id="auth-pass" type="password" placeholder="••••••••" autocomplete="current-password"> </div> <div class="auth-err" id="auth-err"></div> <button class="auth-btn" id="auth-submit" onclick="doAuth()">ENTRAR</button> <div id="auth-register-hint" style="display:none;margin-top:14px;padding:10px 12px;border-radius:8px;background:rgba(0,200,255,.08);border:1px solid rgba(0,200,255,.25);font-size:11px;line-height:1.5;color:var(--text2)">⚠️ Use o <strong>mesmo e-mail</strong> que você usou no pagamento da assinatura. É assim que liberamos seu acesso automaticamente.</div> <a href="faq.html" target="_blank" rel="noopener" style="display:block;width:100%;margin-top:14px;background:transparent;border:none;color:var(--text2);font-size:11px;text-decoration:underline;cursor:pointer;padding:4px;text-align:center">Dúvidas frequentes</a> <div style="text-align:center;font-size:9.5px;color:var(--text2);margin-top:4px;line-height:1.5">Ao continuar, você concorda com os <a href="legal.html" target="_blank" rel="noopener" style="color:var(--text2)">Termos de Uso e Política de Privacidade</a></div> </div> </div>
+<div id="auth-modal"> <div class="auth-box"> <button class="modal-close" onclick="closeAuth()" style="position:absolute;top:10px;right:10px;z-index:1"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button> <div class="auth-hdr"> <div class="auth-logo">√</div> <div class="auth-title">SCALPER<span style="color:var(--accent)">AI</span> TRADER</div> <div class="auth-sub" data-i18n="loginToAccessAI">Faça login para acessar a IA</div> </div> <div class="auth-tabs"> <button class="auth-tab active" id="tab-login" onclick="switchAuthTab('login')" data-i18n="enter">ENTRAR</button> <button class="auth-tab" id="tab-register" onclick="switchAuthTab('register')" data-i18n="createAccount">CRIAR CONTA</button> </div> <div class="auth-form"> <div class="auth-field"> <div class="auth-label" data-i18n="email">E-MAIL</div> <input class="auth-input" id="auth-email" type="email" placeholder="seu@email.com" data-i18n-placeholder="emailPlaceholder" autocomplete="email"> </div> <div class="auth-field"> <div class="auth-label" data-i18n="password">SENHA</div> <input class="auth-input" id="auth-pass" type="password" placeholder="••••••••" autocomplete="current-password"> </div> <div class="auth-err" id="auth-err"></div> <button class="auth-btn" id="auth-submit" onclick="doAuth()">ENTRAR</button> <div id="auth-register-hint" style="display:none;margin-top:14px;padding:10px 12px;border-radius:8px;background:rgba(0,200,255,.08);border:1px solid rgba(0,200,255,.25);font-size:11px;line-height:1.5;color:var(--text2)" data-i18n="registerHint">⚠️ Use o <strong>mesmo e-mail</strong> que você usou no pagamento da assinatura. É assim que liberamos seu acesso automaticamente.</div> <a href="faq.html" target="_blank" rel="noopener" style="display:block;width:100%;margin-top:14px;background:transparent;border:none;color:var(--text2);font-size:11px;text-decoration:underline;cursor:pointer;padding:4px;text-align:center" data-i18n="faqLink">Dúvidas frequentes</a> <div style="text-align:center;font-size:9.5px;color:var(--text2);margin-top:4px;line-height:1.5"><span data-i18n="agreeTerms">Ao continuar, você concorda com os </span><a href="legal.html" target="_blank" rel="noopener" style="color:var(--text2)" data-i18n="termsLink">Termos de Uso e Política de Privacidade</a></div> </div> </div>
 </div>
-<!--  USER MODAL  -->
-<div id="user-modal" style="display:none;position:fixed;inset:0;z-index:200;background:rgba(0,0,0,.85);align-items:center;justify-content:center;backdrop-filter:blur(4px)"> <div class="auth-box"> <div class="modal-hdr"> <div class="modal-title"> MINHA CONTA</div> <button class="modal-close" onclick="closeUserModal()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button> </div> <div class="user-info-bar"> <span class="user-email">Logado como: <span id="user-email-show"></span></span> <button class="logout-btn" onclick="doLogout()">SAIR</button> </div>
-<div id="user-active-section" class="apikey-section" style="display:none;flex-direction:column;gap:8px"> <button class="icon-btn" onclick="openSettings()" style="width:100%;display:flex;align-items:center;justify-content:center;gap:6px;padding:8px"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg> CONFIGURAÇÕES</button> <button class="icon-btn" onclick="openChangePass()" style="width:100%;display:flex;align-items:center;justify-content:center;gap:6px;padding:8px"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg> TROCAR SENHA</button> <a class="icon-btn" href="faq.html" target="_blank" rel="noopener" style="width:100%;display:flex;align-items:center;justify-content:center;gap:6px;padding:8px;text-decoration:none">? DÚVIDAS</a> </div>
-<div id="user-pending-section" class="apikey-section" style="display:none;flex-direction:column;gap:10px;padding:4px 0"> <div style="text-align:center;font-size:11px;color:var(--text2);line-height:1.6;padding:4px 8px">Você ainda não possui uma assinatura ativa.<br>Assine para liberar os sinais no gráfico.</div> <a href="#" onclick="goToCheckout(event);closeUserModal();" style="display:flex;align-items:center;justify-content:center;gap:6px;padding:10px;background:linear-gradient(135deg,var(--accent),#0099cc);color:#001018;font-weight:800;font-size:12px;letter-spacing:1px;border-radius:8px;text-decoration:none;width:100%;box-sizing:border-box">✦ ASSINAR AGORA</a> <div style="text-align:center;font-size:10px;color:var(--text2);line-height:1.5">Após o pagamento, volte e crie sua conta com o mesmo e-mail</div> </div>
+<!--  USER DRAWER (lateral)  -->
+<div id="user-drawer-overlay" onclick="if(event.target===this)closeUserModal()">
+<div id="user-drawer">
+  <div class="drawer-hdr">
+    <div class="drawer-title" data-i18n="myAccount">MINHA CONTA</div>
+    <button class="modal-close" onclick="closeUserModal()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+  </div>
+  <div class="drawer-body">
+    <div id="drawer-user-bar" class="drawer-user-bar" style="display:none">
+      <span class="drawer-email" data-i18n="loggedInAs">Logado como: <span id="user-email-show"></span></span>
+    </div>
+    <div id="user-loggedout-section" style="display:flex;flex-direction:column;gap:10px;padding:16px 18px">
+      <div style="text-align:center;font-size:11px;color:var(--text2);line-height:1.6;padding:4px 8px" data-i18n="notLoggedIn">Faça login para acessar sua conta e os sinais do gráfico.</div>
+      <button class="drawer-item" style="justify-content:center;background:linear-gradient(135deg,var(--accent),#0099cc);color:#001018" onclick="closeUserModal();openAuth();"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg> <span data-i18n="login">LOGIN</span></button>
+      <a class="drawer-item" href="faq.html" target="_blank" rel="noopener"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg> <span data-i18n="faq">DÚVIDAS</span></a>
+    </div>
+    <div id="user-active-section" class="drawer-nav" style="display:none">
+      <button class="drawer-item" onclick="openSettings()"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg> <span data-i18n="settings">CONFIGURAÇÕES</span></button>
+      <button class="drawer-item" onclick="openChangePass()"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg> <span data-i18n="changePassword">TROCAR SENHA</span></button>
+      <a class="drawer-item" href="faq.html" target="_blank" rel="noopener"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg> <span data-i18n="faq">DÚVIDAS</span></a>
+      <div class="drawer-sep"></div>
+      <button class="drawer-item danger" onclick="doLogout()"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg> <span data-i18n="logout">SAIR</span></button>
+    </div>
+    <div id="user-pending-section" style="display:none;flex-direction:column;gap:10px;padding:16px 18px">
+      <div style="text-align:center;font-size:11px;color:var(--text2);line-height:1.6;padding:4px 8px" data-i18n="noActiveSubscription">Você ainda não possui uma assinatura ativa.<br>Assine para liberar os sinais no gráfico.</div>
+      <a href="#" onclick="goToCheckout(event);closeUserModal();" style="display:flex;align-items:center;justify-content:center;gap:6px;padding:10px;background:linear-gradient(135deg,var(--accent),#0099cc);color:#001018;font-weight:800;font-size:12px;letter-spacing:1px;border-radius:8px;text-decoration:none;width:100%;box-sizing:border-box" data-i18n="subscribeNow">✦ ASSINAR AGORA</a>
+      <div style="text-align:center;font-size:10px;color:var(--text2);line-height:1.5" data-i18n="afterPaymentCreateAccount">Após o pagamento, volte e crie sua conta com o mesmo e-mail</div>
+      <div class="drawer-sep" style="margin:6px 0"></div>
+      <button class="drawer-item danger" style="justify-content:center" onclick="doLogout()"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg> <span data-i18n="logout">SAIR</span></button>
+    </div>
+  </div>
+  <div class="drawer-foot">
+    <div class="drawer-lang-row">
+      <span class="drawer-lang-label"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg> <span data-i18n="language">IDIOMA</span></span>
+      <div class="lang-toggle">
+        <button class="lang-opt" id="lang-opt-pt" onclick="setLang('pt')">PT</button>
+        <button class="lang-opt" id="lang-opt-en" onclick="setLang('en')">EN</button>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
 </div></div>
 <!-- CHANGE PASSWORD MODAL -->
-<div id="changepass-modal" style="display:none;position:fixed;inset:0;z-index:210;background:rgba(0,0,0,.85);align-items:center;justify-content:center;backdrop-filter:blur(4px)"> <div class="auth-box"> <button class="modal-close" onclick="closeChangePass()" style="position:absolute;top:10px;right:10px;z-index:1"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button> <div class="auth-hdr"> <div class="auth-logo">🔒</div> <div class="auth-title">TROCAR SENHA</div> <div class="auth-sub">Defina uma nova senha de acesso</div> </div> <div class="auth-form"> <div class="auth-field"> <div class="auth-label">NOVA SENHA</div> <input class="auth-input" id="newpass-1" type="password" placeholder="••••••••" autocomplete="new-password"> </div> <div class="auth-field"> <div class="auth-label">CONFIRMAR NOVA SENHA</div> <input class="auth-input" id="newpass-2" type="password" placeholder="••••••••" autocomplete="new-password"> </div> <div class="auth-err" id="changepass-err"></div> <div class="auth-err" id="changepass-ok" style="display:none;color:var(--green)"></div> <button class="auth-btn" id="changepass-submit" onclick="doChangePassword()">SALVAR NOVA SENHA</button> </div> </div>
+<div id="changepass-modal" style="display:none;position:fixed;inset:0;z-index:210;background:rgba(0,0,0,.85);align-items:center;justify-content:center;backdrop-filter:blur(4px)"> <div class="auth-box"> <button class="modal-close" onclick="closeChangePass()" style="position:absolute;top:10px;right:10px;z-index:1"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button> <div class="auth-hdr"> <div class="auth-logo" style="display:flex;justify-content:center"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="color:var(--accent)"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></div> <div class="auth-title" data-i18n="changePasswordTitle">TROCAR SENHA</div> <div class="auth-sub" data-i18n="setNewPassword">Defina uma nova senha de acesso</div> </div> <div class="auth-form"> <div class="auth-field"> <div class="auth-label" data-i18n="newPassword">NOVA SENHA</div> <input class="auth-input" id="newpass-1" type="password" placeholder="••••••••" autocomplete="new-password"> </div> <div class="auth-field"> <div class="auth-label" data-i18n="confirmNewPassword">CONFIRMAR NOVA SENHA</div> <input class="auth-input" id="newpass-2" type="password" placeholder="••••••••" autocomplete="new-password"> </div> <div class="auth-err" id="changepass-err"></div> <div class="auth-err" id="changepass-ok" style="display:none;color:var(--green)"></div> <button class="auth-btn" id="changepass-submit" onclick="doChangePassword()" data-i18n="saveNewPassword">SALVAR NOVA SENHA</button> </div> </div>
 </div>
 </div> <script>
+// 
+// I18N — SISTEMA DE TRADUÇÃO (PT/EN)
+// 
+const I18N = {
+  pt: {
+    login: 'LOGIN',
+    myAccount: 'MINHA CONTA',
+    loggedInAs: 'Logado como: ',
+    notLoggedIn: 'Faça login para acessar sua conta e os sinais do gráfico.',
+    logout: 'SAIR',
+    settings: 'CONFIGURAÇÕES',
+    changePassword: 'TROCAR SENHA',
+    faq: 'DÚVIDAS',
+    language: 'IDIOMA',
+    noActiveSubscription: 'Você ainda não possui uma assinatura ativa.<br>Assine para liberar os sinais no gráfico.',
+    subscribeNow: '✦ ASSINAR AGORA',
+    afterPaymentCreateAccount: 'Após o pagamento, volte e crie sua conta com o mesmo e-mail',
+    afterPaymentCreateAccount2: 'Após o pagamento, volte aqui e crie sua conta com o mesmo e-mail',
+    myAccountTitle: 'Minha conta',
+    menuTitle: 'Menu',
+    indicatorsOnChart: 'INDICADORES NO GRÁFICO',
+    operatingWindow: 'JANELA OPERACIONAL',
+    timeWindowName: 'Janela Horária (05:00–17:00 UTC)',
+    timeWindowDesc: 'Ativado: sinais só aparecem das 05:00 às 17:00 UTC.<br>Desativado: sinais visíveis a qualquer hora.',
+    period: 'Per.',
+    subpane: 'SUBPANE',
+    sell: 'VENDA',
+    buy: 'COMPRA',
+    strength: 'FORÇA',
+    loading: 'CARREGANDO...',
+    start: '▶ INICIAR',
+    seeHowItWorks: 'VEJA COMO FUNCIONA',
+    seeIndicatorWorking: 'Veja o indicador <span>funcionando de verdade</span> no gráfico',
+    previousSlide: 'Anterior',
+    nextSlide: 'Próxima',
+    previewDesc: 'Sinais reais de tendência, força de mercado e pontos de possível reversão, plotados automaticamente a cada vela.',
+    continueBtn: 'CONTINUAR',
+    aiActiveNow: 'IA ATIVA AGORA',
+    subTitle: 'Indicador de análise técnica em <span>tempo real</span> direto no gráfico BTC/XAU',
+    subDesc: 'Assine e tenha acesso completo à análise automatizada: tendência, força do movimento e indicador de possíveis pontos de reversão calculados a cada vela.',
+    featTrend: 'Indicador de tendência plotado direto no gráfico',
+    featStrength: 'Medidor técnico de força compradora x vendedora',
+    featTimeframes: 'Timeframes 1M e 5M',
+    featAnyDevice: 'Acesso via navegador, em qualquer dispositivo',
+    perMonth: '/ mês',
+    cancelAnytime: 'Cancele quando quiser, sem multa ou burocracia.',
+    subscribeCta: 'ASSINAR AGORA',
+    securePayment: '🔒 Pagamento seguro &nbsp;•&nbsp; Acesso imediato',
+    notFinancialAdvice: 'Este produto é uma ferramenta de análise técnica e não constitui indicação financeira.',
+    termsLink: 'Termos de Uso e Política de Privacidade',
+    freeAccessTitle: 'Acesso <span>liberado</span> para todos por tempo limitado',
+    freeAccessDesc: 'O indicador de análise técnica em tempo real está aberto para qualquer pessoa, sem necessidade de cadastro ou assinatura.',
+    freeAccessNote: 'Essa liberação é temporária e pode ser encerrada em breve. Aproveite enquanto está disponível.',
+    loginToAccessAI: 'Faça login para acessar a IA',
+    enter: 'ENTRAR',
+    createAccount: 'CRIAR CONTA',
+    email: 'E-MAIL',
+    password: 'SENHA',
+    emailPlaceholder: 'seu@email.com',
+    registerHint: '⚠️ Use o <strong>mesmo e-mail</strong> que você usou no pagamento da assinatura. É assim que liberamos seu acesso automaticamente.',
+    faqLink: 'Dúvidas frequentes',
+    agreeTerms: 'Ao continuar, você concorda com os ',
+    changePasswordTitle: 'TROCAR SENHA',
+    setNewPassword: 'Defina uma nova senha de acesso',
+    newPassword: 'NOVA SENHA',
+    confirmNewPassword: 'CONFIRMAR NOVA SENHA',
+    saveNewPassword: 'SALVAR NOVA SENHA',
+    // Mensagens dinâmicas / toasts / erros
+    connLost: 'Conexão perdida. Tentando reconectar…',
+    connRestored: 'Conexão restabelecida',
+    connCouldNotReconnect: 'Não foi possível reconectar. Atualize a página.',
+    refreshPage: 'Atualizar página',
+    refreshBtn: 'ATUALIZAR',
+    pleaseWait: 'AGUARDE...',
+    saving: 'SALVANDO...',
+    updating: 'ATUALIZANDO...',
+    deviceKicked: 'Sua conta foi acessada em outro dispositivo. Sessão encerrada aqui.',
+    sessionExpired: 'Sessão expirada. Faça login novamente.',
+    historyLimit: 'Limite de histórico atingido — não há mais velas anteriores disponíveis.',
+    fillEmailPassword: 'Preencha e-mail e senha.',
+    invalidEmail: 'E-mail inválido.',
+    passMinChars: 'A senha deve ter pelo menos 6 caracteres.',
+    emailAlreadyRegistered: 'Este e-mail já possui cadastro. Faça login.',
+    accountCreated: 'Conta criada! Faça login para continuar.',
+    authGenericError: 'Erro ao autenticar. Tente novamente.',
+    wrongEmailOrPass: 'E-mail ou senha incorretos.',
+    emailNotConfirmed: 'E-mail ainda não confirmado. Verifique sua caixa de entrada.',
+    noAccountFound: 'Nenhuma conta encontrada com este e-mail.',
+    tooManyAttempts: 'Muitas tentativas. Aguarde alguns minutos.',
+    tooManyAttempts2: 'Muitas tentativas. Aguarde alguns minutos antes de tentar novamente.',
+    weakPassword: 'Senha fraca. Use pelo menos 6 caracteres.',
+    weakPassword2: 'Senha fraca. Use pelo menos 6 caracteres, misturando letras e números.',
+    fillBothFields: 'Preencha os dois campos.',
+    passwordsDontMatch: 'As senhas não coincidem.',
+    couldNotChangePass: 'Não foi possível trocar a senha. Tente novamente.',
+    samePassword: 'A nova senha deve ser diferente da atual.',
+    passwordChanged: 'Senha alterada com sucesso!',
+    // Padrões de candle (desenhados no canvas)
+    patDoji: 'Doji',
+    patHammer: 'Martelo',
+    patShootingStar: 'Estrela Cadente',
+    patBullEngulf: 'Engolfo Alta',
+    patBearEngulf: 'Engolfo Baixa',
+    patBullMarubozu: 'Marubozu Alta',
+    patBearMarubozu: 'Marubozu Baixa',
+    patBullCandle: 'Candle Alta',
+    patBearCandle: 'Candle Baixa',
+    patHHHL: 'HH+HL (Alta)',
+    patLHLL: 'LH+LL (Baixa)',
+    patConsolidation: 'Consolidação',
+    marketClosed: 'MERCADO FECHADO',
+    volumeName: 'Volume',
+  },
+  en: {
+    login: 'LOGIN',
+    myAccount: 'MY ACCOUNT',
+    loggedInAs: 'Logged in as: ',
+    notLoggedIn: 'Log in to access your account and the chart signals.',
+    logout: 'LOG OUT',
+    settings: 'SETTINGS',
+    changePassword: 'CHANGE PASSWORD',
+    faq: 'FAQ',
+    language: 'LANGUAGE',
+    noActiveSubscription: "You don't have an active subscription yet.<br>Subscribe to unlock the signals on the chart.",
+    subscribeNow: '✦ SUBSCRIBE NOW',
+    afterPaymentCreateAccount: 'After payment, come back and create your account with the same email',
+    afterPaymentCreateAccount2: 'After payment, come back here and create your account with the same email',
+    myAccountTitle: 'My account',
+    menuTitle: 'Menu',
+    indicatorsOnChart: 'CHART INDICATORS',
+    operatingWindow: 'OPERATING WINDOW',
+    timeWindowName: 'Time Window (05:00–17:00 UTC)',
+    timeWindowDesc: 'Enabled: signals only appear from 05:00 to 17:00 UTC.<br>Disabled: signals visible at any time.',
+    period: 'Per.',
+    subpane: 'SUBPANE',
+    sell: 'SELL',
+    buy: 'BUY',
+    strength: 'STRENGTH',
+    loading: 'LOADING...',
+    start: '▶ START',
+    seeHowItWorks: 'SEE HOW IT WORKS',
+    seeIndicatorWorking: 'See the indicator <span>working for real</span> on the chart',
+    previousSlide: 'Previous',
+    nextSlide: 'Next',
+    previewDesc: 'Real trend signals, market strength and possible reversal points, automatically plotted on every candle.',
+    continueBtn: 'CONTINUE',
+    aiActiveNow: 'AI ACTIVE NOW',
+    subTitle: '<span>Real-time</span> technical analysis indicator right on the BTC/XAU chart',
+    subDesc: 'Subscribe and get full access to automated analysis: trend, movement strength and a possible-reversal-point indicator, calculated on every candle.',
+    featTrend: 'Trend indicator plotted directly on the chart',
+    featStrength: 'Technical buy x sell strength gauge',
+    featTimeframes: '1M and 5M timeframes',
+    featAnyDevice: 'Browser access, on any device',
+    perMonth: '/ month',
+    cancelAnytime: 'Cancel anytime, no fees or red tape.',
+    subscribeCta: 'SUBSCRIBE NOW',
+    securePayment: '🔒 Secure payment &nbsp;•&nbsp; Instant access',
+    notFinancialAdvice: 'This product is a technical analysis tool and does not constitute financial advice.',
+    termsLink: 'Terms of Use and Privacy Policy',
+    freeAccessTitle: '<span>Free access</span> for everyone for a limited time',
+    freeAccessDesc: 'The real-time technical analysis indicator is open to anyone, no sign-up or subscription required.',
+    freeAccessNote: 'This free access is temporary and may end soon. Enjoy it while it lasts.',
+    loginToAccessAI: 'Log in to access the AI',
+    enter: 'LOG IN',
+    createAccount: 'SIGN UP',
+    email: 'EMAIL',
+    password: 'PASSWORD',
+    emailPlaceholder: 'you@email.com',
+    registerHint: "⚠️ Use the <strong>same email</strong> you used for the subscription payment. That's how we automatically unlock your access.",
+    faqLink: 'Frequently asked questions',
+    agreeTerms: 'By continuing, you agree to the ',
+    changePasswordTitle: 'CHANGE PASSWORD',
+    setNewPassword: 'Set a new access password',
+    newPassword: 'NEW PASSWORD',
+    confirmNewPassword: 'CONFIRM NEW PASSWORD',
+    saveNewPassword: 'SAVE NEW PASSWORD',
+    // Mensagens dinâmicas / toasts / erros
+    connLost: 'Connection lost. Trying to reconnect…',
+    connRestored: 'Connection restored',
+    connCouldNotReconnect: 'Could not reconnect. Please refresh the page.',
+    refreshPage: 'Refresh page',
+    refreshBtn: 'REFRESH',
+    pleaseWait: 'PLEASE WAIT...',
+    saving: 'SAVING...',
+    updating: 'UPDATING...',
+    deviceKicked: 'Your account was accessed on another device. This session was ended.',
+    sessionExpired: 'Session expired. Please log in again.',
+    historyLimit: 'History limit reached — no more previous candles available.',
+    fillEmailPassword: 'Enter your email and password.',
+    invalidEmail: 'Invalid email.',
+    passMinChars: 'Password must be at least 6 characters.',
+    emailAlreadyRegistered: 'This email is already registered. Please log in.',
+    accountCreated: 'Account created! Log in to continue.',
+    authGenericError: 'Authentication error. Please try again.',
+    wrongEmailOrPass: 'Incorrect email or password.',
+    emailNotConfirmed: 'Email not confirmed yet. Check your inbox.',
+    noAccountFound: 'No account found with this email.',
+    tooManyAttempts: 'Too many attempts. Please wait a few minutes.',
+    tooManyAttempts2: 'Too many attempts. Please wait a few minutes before trying again.',
+    weakPassword: 'Weak password. Use at least 6 characters.',
+    weakPassword2: 'Weak password. Use at least 6 characters, mixing letters and numbers.',
+    fillBothFields: 'Fill in both fields.',
+    passwordsDontMatch: "Passwords don't match.",
+    couldNotChangePass: 'Could not change the password. Please try again.',
+    samePassword: 'The new password must be different from the current one.',
+    passwordChanged: 'Password changed successfully!',
+    // Padrões de candle (desenhados no canvas)
+    patDoji: 'Doji',
+    patHammer: 'Hammer',
+    patShootingStar: 'Shooting Star',
+    patBullEngulf: 'Bullish Engulfing',
+    patBearEngulf: 'Bearish Engulfing',
+    patBullMarubozu: 'Bullish Marubozu',
+    patBearMarubozu: 'Bearish Marubozu',
+    patBullCandle: 'Bullish Candle',
+    patBearCandle: 'Bearish Candle',
+    patHHHL: 'HH+HL (Bullish)',
+    patLHLL: 'LH+LL (Bearish)',
+    patConsolidation: 'Consolidation',
+    marketClosed: 'MARKET CLOSED',
+    volumeName: 'Volume',
+  }
+};
+let _lang = 'pt';
+function t(key){ return (I18N[_lang] && I18N[_lang][key]) || I18N.pt[key] || key; }
+function applyI18n(){
+  document.documentElement.lang = _lang === 'en' ? 'en' : 'pt-BR';
+  document.querySelectorAll('[data-i18n]').forEach(el=>{
+    const key = el.dataset.i18n;
+    if(!(key in I18N.pt)) return;
+    if(key === 'loggedInAs'){
+      // preserva o <span id="user-email-show"> dentro do elemento
+      const emailSpan = el.querySelector('#user-email-show');
+      el.innerHTML = t(key) + (emailSpan ? emailSpan.outerHTML : '<span id="user-email-show"></span>');
+    } else {
+      el.innerHTML = t(key);
+    }
+  });
+  document.querySelectorAll('[data-i18n-placeholder]').forEach(el=>{
+    const key = el.dataset.i18nPlaceholder;
+    if(key in I18N.pt) el.placeholder = t(key);
+  });
+  document.querySelectorAll('[data-i18n-title]').forEach(el=>{
+    const key = el.dataset.i18nTitle;
+    if(key in I18N.pt) el.title = t(key);
+  });
+  document.querySelectorAll('[data-i18n-aria]').forEach(el=>{
+    const key = el.dataset.i18nAria;
+    if(key in I18N.pt) el.setAttribute('aria-label', t(key));
+  });
+  // Botões de idioma no drawer
+  document.getElementById('lang-opt-pt')?.classList.toggle('active', _lang==='pt');
+  document.getElementById('lang-opt-en')?.classList.toggle('active', _lang==='en');
+  // Reconstrói partes com texto dinâmico gerado via JS
+  try{ buildIndSettings(); }catch(e){}
+  try{ drawChart(); }catch(e){}
+  // Re-renderiza textos de auth conforme a aba/modo atual
+  try{ refreshAuthModeTexts(); }catch(e){}
+}
+function setLang(lang){
+  if(lang!=='pt' && lang!=='en') return;
+  _lang = lang;
+  try{ localStorage.setItem('btcai-lang', lang); }catch(e){}
+  applyI18n();
+}
+function loadLang(){
+  let lang = 'pt';
+  try{
+    const saved = localStorage.getItem('btcai-lang');
+    if(saved==='pt' || saved==='en'){ lang = saved; }
+    else {
+      const nav = (navigator.language||'pt').toLowerCase();
+      if(!nav.startsWith('pt')) lang = 'en';
+    }
+  }catch(e){}
+  _lang = lang;
+}
+loadLang();
+
 // 
 // SETTINGS STATE
 // 
@@ -613,8 +956,9 @@ function toggleBookmapValues(){
 function buildIndSettings(){
   const el = document.getElementById('ind-settings-list');
   function row(ind,i){
-    const badge = '<span style="font-size:7px;background:rgba(0,212,255,.12);color:var(--accent);padding:1px 4px;border-radius:3px;margin-left:4px">SUBPANE</span>';
-    return `<div class="ind-toggle-row"> <div class="ind-toggle-left"> <div style="width:10px;height:10px;border-radius:50%;background:${ind.color};flex-shrink:0"></div> <div class="ind-toggle-name">${ind.name}${badge}</div> ${ind.period>0?`<div class="ind-period"><label>Per.</label><input type="number" value="${ind.period}" min="2" max="500" onchange="INDS_CONFIG[${INDS_CONFIG.indexOf(ind)}].period=+this.value;drawChart()" style="width:38px"></div>`:''}
+    const badge = '<span style="font-size:7px;background:rgba(0,212,255,.12);color:var(--accent);padding:1px 4px;border-radius:3px;margin-left:4px">'+t('subpane')+'</span>';
+    const displayName = ind.id==='vol' ? t('volumeName') : ind.name;
+    return `<div class="ind-toggle-row"> <div class="ind-toggle-left"> <div style="width:10px;height:10px;border-radius:50%;background:${ind.color};flex-shrink:0"></div> <div class="ind-toggle-name">${displayName}${badge}</div> ${ind.period>0?`<div class="ind-period"><label>${t('period')}</label><input type="number" value="${ind.period}" min="2" max="500" onchange="INDS_CONFIG[${INDS_CONFIG.indexOf(ind)}].period=+this.value;drawChart()" style="width:38px"></div>`:''}
       </div> <div class="ind-toggle-right"> <label class="toggle"> <input type="checkbox" ${ind.enabled?'checked':''} onchange="INDS_CONFIG[${INDS_CONFIG.indexOf(ind)}].enabled=this.checked;drawChart();clearTimeout(_saveSettingsTimer);_saveSettingsTimer=setTimeout(saveSettingsToDB,800)"> <span class="toggle-slider"></span> </label> </div> </div>`;
   }
   el.innerHTML = INDS_CONFIG.map((ind,i)=>row(ind,i)).join('');
@@ -833,7 +1177,7 @@ function drawChart(){
     ctx.fillStyle='rgba(255,214,0,0.85)';
     ctx.font='bold 15px Exo 2,sans-serif';
     ctx.textAlign='center';
-    ctx.fillText('⏸  MERCADO FECHADO', (PAD.L+(w-PAD.R))/2, (h-PAD.B)/2 - 12);
+    ctx.fillText('⏸  '+t('marketClosed'), (PAD.L+(w-PAD.R))/2, (h-PAD.B)/2 - 12);
     ctx.fillStyle='rgba(255,255,255,0.4)';
     ctx.font='11px Exo 2,sans-serif';
     ctx.fillText('XAU/USD opera de seg a sex • Reabre domingo ~18h (horário de Brasília)', (PAD.L+(w-PAD.R))/2, (h-PAD.B)/2 + 12);
@@ -1012,12 +1356,12 @@ function detectPatternIdx(start, end){
     const upper = c.high - Math.max(c.open,c.close);
     const lower = Math.min(c.open,c.close) - c.low;
     let pat = null;
-    if(body < range*0.1) pat='Doji';
-    else if(lower>body*2&&upper<body*0.3) pat='Martelo';
-    else if(upper>body*2&&lower<body*0.3) pat='Shooting Star';
-    else if(c.close>c.open&&p.close<p.open&&c.open<p.close&&c.close>p.open) pat='Engolfo Alta';
-    else if(c.close<c.open&&p.close>p.open&&c.open>p.close&&c.close<p.open) pat='Engolfo Baixa';
-    else if(body>range*0.75) pat=c.close>c.open?'Marubozu Alta':'Marubozu Baixa';
+    if(body < range*0.1) pat=t('patDoji');
+    else if(lower>body*2&&upper<body*0.3) pat=t('patHammer');
+    else if(upper>body*2&&lower<body*0.3) pat=t('patShootingStar');
+    else if(c.close>c.open&&p.close<p.open&&c.open<p.close&&c.close>p.open) pat=t('patBullEngulf');
+    else if(c.close<c.open&&p.close>p.open&&c.open>p.close&&c.close<p.open) pat=t('patBearEngulf');
+    else if(body>range*0.75) pat=c.close>c.open?t('patBullMarubozu'):t('patBearMarubozu');
     if(pat){ candles[i]._pattern=pat; return i; }
   }
   return -1;
@@ -1099,7 +1443,7 @@ function drawIndicators(start, end, cw, cAreaH){
 
     // Label do indicador
     ctx.fillStyle='rgba(74,112,144,0.7)'; ctx.font='bold 8px Share Tech Mono,monospace'; ctx.textAlign='left';
-    ctx.fillText(ind.name, PAD.L+4, top+10);
+    ctx.fillText(ind.id==='vol'?t('volumeName'):ind.name, PAD.L+4, top+10);
 
     //  RSI 
     if(ind.type==='rsi'){
@@ -1841,8 +2185,8 @@ function detectFollowLineSignal(candles){
   const curr = fl[fl.length - 2]; // penúltimo (último fechado = onde o label aparece)
   // trendLine do candle mais recente (em formação) — nível técnico atual do indicador
   const flTrendLine = fl[fl.length - 1]?.trendLine ?? null;
-  if(prev.iTrend === -1 && curr.iTrend === 1) return { dir: 'COMPRA', flTrendLine };  //  virou azul
-  if(prev.iTrend === 1  && curr.iTrend === -1) return { dir: 'VENDA',  flTrendLine };  //  virou vermelho
+  if(prev.iTrend === -1 && curr.iTrend === 1) return { dir: t('buy'), flTrendLine };  //  virou azul
+  if(prev.iTrend === 1  && curr.iTrend === -1) return { dir: t('sell'),  flTrendLine };  //  virou vermelho
   return null;
 }
 
@@ -1963,8 +2307,8 @@ function showHistoryLimitToast(){
   if(_historyLimitShown) return;
   _historyLimitShown=true;
   const msg = candles.length>=MAX_CANDLES_HISTORY
-    ? `Limite de ${MAX_CANDLES_HISTORY.toLocaleString('pt-BR')} velas atingido.`
-    : 'Limite de histórico atingido — não há mais velas anteriores disponíveis.';
+    ? (_lang==='en' ? `Limit of ${MAX_CANDLES_HISTORY.toLocaleString('en-US')} candles reached.` : `Limite de ${MAX_CANDLES_HISTORY.toLocaleString('pt-BR')} velas atingido.`)
+    : t('historyLimit');
   showToast('warn',msg,{key:'history-limit',duration:4500});
   setTimeout(()=>{ _historyLimitShown=false; }, 8000); // permite mostrar de novo depois de um tempo, evita spam ao continuar arrastando
 }
@@ -2088,7 +2432,7 @@ function showToast(type, text, opts){
   if(opts.showRefresh){
     const btn = document.createElement('button');
     btn.className = 'toast-refresh-btn';
-    btn.textContent = 'ATUALIZAR';
+    btn.textContent = t('refreshBtn');
     btn.onclick = ()=>location.reload();
     el.appendChild(btn);
   }
@@ -2120,12 +2464,12 @@ function onConnectionLost(){
   if(_connIsDown) { _toastReconnectAttempts++; return; }
   _connIsDown = true;
   clearToast('ok','conn');
-  showToast('warn','Conexão perdida. Tentando reconectar…',{key:'conn',persist:true});
+  showToast('warn',t('connLost'),{key:'conn',persist:true});
   _toastReconnectAttempts++;
   // Depois de várias tentativas sem sucesso, sugere atualizar a página
   if(_toastStaleTimer) clearTimeout(_toastStaleTimer);
   _toastStaleTimer = setTimeout(()=>{
-    showToast('err','Não foi possível reconectar. Atualize a página.',{key:'stale',persist:true,showRefresh:true});
+    showToast('err',t('connCouldNotReconnect'),{key:'stale',persist:true,showRefresh:true});
   }, 15000);
 }
 
@@ -2134,7 +2478,7 @@ function onConnectionRestored(){
     clearToast('warn','conn');
     clearToast('err','stale');
     if(_toastStaleTimer){ clearTimeout(_toastStaleTimer); _toastStaleTimer=null; }
-    showToast('ok','Conexão restabelecida',{key:'conn'});
+    showToast('ok',t('connRestored'),{key:'conn'});
   }
   _toastReconnectAttempts = 0;
   _connIsDown = false;
@@ -2379,14 +2723,14 @@ function detectCandlePattern(arr){
   const c=arr[arr.length-1],p=arr[arr.length-2];
   const body=Math.abs(c.close-c.open),range=c.high-c.low||0.0001;
   const upper=c.high-Math.max(c.open,c.close),lower=Math.min(c.open,c.close)-c.low;
-  if(body<range*0.1)return'Doji';
-  if(lower>body*2&&upper<body*0.3)return'Martelo';
-  if(upper>body*2&&lower<body*0.3)return'Shooting Star';
-  if(c.close>c.open&&p.close<p.open&&c.open<p.close&&c.close>p.open)return'Engolfo de Alta';
-  if(c.close<c.open&&p.close>p.open&&c.open>p.close&&c.close<p.open)return'Engolfo de Baixa';
-  if(c.close>c.open&&body>range*0.7)return'Marubozu Alta';
-  if(c.close<c.open&&body>range*0.7)return'Marubozu Baixa';
-  return c.close>c.open?'Candle Alta':'Candle Baixa';
+  if(body<range*0.1)return t('patDoji');
+  if(lower>body*2&&upper<body*0.3)return t('patHammer');
+  if(upper>body*2&&lower<body*0.3)return t('patShootingStar');
+  if(c.close>c.open&&p.close<p.open&&c.open<p.close&&c.close>p.open)return t('patBullEngulf');
+  if(c.close<c.open&&p.close>p.open&&c.open>p.close&&c.close<p.open)return t('patBearEngulf');
+  if(c.close>c.open&&body>range*0.7)return t('patBullMarubozu');
+  if(c.close<c.open&&body>range*0.7)return t('patBearMarubozu');
+  return c.close>c.open?t('patBullCandle'):t('patBearCandle');
 }
 function detectTrend(cls,s=20,l=50){
   if(cls.length<l)return'lateral';
@@ -2401,7 +2745,7 @@ function detectStructure(arr){
   const hl=ls[ls.length-1]>Math.min(...ls.slice(0,-1));
   const ll=ls[ls.length-1]<Math.min(...ls.slice(0,-1));
   const lh=hs[hs.length-1]<Math.max(...hs.slice(0,-1));
-  if(hh&&hl)return'HH+HL (Alta)'; if(lh&&ll)return'LH+LL (Baixa)'; return'Consolidação';
+  if(hh&&hl)return t('patHHHL'); if(lh&&ll)return t('patLHLL'); return t('patConsolidation');
 }
 
 function setInd(id,val,cls,sig){
@@ -2699,11 +3043,10 @@ function forceLogoutOtherDevice(){
   stopDeviceCheck();
   if(_tokenRefreshTimer){ clearInterval(_tokenRefreshTimer); _tokenRefreshTimer=null; }
   _session=null; localStorage.removeItem('btcai_session');
-  document.getElementById('login-btn').style.display='';
-  document.getElementById('user-avatar').classList.remove('visible');
-  document.getElementById('user-modal').style.display='none';
+  updateDrawerLoginState();
+  document.getElementById('user-drawer-overlay').classList.remove('open');
   document.getElementById('changepass-modal').style.display='none';
-  showToast('err','Sua conta foi acessada em outro dispositivo. Sessão encerrada aqui.',{key:'device',persist:true,showRefresh:true});
+  showToast('err',t('deviceKicked'),{key:'device',persist:true,showRefresh:true});
   openAuth();
 }
 
@@ -2742,18 +3085,17 @@ function startTokenRefresh(){
       _session=null; localStorage.removeItem('btcai_session');
       clearInterval(_tokenRefreshTimer);
       stopDeviceCheck();
-      showToast('err','Sessão expirada. Faça login novamente.',{key:'session-expired'});
+      showToast('err',t('sessionExpired'),{key:'session-expired'});
       openAuth();
     }
   }, 45*60*1000); // 45 minutos
 }
 
 async function onLogin(){
-  document.getElementById('login-btn').style.display='none';
-  document.getElementById('user-avatar').classList.add('visible');
+  updateDrawerLoginState();
   document.getElementById('user-email-show').textContent=_session.user.email;
   document.getElementById('auth-modal').classList.remove('open');
-  document.getElementById('user-modal').style.display='none';
+  document.getElementById('user-drawer-overlay').classList.remove('open');
   await loadApiKeyFromDB();
 }
 
@@ -2846,20 +3188,38 @@ function closeAuth(){document.getElementById('auth-modal').classList.remove('ope
 document.getElementById('auth-modal')?.addEventListener('click',e=>{if(e.target===document.getElementById('auth-modal'))closeAuth();});
 
 function openUserModal(){
-  if(!_session){openAuth();return;}
-  document.getElementById('user-modal').style.display='flex';
+  document.getElementById('user-drawer-overlay').classList.add('open');
+  updateDrawerLoginState();
 }
-function closeUserModal(){document.getElementById('user-modal').style.display='none';}
-document.getElementById('user-modal')?.addEventListener('click',e=>{if(e.target===document.getElementById('user-modal'))closeUserModal();});
+function closeUserModal(){document.getElementById('user-drawer-overlay').classList.remove('open');}
+// Alterna, dentro do drawer, entre o bloco "não logado" (botão de Login) e o
+// bloco de conta (ativo/pendente), sempre mantendo o idioma acessível.
+function updateDrawerLoginState(){
+  const loggedOut = document.getElementById('user-loggedout-section');
+  const userBar = document.getElementById('drawer-user-bar');
+  if(!loggedOut) return;
+  if(_session){
+    loggedOut.style.display='none';
+    if(userBar) userBar.style.display='flex';
+  } else {
+    loggedOut.style.display='flex';
+    if(userBar) userBar.style.display='none';
+  }
+}
 
 let _authMode='login';
 function switchAuthTab(mode){
   _authMode=mode;
   document.getElementById('tab-login').classList.toggle('active',mode==='login');
   document.getElementById('tab-register').classList.toggle('active',mode==='register');
-  document.getElementById('auth-submit').textContent=mode==='login'?'ENTRAR':'CRIAR CONTA';
+  document.getElementById('auth-submit').textContent=mode==='login'?t('enter'):t('createAccount');
   document.getElementById('auth-err').style.display='none';
   document.getElementById('auth-register-hint').style.display=mode==='register'?'block':'none';
+}
+// Reaplica os textos do modal de auth conforme o modo atual (chamado ao trocar idioma)
+function refreshAuthModeTexts(){
+  const submit = document.getElementById('auth-submit');
+  if(submit && !submit.disabled){ submit.textContent = _authMode==='login'?t('enter'):t('createAccount'); }
 }
 
 // Cria a linha em 'subscriptions' com status 'pending' assim que a conta é criada.
@@ -2912,10 +3272,10 @@ async function doAuth(){
   const err=document.getElementById('auth-err');
   const btn=document.getElementById('auth-submit');
   err.style.display='none';
-  if(!email||!pass){err.textContent='Preencha e-mail e senha.';err.style.display='block';return;}
-  if(!/\S+@\S+\.\S+/.test(email)){err.textContent='E-mail inválido.';err.style.display='block';return;}
-  if(pass.length<6){err.textContent='A senha deve ter pelo menos 6 caracteres.';err.style.display='block';return;}
-  btn.disabled=true;btn.textContent='AGUARDE...';
+  if(!email||!pass){err.textContent=t('fillEmailPassword');err.style.display='block';return;}
+  if(!/\S+@\S+\.\S+/.test(email)){err.textContent=t('invalidEmail');err.style.display='block';return;}
+  if(pass.length<6){err.textContent=t('passMinChars');err.style.display='block';return;}
+  btn.disabled=true;btn.textContent=t('pleaseWait');
   try{
     const path=_authMode==='login'?'/token?grant_type=password':'/signup';
     const d=await supaAuth(path,{email,password:pass});
@@ -2923,17 +3283,17 @@ async function doAuth(){
       // O Supabase, por segurança, não retorna erro quando o e-mail já existe:
       // ele responde com sucesso e "identities: []" (nenhuma identidade nova criada).
       if(Array.isArray(d.user.identities) && d.user.identities.length===0){
-        err.textContent='Este e-mail já possui cadastro. Faça login.';
+        err.textContent=t('emailAlreadyRegistered');
         err.style.display='block';
         switchAuthTab('login');
-        btn.disabled=false;btn.textContent='ENTRAR';
+        btn.disabled=false;btn.textContent=t('enter');
         return;
       }
       await ensurePendingSubscription(email, d.user.id);
-      err.textContent='Conta criada! Faça login para continuar.';
+      err.textContent=t('accountCreated');
       err.style.display='block';
       switchAuthTab('login');
-      btn.disabled=false;btn.textContent='ENTRAR';
+      btn.disabled=false;btn.textContent=t('enter');
       return;
     }
     _session={access_token:d.access_token,refresh_token:d.refresh_token,user:d.user};
@@ -2948,33 +3308,33 @@ async function doAuth(){
   }catch(e){
     const code=(e.code||'').toLowerCase();
     const msg=(e.message||'').toLowerCase();
-    let friendly='Erro ao autenticar. Tente novamente.';
+    let friendly=t('authGenericError');
     if(_authMode==='login'){
       if(code==='invalid_credentials' || msg.includes('invalid login') || msg.includes('invalid credentials') || msg.includes('wrong password')){
-        friendly='E-mail ou senha incorretos.';
+        friendly=t('wrongEmailOrPass');
       } else if(code==='email_not_confirmed' || msg.includes('email not confirmed')){
-        friendly='E-mail ainda não confirmado. Verifique sua caixa de entrada.';
+        friendly=t('emailNotConfirmed');
       } else if(code==='user_not_found' || msg.includes('user not found') || msg.includes('no user')){
-        friendly='Nenhuma conta encontrada com este e-mail.';
+        friendly=t('noAccountFound');
       } else if(code==='over_request_rate_limit' || code==='over_email_send_rate_limit' || msg.includes('too many')){
-        friendly='Muitas tentativas. Aguarde alguns minutos.';
+        friendly=t('tooManyAttempts');
       } else if(code==='email_address_invalid' || msg.includes('invalid email') || msg.includes('email address')){
-        friendly='E-mail inválido.';
+        friendly=t('invalidEmail');
       }
     } else {
       if(code==='user_already_exists' || code==='email_exists' || msg.includes('already registered') || msg.includes('already exists') || msg.includes('user already')){
-        friendly='Este e-mail já possui cadastro. Faça login.';
+        friendly=t('emailAlreadyRegistered');
       } else if(code==='weak_password' || msg.includes('weak password') || msg.includes('password')){
-        friendly='Senha fraca. Use pelo menos 6 caracteres.';
+        friendly=t('weakPassword');
       } else if(code==='email_address_invalid' || msg.includes('invalid email') || msg.includes('email address')){
-        friendly='E-mail inválido.';
+        friendly=t('invalidEmail');
       } else if(code==='over_email_send_rate_limit' || msg.includes('too many')){
-        friendly='Muitas tentativas. Aguarde alguns minutos antes de tentar novamente.';
+        friendly=t('tooManyAttempts2');
       }
     }
     err.textContent=friendly;err.style.display='block';
   }
-  btn.disabled=false;btn.textContent=_authMode==='login'?'ENTRAR':'CRIAR CONTA';
+  btn.disabled=false;btn.textContent=_authMode==='login'?t('enter'):t('createAccount');
 }
 // Enter key
 ['auth-email','auth-pass'].forEach(id=>document.getElementById(id)?.addEventListener('keydown',e=>{if(e.key==='Enter')doAuth();}));
@@ -2988,9 +3348,8 @@ async function doLogout(){
   stopDeviceCheck();
   _session=null;localStorage.removeItem('btcai_session');
   if(_tokenRefreshTimer){ clearInterval(_tokenRefreshTimer); _tokenRefreshTimer=null; }
-  document.getElementById('login-btn').style.display='';
-  document.getElementById('user-avatar').classList.remove('visible');
-  document.getElementById('user-modal').style.display='none';
+  updateDrawerLoginState();
+  document.getElementById('user-drawer-overlay').classList.remove('open');
 }
 
 // 
@@ -3016,11 +3375,11 @@ async function doChangePassword(){
   const ok=document.getElementById('changepass-ok');
   const btn=document.getElementById('changepass-submit');
   err.style.display='none'; ok.style.display='none';
-  if(!p1||!p2){ err.textContent='Preencha os dois campos.'; err.style.display='block'; return; }
-  if(p1.length<6){ err.textContent='A senha deve ter pelo menos 6 caracteres.'; err.style.display='block'; return; }
-  if(p1!==p2){ err.textContent='As senhas não coincidem.'; err.style.display='block'; return; }
-  if(!_session?.access_token){ err.textContent='Sessão expirada. Faça login novamente.'; err.style.display='block'; return; }
-  btn.disabled=true; btn.textContent='SALVANDO...';
+  if(!p1||!p2){ err.textContent=t('fillBothFields'); err.style.display='block'; return; }
+  if(p1.length<6){ err.textContent=t('passMinChars'); err.style.display='block'; return; }
+  if(p1!==p2){ err.textContent=t('passwordsDontMatch'); err.style.display='block'; return; }
+  if(!_session?.access_token){ err.textContent=t('sessionExpired'); err.style.display='block'; return; }
+  btn.disabled=true; btn.textContent=t('saving');
   try{
     const r=await fetch(SUPA_URL+'/auth/v1/user',{
       method:'PUT',
@@ -3034,21 +3393,21 @@ async function doChangePassword(){
     const d=await r.json().catch(()=>({}));
     if(!r.ok){
       const msg=(d.msg||d.error_description||d.message||'').toLowerCase();
-      let friendly='Não foi possível trocar a senha. Tente novamente.';
-      if(msg.includes('weak') || msg.includes('password')) friendly='Senha fraca. Use pelo menos 6 caracteres, misturando letras e números.';
-      if(msg.includes('same') || msg.includes('should be different')) friendly='A nova senha deve ser diferente da atual.';
+      let friendly=t('couldNotChangePass');
+      if(msg.includes('weak') || msg.includes('password')) friendly=t('weakPassword2');
+      if(msg.includes('same') || msg.includes('should be different')) friendly=t('samePassword');
       throw new Error(friendly);
     }
-    ok.textContent='Senha alterada com sucesso!';
+    ok.textContent=t('passwordChanged');
     ok.style.display='block';
     document.getElementById('newpass-1').value='';
     document.getElementById('newpass-2').value='';
     setTimeout(closeChangePass, 1600);
   }catch(e){
-    err.textContent=e.message||'Erro ao trocar senha.';
+    err.textContent=e.message||t('couldNotChangePass');
     err.style.display='block';
   }
-  btn.disabled=false; btn.textContent='SALVAR NOVA SENHA';
+  btn.disabled=false; btn.textContent=t('saveNewPassword');
 }
 ['newpass-1','newpass-2'].forEach(id=>document.getElementById(id)?.addEventListener('keydown',e=>{if(e.key==='Enter')doChangePassword();}));
 
@@ -3143,7 +3502,7 @@ function updateSubGate(){
   if(_freeMode){
     closeSubCard();
     openFreeModeCard();
-    if(activeSection) activeSection.style.display='block';
+    if(activeSection) activeSection.style.display='flex';
     if(pendingSection) pendingSection.style.display='none';
     return;
   }
@@ -3176,6 +3535,7 @@ async function saveSettingsToDB(){
 }
 
 window.addEventListener('load',async()=>{
+  applyI18n();
   loadTimeWindowSetting();
   await Promise.all([loadCandles(currentTF),load24h()]);
   setInterval(load24h,30000);
@@ -3204,7 +3564,7 @@ async function doStartRefresh(){
   const msg = document.getElementById('ld-msg');
   if(startBtn){ startBtn.style.display='none'; }
   if(spinner){ spinner.style.display=''; }
-  if(msg){ msg.textContent='ATUALIZANDO...'; msg.style.display=''; }
+  if(msg){ msg.textContent=t('updating'); msg.style.display=''; }
 
   const tf = currentTF || '5m';
   try{

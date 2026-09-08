@@ -22,6 +22,10 @@ html,body{background:var(--bg);color:var(--text);font-family:'Exo 2',sans-serif;
 .back{margin-left:auto;color:var(--text2);text-decoration:none;font-size:11px;font-weight:700;
   border:1px solid var(--border);border-radius:6px;padding:6px 10px;letter-spacing:.5px;white-space:nowrap}
 .back:hover{color:var(--accent);border-color:var(--accent)}
+.lang-toggle{display:flex;border:1px solid var(--border);border-radius:7px;overflow:hidden;flex-shrink:0;margin-left:8px}
+.lang-opt{padding:6px 10px;background:transparent;border:none;color:var(--text2);font-family:'Exo 2',sans-serif;
+  font-size:10.5px;font-weight:800;letter-spacing:.5px;cursor:pointer;transition:all .15s}
+.lang-opt.active{background:var(--accent);color:#001018}
 h1{color:#fff;font-size:20px;margin-bottom:22px;letter-spacing:.5px}
 .faq-item{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:16px 18px;margin-bottom:12px}
 .faq-q{font-size:13.5px;font-weight:700;color:#fff;margin-bottom:6px;display:flex;align-items:flex-start;gap:8px}
@@ -43,61 +47,136 @@ footer a{color:var(--text2)}
   <div class="top">
     <div class="logo-ic">√</div>
     <div class="logo-nm">SCALPER<span>AI</span></div>
-    <a class="back" href="#" onclick="goBackOrClose(event)">← VOLTAR</a>
+    <div class="lang-toggle">
+      <button class="lang-opt" id="lang-opt-pt" onclick="setLang('pt')">PT</button>
+      <button class="lang-opt" id="lang-opt-en" onclick="setLang('en')">EN</button>
+    </div>
+    <a class="back" href="#" onclick="goBackOrClose(event)" data-i18n="back">← VOLTAR</a>
   </div>
 
-  <h1>Dúvidas Frequentes</h1>
+  <h1 data-i18n="title">Dúvidas Frequentes</h1>
 
   <div class="faq-item">
-    <div class="faq-q"><span>?</span>Como funciona o indicador?</div>
-    <div class="faq-a">O SCALPER AI é uma ferramenta de análise técnica automatizada. Ele sinaliza momentos de
+    <div class="faq-q"><span>?</span><span data-i18n="q1">Como funciona o indicador?</span></div>
+    <div class="faq-a" data-i18n="a1">O SCALPER AI é uma ferramenta de análise técnica automatizada. Ele sinaliza momentos de
     possível tendência de alta ou de baixa com base em indicadores de mercado. A decisão de entrar ou sair de
     uma operação é sempre sua — não fazemos recomendações de compra ou venda.</div>
   </div>
 
   <div class="faq-item">
-    <div class="faq-q"><span>?</span>O indicador erra?</div>
-    <div class="faq-a">Sim, como qualquer ferramenta de análise técnica. Nenhum indicador acerta 100% do
+    <div class="faq-q"><span>?</span><span data-i18n="q2">O indicador erra?</span></div>
+    <div class="faq-a" data-i18n="a2">Sim, como qualquer ferramenta de análise técnica. Nenhum indicador acerta 100% do
     tempo. Podem ocorrer sequências de sinais desfavoráveis. Use sempre gerenciamento de risco e nunca opere
     valores que não pode perder.</div>
   </div>
 
   <div class="faq-item">
-    <div class="faq-q"><span>?</span>Em qual timeframe o sinal é calculado?</div>
-    <div class="faq-a">O sinal é calculado com base no gráfico de 5 minutos (5M). O timeframe de 1 minuto (1M)
+    <div class="faq-q"><span>?</span><span data-i18n="q3">Em qual timeframe o sinal é calculado?</span></div>
+    <div class="faq-a" data-i18n="a3">O sinal é calculado com base no gráfico de 5 minutos (5M). O timeframe de 1 minuto (1M)
     é exibido apenas para visualização mais detalhada do movimento de preço.</div>
   </div>
 
   <div class="faq-item">
-    <div class="faq-q"><span>?</span>Como cancelo minha assinatura?</div>
-    <div class="faq-a">O cancelamento é feito diretamente na plataforma de pagamento usada na assinatura
+    <div class="faq-q"><span>?</span><span data-i18n="q4">Como cancelo minha assinatura?</span></div>
+    <div class="faq-a" data-i18n="a4">O cancelamento é feito diretamente na plataforma de pagamento usada na assinatura
     (você recebeu o link por e-mail na confirmação da compra). Não é necessário nos contatar para cancelar.</div>
   </div>
 
   <div class="faq-item">
-    <div class="faq-q"><span>?</span>Paguei mas meu acesso não foi liberado. O que fazer?</div>
-    <div class="faq-a">Confirme se criou sua conta usando exatamente o mesmo e-mail informado no pagamento.
+    <div class="faq-q"><span>?</span><span data-i18n="q5">Paguei mas meu acesso não foi liberado. O que fazer?</span></div>
+    <div class="faq-a" data-i18n="a5">Confirme se criou sua conta usando exatamente o mesmo e-mail informado no pagamento.
     Se o problema persistir, entre em contato pelos canais abaixo.</div>
   </div>
 
   <div class="faq-item">
-    <div class="faq-q"><span>?</span>O gráfico não carrega ou travou. O que fazer?</div>
-    <div class="faq-a">Atualize a página (F5 ou puxe para atualizar no celular). Isso resolve a grande maioria
+    <div class="faq-q"><span>?</span><span data-i18n="q6">O gráfico não carrega ou travou. O que fazer?</span></div>
+    <div class="faq-a" data-i18n="a6">Atualize a página (F5 ou puxe para atualizar no celular). Isso resolve a grande maioria
     dos casos de instabilidade de conexão.</div>
   </div>
 
-  <div class="contact-title">AINDA PRECISA DE AJUDA?</div>
+  <div class="contact-title" data-i18n="stillNeedHelp">AINDA PRECISA DE AJUDA?</div>
   <div class="contact-row">
     <a class="contact-btn wa" href="https://wa.me/5585996138679" target="_blank" rel="noopener">WHATSAPP</a>
-    <a class="contact-btn mail" href="mailto:takezlayer@gmail.com">E-MAIL</a>
+    <a class="contact-btn mail" href="mailto:takezlayer@gmail.com" data-i18n="emailBtn">E-MAIL</a>
   </div>
 
   <footer>
-    SCALPER AI Trader PRO &nbsp;•&nbsp; <a href="legal.html">Termos de Uso e Política de Privacidade</a>
+    SCALPER AI Trader PRO &nbsp;•&nbsp; <a href="legal.html" data-i18n="termsLink">Termos de Uso e Política de Privacidade</a>
   </footer>
 
 </div>
 <script>
+const I18N = {
+  pt: {
+    back: '← VOLTAR',
+    title: 'Dúvidas Frequentes',
+    q1: 'Como funciona o indicador?',
+    a1: 'O SCALPER AI é uma ferramenta de análise técnica automatizada. Ele sinaliza momentos de possível tendência de alta ou de baixa com base em indicadores de mercado. A decisão de entrar ou sair de uma operação é sempre sua — não fazemos recomendações de compra ou venda.',
+    q2: 'O indicador erra?',
+    a2: 'Sim, como qualquer ferramenta de análise técnica. Nenhum indicador acerta 100% do tempo. Podem ocorrer sequências de sinais desfavoráveis. Use sempre gerenciamento de risco e nunca opere valores que não pode perder.',
+    q3: 'Em qual timeframe o sinal é calculado?',
+    a3: 'O sinal é calculado com base no gráfico de 5 minutos (5M). O timeframe de 1 minuto (1M) é exibido apenas para visualização mais detalhada do movimento de preço.',
+    q4: 'Como cancelo minha assinatura?',
+    a4: 'O cancelamento é feito diretamente na plataforma de pagamento usada na assinatura (você recebeu o link por e-mail na confirmação da compra). Não é necessário nos contatar para cancelar.',
+    q5: 'Paguei mas meu acesso não foi liberado. O que fazer?',
+    a5: 'Confirme se criou sua conta usando exatamente o mesmo e-mail informado no pagamento. Se o problema persistir, entre em contato pelos canais abaixo.',
+    q6: 'O gráfico não carrega ou travou. O que fazer?',
+    a6: 'Atualize a página (F5 ou puxe para atualizar no celular). Isso resolve a grande maioria dos casos de instabilidade de conexão.',
+    stillNeedHelp: 'AINDA PRECISA DE AJUDA?',
+    emailBtn: 'E-MAIL',
+    termsLink: 'Termos de Uso e Política de Privacidade',
+  },
+  en: {
+    back: '← BACK',
+    title: 'Frequently Asked Questions',
+    q1: 'How does the indicator work?',
+    a1: 'SCALPER AI is an automated technical analysis tool. It signals possible moments of upward or downward trend based on market indicators. The decision to enter or exit a trade is always yours — we do not make buy or sell recommendations.',
+    q2: 'Does the indicator make mistakes?',
+    a2: 'Yes, like any technical analysis tool. No indicator is right 100% of the time. Sequences of unfavorable signals can occur. Always use risk management and never trade money you cannot afford to lose.',
+    q3: 'On which timeframe is the signal calculated?',
+    a3: 'The signal is calculated based on the 5-minute (5M) chart. The 1-minute (1M) timeframe is shown only for a more detailed view of price movement.',
+    q4: 'How do I cancel my subscription?',
+    a4: 'Cancellation is done directly on the payment platform used for the subscription (you received the link by email in your purchase confirmation). You do not need to contact us to cancel.',
+    q5: 'I paid but my access was not unlocked. What should I do?',
+    a5: 'Confirm you created your account using exactly the same email used at checkout. If the issue persists, contact us through the channels below.',
+    q6: "The chart won't load or is stuck. What should I do?",
+    a6: 'Refresh the page (F5 or pull-to-refresh on mobile). This resolves the vast majority of connection instability cases.',
+    stillNeedHelp: 'STILL NEED HELP?',
+    emailBtn: 'EMAIL',
+    termsLink: 'Terms of Use and Privacy Policy',
+  }
+};
+let _lang = 'pt';
+function t(key){ return (I18N[_lang] && I18N[_lang][key]) || I18N.pt[key] || key; }
+function applyI18n(){
+  document.documentElement.lang = _lang === 'en' ? 'en' : 'pt-BR';
+  document.querySelectorAll('[data-i18n]').forEach(el=>{
+    const key = el.dataset.i18n;
+    if(key in I18N.pt) el.innerHTML = t(key);
+  });
+  document.getElementById('lang-opt-pt')?.classList.toggle('active', _lang==='pt');
+  document.getElementById('lang-opt-en')?.classList.toggle('active', _lang==='en');
+}
+function setLang(lang){
+  if(lang!=='pt' && lang!=='en') return;
+  _lang = lang;
+  try{ localStorage.setItem('btcai-lang', lang); }catch(e){}
+  applyI18n();
+}
+(function(){
+  let lang='pt';
+  try{
+    const saved = localStorage.getItem('btcai-lang');
+    if(saved==='pt'||saved==='en'){ lang=saved; }
+    else{
+      const nav=(navigator.language||'pt').toLowerCase();
+      if(!nav.startsWith('pt')) lang='en';
+    }
+  }catch(e){}
+  _lang = lang;
+})();
+applyI18n();
+
 function goBackOrClose(e){
   e.preventDefault();
   // Se a página tem histórico próprio (foi navegada dentro da mesma aba), volta.
@@ -113,7 +192,7 @@ function goBackOrClose(e){
   // avisa a pessoa a fechar manualmente.
   setTimeout(()=>{
     if(!window.closed){
-      alert('Pode fechar esta aba para voltar ao aplicativo.');
+      alert(_lang==='en' ? 'You can close this tab to return to the app.' : 'Pode fechar esta aba para voltar ao aplicativo.');
     }
   }, 300);
 }
