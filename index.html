@@ -462,7 +462,7 @@ input[type=color]{display:none}
     <li><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> <span data-i18n="featTimeframes">Timeframes 1M e 5M</span></li>
     <li><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> <span data-i18n="featAnyDevice">Acesso via navegador, em qualquer dispositivo</span></li>
   </ul>
-  <div class="sub-price-row"><span class="sub-price">R$ 137,00</span><span class="sub-period" data-i18n="perMonth">/ mês</span></div>
+  <div class="sub-price-row"><span class="sub-price">$97</span><span class="sub-period" data-i18n="perMonth">/ mês</span></div>
   <div class="sub-note" data-i18n="cancelAnytime">Cancele quando quiser, sem multa ou burocracia.</div>
   <a class="sub-cta" id="sub-cta-btn" href="#" target="_blank" rel="noopener" onclick="goToCheckout(event)" data-i18n="subscribeCta">ASSINAR AGORA</a>
   <div class="sub-foot" data-i18n="securePayment">🔒 Pagamento seguro &nbsp;•&nbsp; Acesso imediato</div>
@@ -811,13 +811,13 @@ function setLang(lang){
   applyI18n();
 }
 function loadLang(){
-  let lang = 'pt';
+  let lang = 'en';
   try{
     const saved = localStorage.getItem('btcai-lang');
     if(saved==='pt' || saved==='en'){ lang = saved; }
     else {
-      const nav = (navigator.language||'pt').toLowerCase();
-      if(!nav.startsWith('pt')) lang = 'en';
+      const nav = (navigator.language||'en').toLowerCase();
+      if(nav.startsWith('pt')) lang = 'pt';
     }
   }catch(e){}
   _lang = lang;
@@ -3130,7 +3130,7 @@ async function onLogin(){
 // 
 // SUBSCRIPTION PAYWALL CARD
 // 
-const PERFECTPAY_CHECKOUT_URL = 'https://go.perfectpay.com.br/PPU38CQD7UC'; // <-- troque pelo link do seu checkout na PerfectPay
+const PERFECTPAY_CHECKOUT_URL = 'https://go.centerpag.com/PPU38CQG1AD'; // link do checkout USD ($97/mês) na PerfectPay
 
 function openSubCard(){
   document.getElementById('sub-overlay').classList.add('open');

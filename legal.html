@@ -311,13 +311,13 @@ function setLang(lang){
   applyLegalLang();
 }
 (function(){
-  let lang='pt';
+  let lang='en';
   try{
     const saved = localStorage.getItem('btcai-lang');
     if(saved==='pt'||saved==='en'){ lang=saved; }
     else{
-      const nav=(navigator.language||'pt').toLowerCase();
-      if(!nav.startsWith('pt')) lang='en';
+      const nav=(navigator.language||'en').toLowerCase();
+      if(nav.startsWith('pt')) lang='pt';
     }
   }catch(e){}
   _lang = lang;
