@@ -1921,8 +1921,9 @@ wrap.addEventListener('touchstart', e=>{
     tState.startView  = viewStart;
     tState.startCount = viewCount;
     if(priceAutoScale) calcPriceRange();
-    // Só desativa auto-scale ao arrastar a escala de preço/tempo — pan horizontal mantém
-    if(zone !== 'pan') priceAutoScale = false;
+    // Arrastar o gráfico (pan) desativa o auto-scale, igual ao comportamento no desktop —
+    // evita que a escala vertical volte a se ajustar sozinha durante um arraste horizontal.
+    priceAutoScale = false;
     tState.startMin = priceMin;
     tState.startMax = priceMax;
 
