@@ -2546,16 +2546,23 @@ function connectWS(tf){
     // Ignora velas do mercado fechado (XAU fim de semana)
     if(currentAsset==='XAU' && !isXAUMarketOpen()) return;
     livePrice=+k.close; updatePrice(livePrice);
-    // Se o preço saiu da janela visível e auto-scale está desligado, reativa
-    if(!priceAutoScale && livePrice > 0 && priceMax > priceMin){
-      if(livePrice < priceMin || livePrice > priceMax) priceAutoScale = true;
-    }
     const cnd={time:Math.floor(+k.start/1000),open:+k.open,high:+k.high,low:+k.low,close:+k.close,volume:+k.volume};
     const last=candles[candles.length-1];
     if(last&&last.time===cnd.time){candles[candles.length-1]=cnd;}
     else if(cnd.time>(last?.time||0)){
-      candles.push(cnd); if(candles.length>600)candles.shift();
-      viewStart=Math.max(0,candles.length-viewCount+6);
+      // Só acompanha a vela nova automaticamente se o usuário já estava "colado"
+      // na borda direita do gráfico. Se ele arrastou para ver velas mais antigas,
+      // uma vela nova não deve empurrar a visualização para frente sozinha.
+      const wasAtRightEdge = viewStart >= candles.length - viewCount - 2;
+      const overflowed = candles.length > 600;
+      candles.push(cnd); if(overflowed) candles.shift();
+      if(wasAtRightEdge){
+        viewStart=Math.max(0,candles.length-viewCount+6);
+      } else if(overflowed){
+        // O shift() já removeu uma vela do início, deslocando todos os índices em -1.
+        // Compensa para que a vela que o usuário estava vendo continue na mesma posição.
+        viewStart=Math.max(0, viewStart - 1);
+      }
     }
     if(tf==='5m') candles5m = candles;
     // Salvar k.end para o render loop calcular o countdown localmente
