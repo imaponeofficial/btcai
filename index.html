@@ -482,7 +482,7 @@ input[type=color]{display:none}
   </ul>
   <div class="sub-note" style="margin-bottom:0" data-i18n="freeAccessNote">Essa liberação é temporária e pode ser encerrada em breve. Aproveite enquanto está disponível.</div>
 </div></div>
-<div id="auth-modal"> <div class="auth-box"> <button class="modal-close" onclick="closeAuth()" style="position:absolute;top:10px;right:10px;z-index:1"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button> <div class="auth-hdr"> <div class="auth-logo">√</div> <div class="auth-title">SCALPER<span style="color:var(--accent)">AI</span> TRADER</div> <div class="auth-sub" data-i18n="loginToAccessAI">Faça login para acessar a IA</div> </div> <div class="auth-tabs"> <button class="auth-tab active" id="tab-login" onclick="switchAuthTab('login')" data-i18n="enter">ENTRAR</button> <button class="auth-tab" id="tab-register" onclick="switchAuthTab('register')" data-i18n="createAccount">CRIAR CONTA</button> </div> <div class="auth-form"> <div class="auth-field"> <div class="auth-label" data-i18n="email">E-MAIL</div> <input class="auth-input" id="auth-email" type="email" placeholder="seu@email.com" data-i18n-placeholder="emailPlaceholder" autocomplete="email"> </div> <div class="auth-field"> <div class="auth-label" data-i18n="password">SENHA</div> <input class="auth-input" id="auth-pass" type="password" placeholder="••••••••" autocomplete="current-password"> </div> <div class="auth-err" id="auth-err"></div> <button class="auth-btn" id="auth-submit" onclick="doAuth()">ENTRAR</button> <div id="auth-register-hint" style="display:none;margin-top:14px;padding:10px 12px;border-radius:8px;background:rgba(0,200,255,.08);border:1px solid rgba(0,200,255,.25);font-size:11px;line-height:1.5;color:var(--text2)" data-i18n="registerHint">⚠️ Use o <strong>mesmo e-mail</strong> que você usou no pagamento da assinatura. É assim que liberamos seu acesso automaticamente.</div> <a href="faq.html" target="_blank" rel="noopener" style="display:block;width:100%;margin-top:14px;background:transparent;border:none;color:var(--text2);font-size:11px;text-decoration:underline;cursor:pointer;padding:4px;text-align:center" data-i18n="faqLink">Dúvidas frequentes</a> <div style="text-align:center;font-size:9.5px;color:var(--text2);margin-top:4px;line-height:1.5"><span data-i18n="agreeTerms">Ao continuar, você concorda com os </span><a href="legal.html" target="_blank" rel="noopener" style="color:var(--text2)" data-i18n="termsLink">Termos de Uso e Política de Privacidade</a></div> </div> </div>
+<div id="auth-modal"> <div class="auth-box"> <button class="modal-close" onclick="closeAuth()" style="position:absolute;top:10px;right:10px;z-index:1"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button> <div class="auth-hdr"> <div class="auth-logo">√</div> <div class="auth-title">SCALPER<span style="color:var(--accent)">AI</span> TRADER</div> <div class="auth-sub" data-i18n="loginToAccessAI">Faça login para acessar a IA</div> </div> <div class="auth-tabs"> <button class="auth-tab active" id="tab-login" onclick="switchAuthTab('login')" data-i18n="enter">ENTRAR</button> <button class="auth-tab" id="tab-register" onclick="switchAuthTab('register')" data-i18n="createAccount">CRIAR CONTA</button> </div> <div class="auth-form"> <div class="auth-field"> <div class="auth-label" data-i18n="email">E-MAIL</div> <input class="auth-input" id="auth-email" type="email" placeholder="seu@email.com" data-i18n-placeholder="emailPlaceholder" autocomplete="email"> </div> <div class="auth-field"> <div class="auth-label" data-i18n="password">SENHA</div> <input class="auth-input" id="auth-pass" type="password" placeholder="••••••••" autocomplete="current-password"> </div> <div class="auth-field" id="auth-pass2-field" style="display:none"> <div class="auth-label" data-i18n="confirmPassword">CONFIRMAR SENHA</div> <input class="auth-input" id="auth-pass2" type="password" placeholder="••••••••" autocomplete="new-password"> </div> <div class="auth-err" id="auth-err"></div> <button class="auth-btn" id="auth-submit" onclick="doAuth()">ENTRAR</button> <div id="auth-register-hint" style="display:none;margin-top:14px;padding:10px 12px;border-radius:8px;background:rgba(0,200,255,.08);border:1px solid rgba(0,200,255,.25);font-size:11px;line-height:1.5;color:var(--text2)" data-i18n="registerHint">⚠️ Use o <strong>mesmo e-mail</strong> que você usou no pagamento da assinatura. É assim que liberamos seu acesso automaticamente.</div> <a href="faq.html" target="_blank" rel="noopener" style="display:block;width:100%;margin-top:14px;background:transparent;border:none;color:var(--text2);font-size:11px;text-decoration:underline;cursor:pointer;padding:4px;text-align:center" data-i18n="faqLink">Dúvidas frequentes</a> <div style="text-align:center;font-size:9.5px;color:var(--text2);margin-top:4px;line-height:1.5"><span data-i18n="agreeTerms">Ao continuar, você concorda com os </span><a href="legal.html" target="_blank" rel="noopener" style="color:var(--text2)" data-i18n="termsLink">Termos de Uso e Política de Privacidade</a></div> </div> </div>
 </div>
 <!--  USER DRAWER (lateral)  -->
 <div id="user-drawer-overlay" onclick="if(event.target===this)closeUserModal()">
@@ -602,6 +602,7 @@ const I18N = {
     createAccount: 'CRIAR CONTA',
     email: 'E-MAIL',
     password: 'SENHA',
+    confirmPassword: 'CONFIRMAR SENHA',
     emailPlaceholder: 'seu@email.com',
     registerHint: '⚠️ Use o <strong>mesmo e-mail</strong> que você usou no pagamento da assinatura. É assim que liberamos seu acesso automaticamente.',
     faqLink: 'Dúvidas frequentes',
@@ -626,6 +627,7 @@ const I18N = {
     fillEmailPassword: 'Preencha e-mail e senha.',
     invalidEmail: 'E-mail inválido.',
     passMinChars: 'A senha deve ter pelo menos 6 caracteres.',
+    passMismatch: 'As senhas não coincidem.',
     emailAlreadyRegistered: 'Este e-mail já possui cadastro. Faça login.',
     accountCreated: 'Conta criada! Faça login para continuar.',
     authGenericError: 'Erro ao autenticar. Tente novamente.',
@@ -655,6 +657,7 @@ const I18N = {
     patLHLL: 'LH+LL (Baixa)',
     patConsolidation: 'Consolidação',
     marketClosed: 'MERCADO FECHADO',
+    marketClosedSub: 'XAU/USD opera de seg a sex • Reabre domingo ~18h (horário de Brasília)',
     volumeName: 'Volume',
   },
   en: {
@@ -711,6 +714,7 @@ const I18N = {
     createAccount: 'SIGN UP',
     email: 'EMAIL',
     password: 'PASSWORD',
+    confirmPassword: 'CONFIRM PASSWORD',
     emailPlaceholder: 'you@email.com',
     registerHint: "⚠️ Use the <strong>same email</strong> you used for the subscription payment. That's how we automatically unlock your access.",
     faqLink: 'Frequently asked questions',
@@ -735,6 +739,7 @@ const I18N = {
     fillEmailPassword: 'Enter your email and password.',
     invalidEmail: 'Invalid email.',
     passMinChars: 'Password must be at least 6 characters.',
+    passMismatch: 'Passwords do not match.',
     emailAlreadyRegistered: 'This email is already registered. Please log in.',
     accountCreated: 'Account created! Log in to continue.',
     authGenericError: 'Authentication error. Please try again.',
@@ -764,6 +769,7 @@ const I18N = {
     patLHLL: 'LH+LL (Bearish)',
     patConsolidation: 'Consolidation',
     marketClosed: 'MARKET CLOSED',
+    marketClosedSub: 'XAU/USD trades Mon–Fri • Reopens Sunday ~18:00 (Brasília time)',
     volumeName: 'Volume',
   }
 };
@@ -1208,7 +1214,7 @@ function drawChart(){
     ctx.fillText('⏸  '+t('marketClosed'), (PAD.L+(w-PAD.R))/2, (h-PAD.B)/2 - 12);
     ctx.fillStyle='rgba(255,255,255,0.4)';
     ctx.font='11px Exo 2,sans-serif';
-    ctx.fillText('XAU/USD opera de seg a sex • Reabre domingo ~18h (horário de Brasília)', (PAD.L+(w-PAD.R))/2, (h-PAD.B)/2 + 12);
+    ctx.fillText(t('marketClosedSub'), (PAD.L+(w-PAD.R))/2, (h-PAD.B)/2 + 12);
     ctx.restore();
   }
 }
@@ -3257,6 +3263,8 @@ function switchAuthTab(mode){
   document.getElementById('auth-submit').textContent=mode==='login'?t('enter'):t('createAccount');
   document.getElementById('auth-err').style.display='none';
   document.getElementById('auth-register-hint').style.display=mode==='register'?'block':'none';
+  document.getElementById('auth-pass2-field').style.display=mode==='register'?'flex':'none';
+  if(mode==='login') document.getElementById('auth-pass2').value='';
 }
 // Reaplica os textos do modal de auth conforme o modo atual (chamado ao trocar idioma)
 function refreshAuthModeTexts(){
@@ -3311,12 +3319,14 @@ async function ensurePendingSubscription(email, uid){
 async function doAuth(){
   const email=document.getElementById('auth-email').value.trim();
   const pass=document.getElementById('auth-pass').value;
+  const pass2=document.getElementById('auth-pass2').value;
   const err=document.getElementById('auth-err');
   const btn=document.getElementById('auth-submit');
   err.style.display='none';
   if(!email||!pass){err.textContent=t('fillEmailPassword');err.style.display='block';return;}
   if(!/\S+@\S+\.\S+/.test(email)){err.textContent=t('invalidEmail');err.style.display='block';return;}
   if(pass.length<6){err.textContent=t('passMinChars');err.style.display='block';return;}
+  if(_authMode==='register' && pass!==pass2){err.textContent=t('passMismatch');err.style.display='block';return;}
   btn.disabled=true;btn.textContent=t('pleaseWait');
   try{
     const path=_authMode==='login'?'/token?grant_type=password':'/signup';
@@ -3379,7 +3389,7 @@ async function doAuth(){
   btn.disabled=false;btn.textContent=_authMode==='login'?t('enter'):t('createAccount');
 }
 // Enter key
-['auth-email','auth-pass'].forEach(id=>document.getElementById(id)?.addEventListener('keydown',e=>{if(e.key==='Enter')doAuth();}));
+['auth-email','auth-pass','auth-pass2'].forEach(id=>document.getElementById(id)?.addEventListener('keydown',e=>{if(e.key==='Enter')doAuth();}));
 
 async function doLogout(){
   // Libera o "slot" de dispositivo para não bloquear um próximo login em outro aparelho

@@ -71,6 +71,7 @@ tbody tr:hover{background:rgba(255,255,255,.02)}
 .badge{display:inline-flex;align-items:center;gap:5px;padding:4px 9px;border-radius:6px;
   font-size:10px;font-weight:800;letter-spacing:.5px}
 .badge-assinante{background:rgba(0,230,118,.12);color:var(--green);border:1px solid rgba(0,230,118,.3)}
+.badge-admin{background:rgba(255,214,0,.12);color:var(--yellow);border:1px solid rgba(255,214,0,.35)}
 .badge-teste{background:rgba(0,212,255,.1);color:var(--accent);border:1px solid rgba(0,212,255,.3)}
 .badge-free{background:rgba(255,255,255,.05);color:var(--text2);border:1px solid var(--border)}
 .trial-timer{font-family:'Share Tech Mono',monospace;font-size:12px;padding:3px 8px;border-radius:5px;
@@ -138,11 +139,13 @@ tbody tr:hover{background:rgba(255,255,255,.02)}
     <div class="stat"><div class="stat-num" id="stat-assinantes" style="color:var(--green)">—</div><div class="stat-label">ASSINANTES</div></div>
     <div class="stat"><div class="stat-num" id="stat-teste" style="color:var(--accent)">—</div><div class="stat-label">EM TESTE</div></div>
     <div class="stat"><div class="stat-num" id="stat-free" style="color:var(--text2)">—</div><div class="stat-label">FREE</div></div>
+    <div class="stat"><div class="stat-num" id="stat-admin" style="color:var(--yellow)">—</div><div class="stat-label">ADMIN</div></div>
   </div>
 
   <div class="toolbar">
     <input class="search" id="search-input" placeholder="Buscar por e-mail..." oninput="renderTable()">
     <button class="filter-btn active" data-f="todos" onclick="setFilter('todos')">TODOS</button>
+    <button class="filter-btn" data-f="admin" onclick="setFilter('admin')">ADMIN</button>
     <button class="filter-btn" data-f="assinante" onclick="setFilter('assinante')">ASSINANTES</button>
     <button class="filter-btn" data-f="teste" onclick="setFilter('teste')">TESTE</button>
     <button class="filter-btn" data-f="free" onclick="setFilter('free')">FREE</button>
@@ -277,7 +280,7 @@ async function loadClients(){
   tbody.innerHTML='<tr><td colspan="4" class="loading-row">Carregando...</td></tr>';
   mlist.innerHTML='<div class="loading-row">Carregando...</div>';
   try{
-    const settingsRows = await supa('/rest/v1/user_settings?select=user_id,email,trial_active,trial_started_at&order=email.asc',
+    const settingsRows = await supa('/rest/v1/user_settings?select=user_id,email,trial_active,trial_started_at,is_admin&order=email.asc',
         'GET',null,_session.access_token);
     const subRows = await supa('/rest/v1/subscriptions?select=email,status', 'GET',null,_session.access_token);
     const activeEmails = {};
@@ -287,8 +290,11 @@ async function loadClients(){
     _clients = (settingsRows||[]).map(function(r){
       const email=(r.email||'').toLowerCase();
       const isSubscriber = !!activeEmails[email];
+      const isAdmin = r.is_admin===true;
       let status='free', trialDaysLeft=null, trialExpired=false;
-      if(isSubscriber){
+      if(isAdmin){
+        status='admin';
+      } else if(isSubscriber){
         status='assinante';
       } else if(r.trial_active && r.trial_started_at){
         const startedAt=new Date(r.trial_started_at).getTime();
@@ -303,7 +309,8 @@ async function loadClients(){
       return {
         user_id:r.user_id, email:r.email||'(sem e-mail)', status:status,
         trial_active:!!r.trial_active, trial_started_at:r.trial_started_at,
-        trialDaysLeft:trialDaysLeft, trialExpired:trialExpired, isSubscriber:isSubscriber
+        trialDaysLeft:trialDaysLeft, trialExpired:trialExpired, isSubscriber:isSubscriber,
+        isAdmin:isAdmin
       };
     });
     updateStats();
@@ -319,6 +326,7 @@ function updateStats(){
   document.getElementById('stat-assinantes').textContent=_clients.filter(function(c){return c.status==='assinante';}).length;
   document.getElementById('stat-teste').textContent=_clients.filter(function(c){return c.status==='teste';}).length;
   document.getElementById('stat-free').textContent=_clients.filter(function(c){return c.status==='free'||c.trialExpired;}).length;
+  document.getElementById('stat-admin').textContent=_clients.filter(function(c){return c.status==='admin';}).length;
 }
 
 function setFilter(f){
@@ -341,6 +349,7 @@ function trialBadgeHtml(c){
 }
 
 function statusBadgeHtml(c){
+  if(c.status==='admin') return '<span class="badge badge-admin">ADM</span>';
   if(c.status==='assinante') return '<span class="badge badge-assinante">ASSINANTE</span>';
   if(c.status==='teste') return '<span class="badge badge-teste">TESTE</span>';
   return '<span class="badge badge-free">FREE</span>';
@@ -383,7 +392,7 @@ function renderTable(){
 }
 
 function toggleHtml(c){
-  const disabled = c.isSubscriber ? 'disabled title="Cliente assinante — não é necessário liberar teste"' : '';
+  const disabled = (c.isSubscriber || c.isAdmin) ? 'disabled title="'+(c.isAdmin?'Conta administradora — não aplicável':'Cliente assinante — não é necessário liberar teste')+'"' : '';
   const on = (c.trial_active && !c.trialExpired) ? 'on' : '';
   return '<button class="toggle '+on+'" '+disabled+' onclick="toggleTrial(\''+c.user_id+'\', this)"></button>';
 }
@@ -394,7 +403,7 @@ function escapeHtml(s){
 
 async function toggleTrial(userId, btnEl){
   const client=_clients.find(function(c){ return c.user_id===userId; });
-  if(!client || client.isSubscriber) return;
+  if(!client || client.isSubscriber || client.isAdmin) return;
   const willActivate = !(client.trial_active && !client.trialExpired);
 
   btnEl.classList.add('loading');
