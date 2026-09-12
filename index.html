@@ -3454,6 +3454,8 @@ async function doChangePassword(){
 ['newpass-1','newpass-2'].forEach(id=>document.getElementById(id)?.addEventListener('keydown',e=>{if(e.key==='Enter')doChangePassword();}));
 
 //  SETTINGS DB (cores e indicadores) 
+const TRIAL_DAYS = 30;
+
 async function loadApiKeyFromDB(){
   if(!_session) return;
   try{
@@ -3472,13 +3474,31 @@ async function loadApiKeyFromDB(){
     }catch(e){ console.warn('check subscriptions',e); }
 
     const rows=await supa(
-      '/rest/v1/user_settings?user_id=eq.'+_session.user.id+'&select=candle_colors,inds_config,email,subscription_status',
+      '/rest/v1/user_settings?user_id=eq.'+_session.user.id+'&select=candle_colors,inds_config,email,subscription_status,trial_active,trial_started_at',
       'GET',null,_session.access_token);
 
     // Upsert sempre com o status correto e o e-mail
     await supaUpsertSettings({ email:_session.user.email, subscription_status:realStatus });
 
-    _subActive = realStatus==='active';
+    const row0 = rows && rows.length ? rows[0] : null;
+
+    // ── TESTE GRÁTIS (30 dias) ──
+    // Só é considerado ativo se: (1) não é assinante pago, (2) trial_active=true,
+    // e (3) ainda não passou o prazo de 30 dias desde que o admin liberou.
+    let trialActive = false;
+    if(realStatus!=='active' && row0 && row0.trial_active && row0.trial_started_at){
+      const startedAt = new Date(row0.trial_started_at).getTime();
+      const elapsedDays = (Date.now() - startedAt) / (1000*60*60*24);
+      if(elapsedDays < TRIAL_DAYS){
+        trialActive = true;
+      } else {
+        // Expirou: desliga o toggle sozinho no banco, para o admin ver
+        // corretamente no painel que esse teste já não está mais ativo.
+        try{ await supaUpsertSettings({ trial_active:false }); }catch(_){}
+      }
+    }
+
+    _subActive = realStatus==='active' || trialActive;
     updateSubGate();
 
     if(!rows||!rows.length){
