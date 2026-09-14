@@ -21,7 +21,8 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);fon
   padding:7px 10px;background:var(--bg2);border-bottom:1px solid var(--border);gap:6px}
 .logo{display:flex;align-items:center;gap:6px;flex-shrink:0}
 .logo-ic{width:28px;height:28px;border-radius:6px;background:linear-gradient(135deg,#00d4ff,#0055aa);
-  display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:900;color:#fff}
+  display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:900;color:#fff;overflow:hidden}
+.logo-ic img{width:100%;height:100%;object-fit:cover;display:block}
 .logo-nm{font-size:14px;font-weight:900;letter-spacing:2px;color:#fff}
 .logo-nm span{color:var(--accent)}
 .price-blk{text-align:center;flex:1;display:flex;align-items:center;justify-content:center;gap:6px}
@@ -227,6 +228,7 @@ input[type=color]{display:none}
 @keyframes slideUp{from{transform:translateY(20px);opacity:0}to{transform:translateY(0);opacity:1}}
 .auth-hdr{padding:20px 20px 0;text-align:center}
 .auth-logo{font-size:32px;margin-bottom:8px}
+.auth-logo img{width:48px;height:48px;border-radius:12px;object-fit:cover;display:block;margin:0 auto}
 .auth-title{font-size:16px;font-weight:900;letter-spacing:3px;color:#fff;margin-bottom:4px}
 .auth-sub{font-size:10px;color:var(--text2);letter-spacing:1px}
 .auth-tabs{display:flex;margin:16px 20px 0;border:1px solid var(--border);border-radius:8px;overflow:hidden}
@@ -316,7 +318,9 @@ input[type=color]{display:none}
   display:flex;align-items:center;justify-content:center;
   font-size:22px;font-weight:900;color:#fff;
   box-shadow:0 0 30px rgba(0,212,255,.35);
+  overflow:hidden;
 }
+.ld-logo-ic img{width:100%;height:100%;object-fit:cover;display:block}
 .ld-logo-nm{font-size:22px;font-weight:900;letter-spacing:3px;color:#fff}
 .ld-logo-nm span{color:var(--accent)}
 .ld-spinner{
@@ -417,14 +421,14 @@ input[type=color]{display:none}
 <!-- LOADING SCREEN -->
 <div id="loading-screen">
   <div class="ld-logo">
-    <div class="ld-logo-ic">√</div>
+    <div class="ld-logo-ic"><img src="logo.png" alt="Logo"></div>
     <div class="ld-logo-nm">SCALPER<span>AI</span></div>
   </div>
   <div class="ld-spinner" id="ld-spinner"></div>
   <div class="ld-msg" id="ld-msg" data-i18n="loading">CARREGANDO...</div>
   <button id="ld-start-btn" onclick="doStartRefresh()" data-i18n="start">▶ INICIAR</button>
 </div>
-<div id="app"> <div id="hdr"> <div class="logo"> <div class="logo-ic">√</div> <div class="logo-nm">SCALPER<span>AI</span></div> </div> <div class="price-blk"> <div class="price-v" id="live-price">--,---</div> <div class="price-c up" id="price-chg">+0.00%</div> </div> <button id="menu-btn" onclick="openUserModal()" data-i18n-title="menuTitle" title="Menu"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round"><line x1="4" y1="7" x2="20" y2="7"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="17" x2="20" y2="17"/></svg></button>
+<div id="app"> <div id="hdr"> <div class="logo"> <div class="logo-ic"><img src="logo.png" alt="Logo"></div> <div class="logo-nm">SCALPER<span>AI</span></div> </div> <div class="price-blk"> <div class="price-v" id="live-price">--,---</div> <div class="price-c up" id="price-chg">+0.00%</div> </div> <button id="menu-btn" onclick="openUserModal()" data-i18n-title="menuTitle" title="Menu"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round"><line x1="4" y1="7" x2="20" y2="7"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="17" x2="20" y2="17"/></svg></button>
 </div> <div id="tfbar"> <div class="tf-btns"> <button class="tf-btn active" data-tf="1m">1M</button> <button class="tf-btn" data-tf="5m">5M</button> </div> <div class="asset-sep"></div> <div class="asset-btns"> <button class="asset-btn active" data-asset="BTC" onclick="switchAsset('BTC')">BTC</button> <button class="asset-btn" data-asset="XAU" onclick="switchAsset('XAU')">XAU</button> </div>
 </div> <div id="toast-wrap"></div> <div id="chart-wrap" class="cursor-cross"> <canvas id="chart-canvas"></canvas> <div id="ch-tooltip"></div> <div id="ch-price-lbl"></div> <div id="ch-time-lbl"></div> </div> <div id="strength"> <div class="str-labels"> <span class="str-sell" data-i18n="sell"> VENDA</span> <span style="font-size:8px;color:var(--text2);letter-spacing:2px" data-i18n="strength">FORÇA</span> <span class="str-buy" data-i18n="buy">COMPRA </span> </div> <div class="str-track"> <div class="sf-sell" id="sf-sell" style="width:0%"></div> <div class="sf-buy" id="sf-buy" style="width:0%"></div> <div class="str-mid"></div> <div class="str-needle" id="s-needle" style="left:calc(50% - 1.5px)"></div> </div> <div class="str-pcts"> <span class="pct-s" id="p-sell">50%</span> <span class="pct-b" id="p-buy">50%</span> </div>
 </div>
@@ -483,7 +487,7 @@ input[type=color]{display:none}
   </ul>
   <div class="sub-note" style="margin-bottom:0" data-i18n="freeAccessNote">Essa liberação é temporária e pode ser encerrada em breve. Aproveite enquanto está disponível.</div>
 </div></div>
-<div id="auth-modal"> <div class="auth-box"> <button class="modal-close" onclick="closeAuth()" style="position:absolute;top:10px;right:10px;z-index:1"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button> <div class="auth-hdr"> <div class="auth-logo">√</div> <div class="auth-title">SCALPER<span style="color:var(--accent)">AI</span> TRADER</div> <div class="auth-sub" data-i18n="loginToAccessAI">Faça login para acessar a IA</div> </div> <div class="auth-tabs"> <button class="auth-tab active" id="tab-login" onclick="switchAuthTab('login')" data-i18n="enter">ENTRAR</button> <button class="auth-tab" id="tab-register" onclick="switchAuthTab('register')" data-i18n="createAccount">CRIAR CONTA</button> </div> <div class="auth-form"> <div class="auth-field"> <div class="auth-label" data-i18n="email">E-MAIL</div> <input class="auth-input" id="auth-email" type="email" placeholder="seu@email.com" data-i18n-placeholder="emailPlaceholder" autocomplete="email"> </div> <div class="auth-field"> <div class="auth-label" data-i18n="password">SENHA</div> <input class="auth-input" id="auth-pass" type="password" placeholder="••••••••" autocomplete="current-password"> </div> <div class="auth-field" id="auth-pass2-field" style="display:none"> <div class="auth-label" data-i18n="confirmPassword">CONFIRMAR SENHA</div> <input class="auth-input" id="auth-pass2" type="password" placeholder="••••••••" autocomplete="new-password"> </div> <div class="auth-err" id="auth-err"></div> <button class="auth-btn" id="auth-submit" onclick="doAuth()">ENTRAR</button> <div id="auth-register-hint" style="display:none;margin-top:14px;padding:10px 12px;border-radius:8px;background:rgba(0,200,255,.08);border:1px solid rgba(0,200,255,.25);font-size:11px;line-height:1.5;color:var(--text2)" data-i18n="registerHint">⚠️ Use o <strong>mesmo e-mail</strong> que você usou no pagamento da assinatura. É assim que liberamos seu acesso automaticamente.</div> <a href="faq.html" target="_blank" rel="noopener" style="display:block;width:100%;margin-top:14px;background:transparent;border:none;color:var(--text2);font-size:11px;text-decoration:underline;cursor:pointer;padding:4px;text-align:center" data-i18n="faqLink">Dúvidas frequentes</a> <div style="text-align:center;font-size:9.5px;color:var(--text2);margin-top:4px;line-height:1.5"><span data-i18n="agreeTerms">Ao continuar, você concorda com os </span><a href="legal.html" target="_blank" rel="noopener" style="color:var(--text2)" data-i18n="termsLink">Termos de Uso e Política de Privacidade</a></div> </div> </div>
+<div id="auth-modal"> <div class="auth-box"> <button class="modal-close" onclick="closeAuth()" style="position:absolute;top:10px;right:10px;z-index:1"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button> <div class="auth-hdr"> <div class="auth-logo"><img src="logo.png" alt="Logo"></div> <div class="auth-title">SCALPER<span style="color:var(--accent)">AI</span> TRADER</div> <div class="auth-sub" data-i18n="loginToAccessAI">Faça login para acessar a IA</div> </div> <div class="auth-tabs"> <button class="auth-tab active" id="tab-login" onclick="switchAuthTab('login')" data-i18n="enter">ENTRAR</button> <button class="auth-tab" id="tab-register" onclick="switchAuthTab('register')" data-i18n="createAccount">CRIAR CONTA</button> </div> <div class="auth-form"> <div class="auth-field"> <div class="auth-label" data-i18n="email">E-MAIL</div> <input class="auth-input" id="auth-email" type="email" placeholder="seu@email.com" data-i18n-placeholder="emailPlaceholder" autocomplete="email"> </div> <div class="auth-field"> <div class="auth-label" data-i18n="password">SENHA</div> <input class="auth-input" id="auth-pass" type="password" placeholder="••••••••" autocomplete="current-password"> </div> <div class="auth-field" id="auth-pass2-field" style="display:none"> <div class="auth-label" data-i18n="confirmPassword">CONFIRMAR SENHA</div> <input class="auth-input" id="auth-pass2" type="password" placeholder="••••••••" autocomplete="new-password"> </div> <div class="auth-err" id="auth-err"></div> <button class="auth-btn" id="auth-submit" onclick="doAuth()">ENTRAR</button> <div id="auth-register-hint" style="display:none;margin-top:14px;padding:10px 12px;border-radius:8px;background:rgba(0,200,255,.08);border:1px solid rgba(0,200,255,.25);font-size:11px;line-height:1.5;color:var(--text2)" data-i18n="registerHint">⚠️ Use o <strong>mesmo e-mail</strong> que você usou no pagamento da assinatura. É assim que liberamos seu acesso automaticamente.</div> <a href="faq.html" target="_blank" rel="noopener" style="display:block;width:100%;margin-top:14px;background:transparent;border:none;color:var(--text2);font-size:11px;text-decoration:underline;cursor:pointer;padding:4px;text-align:center" data-i18n="faqLink">Dúvidas frequentes</a> <div style="text-align:center;font-size:9.5px;color:var(--text2);margin-top:4px;line-height:1.5"><span data-i18n="agreeTerms">Ao continuar, você concorda com os </span><a href="legal.html" target="_blank" rel="noopener" style="color:var(--text2)" data-i18n="termsLink">Termos de Uso e Política de Privacidade</a></div> </div> </div>
 </div>
 <!--  USER DRAWER (lateral)  -->
 <div id="user-drawer-overlay" onclick="if(event.target===this)closeUserModal()">
