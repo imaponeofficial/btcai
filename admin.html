@@ -19,8 +19,9 @@ html,body{background:var(--bg);color:var(--text);font-family:'Exo 2',sans-serif;
 #gate{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
 .gate-box{width:min(360px,100%);background:var(--bg2);border:1px solid var(--border);
   border-radius:14px;padding:28px 24px}
-.gate-logo{width:44px;height:44px;border-radius:10px;background:linear-gradient(135deg,#00d4ff,#0055aa);
-  display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:900;color:#fff;margin:0 auto 14px}
+.gate-logo{width:44px;height:44px;border-radius:10px;
+  display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:900;color:#fff;margin:0 auto 14px;overflow:hidden}
+.gate-logo img{width:100%;height:100%;object-fit:cover;display:block}
 .gate-title{text-align:center;font-size:14px;font-weight:900;letter-spacing:2px;color:#fff;margin-bottom:2px}
 .gate-sub{text-align:center;font-size:11px;color:var(--text2);margin-bottom:20px}
 .field{margin-bottom:12px}
@@ -37,8 +38,9 @@ html,body{background:var(--bg);color:var(--text);font-family:'Exo 2',sans-serif;
 /* DASHBOARD */
 #dash{display:none;max-width:1100px;margin:0 auto;padding:20px 16px 60px}
 .dash-top{display:flex;align-items:center;gap:10px;margin-bottom:20px;flex-wrap:wrap}
-.dash-logo{width:32px;height:32px;border-radius:8px;background:linear-gradient(135deg,#00d4ff,#0055aa);
-  display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:900;color:#fff}
+.dash-logo{width:32px;height:32px;border-radius:8px;
+  display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:900;color:#fff;overflow:hidden}
+.dash-logo img{width:100%;height:100%;object-fit:cover;display:block}
 .dash-title{font-size:14px;font-weight:900;letter-spacing:1.5px;color:#fff}
 .dash-title span{color:var(--accent)}
 .dash-logout{margin-left:auto;background:transparent;border:1px solid var(--border);color:var(--text2);
@@ -112,7 +114,7 @@ tbody tr:hover{background:rgba(255,255,255,.02)}
 
 <div id="gate">
   <div class="gate-box">
-    <div class="gate-logo">√</div>
+    <div class="gate-logo"><img src="logo.png" alt="Logo"></div>
     <div class="gate-title">PAINEL ADMIN</div>
     <div class="gate-sub">SCALPER AI Trader PRO</div>
     <div class="field">
@@ -130,7 +132,7 @@ tbody tr:hover{background:rgba(255,255,255,.02)}
 
 <div id="dash">
   <div class="dash-top">
-    <div class="dash-logo">√</div>
+    <div class="dash-logo"><img src="logo.png" alt="Logo"></div>
     <div class="dash-title">SCALPER<span>AI</span> · ADMIN</div>
     <button class="dash-logout" onclick="doAdminLogout()">SAIR</button>
   </div>
