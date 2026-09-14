@@ -20,7 +20,7 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);fon
 #hdr{flex-shrink:0;display:flex;align-items:center;justify-content:space-between;
   padding:7px 10px;background:var(--bg2);border-bottom:1px solid var(--border);gap:6px}
 .logo{display:flex;align-items:center;gap:6px;flex-shrink:0}
-.logo-ic{width:28px;height:28px;border-radius:6px;background:linear-gradient(135deg,#00d4ff,#0055aa);
+.logo-ic{width:28px;height:28px;border-radius:6px;
   display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:900;color:#fff;overflow:hidden}
 .logo-ic img{width:100%;height:100%;object-fit:cover;display:block}
 .logo-nm{font-size:14px;font-weight:900;letter-spacing:2px;color:#fff}
@@ -314,10 +314,8 @@ input[type=color]{display:none}
 }
 .ld-logo-ic{
   width:44px;height:44px;border-radius:12px;
-  background:linear-gradient(135deg,#00d4ff,#0055aa);
   display:flex;align-items:center;justify-content:center;
   font-size:22px;font-weight:900;color:#fff;
-  box-shadow:0 0 30px rgba(0,212,255,.35);
   overflow:hidden;
 }
 .ld-logo-ic img{width:100%;height:100%;object-fit:cover;display:block}
@@ -2358,11 +2356,17 @@ async function loadCandles(tf){
   if(!TF[tf]) return;
   try{
     let fetched=await fetchKlines(TF[tf].i,1000);
-    // XAU 1m: se o mercado abriu há pouco tempo, o fetchKlines retorna poucas velas
+    // XAU: se o mercado abriu há pouco tempo, o fetchKlines retorna poucas velas
     // (só as velas desde a abertura). Buscamos também as velas antes do fechamento
-    // para preencher o histórico visível no gráfico.
-    if(currentAsset==='XAU' && tf==='1m' && isXAUMarketOpen()){
-      const OPEN_THRESHOLD_SECS = 4*60*60; // se o mercado abriu há menos de 4h
+    // para preencher o histórico visível no gráfico. Vale para qualquer timeframe,
+    // não só 1m — senão o histórico só aparece quando o usuário está no 1m.
+    if(currentAsset==='XAU' && isXAUMarketOpen()){
+      const requestedAsset = currentAsset; // trava o ativo desta chamada; se o usuário trocar de ativo
+                                            // enquanto a busca abaixo está em andamento, descartamos o resultado
+      // Threshold proporcional ao timeframe: precisamos de histórico suficiente
+      // pra preencher a tela (~80 velas visíveis), então usamos a duração do TF.
+      const tfSecs = TF[tf].s;
+      const OPEN_THRESHOLD_SECS = Math.max(4*60*60, tfSecs*80); // pelo menos 4h, ou 80 velas do TF atual
       const now = Math.floor(Date.now()/1000);
       const oldest = fetched.length ? fetched[0].time : now;
       if((now - oldest) < OPEN_THRESHOLD_SECS){
@@ -2370,32 +2374,28 @@ async function loadCandles(tf){
         try{
           const closeMs = xauLastCloseTime();
           // closeMs pode ser null se o mercado está aberto há muito tempo — verificar
-          if(!closeMs){
+          let effectiveCloseMs = closeMs;
+          if(!effectiveCloseMs){
             // Mercado abre domingo ~22h UTC. Calcular o último fechamento (sexta ~22h UTC)
             const d = new Date();
             const dayOfWeek = d.getUTCDay(); // 0=dom,1=seg,...
             // Quantos dias até a última sexta
             let daysBack = dayOfWeek === 0 ? 2 : dayOfWeek === 1 ? 3 : dayOfWeek - 5;
             if(daysBack < 0) daysBack += 7;
-            const prevFriCloseMs = Date.UTC(
+            effectiveCloseMs = Date.UTC(
               d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate() - daysBack,
               21, 59, 59, 0
             );
-            const older = await fetchKlines('1m', 500, prevFriCloseMs);
-            if(older.length){
-              const combined = [...older.filter(c=>!fetched.find(f2=>f2.time===c.time)), ...fetched];
-              combined.sort((a,b)=>a.time-b.time);
-              fetched = combined;
-            }
-          } else {
-            const older = await fetchKlines('1m', 500, closeMs);
-            if(older.length){
-              const combined = [...older.filter(c=>!fetched.find(f2=>f2.time===c.time)), ...fetched];
-              combined.sort((a,b)=>a.time-b.time);
-              fetched = combined;
-            }
           }
-        }catch(e){ console.warn('XAU 1m pre-close history error',e); }
+          const older = await fetchKlines(TF[tf].i, 500, effectiveCloseMs);
+          // Se o usuário trocou de ativo enquanto aguardávamos essa resposta, descarta —
+          // evita misturar velas do XAU com o array que agora pertence a outro ativo (ex: BTC).
+          if(older.length && currentAsset===requestedAsset){
+            const combined = [...older.filter(c=>!fetched.find(f2=>f2.time===c.time)), ...fetched];
+            combined.sort((a,b)=>a.time-b.time);
+            fetched = combined;
+          }
+        }catch(e){ console.warn('XAU pre-close history error',e); }
       }
     }
     candles=fetched;
@@ -2534,6 +2534,7 @@ function connectWS(tf){
   if(ws){ _wsIntentionalClose = true; try{ws.close(1000);}catch(_){}ws=null;}
   const bvInt=bybitInterval(TF[tf].i);
   const sym=bybitSymbol(currentAsset);
+  const boundAsset=currentAsset; // trava o ativo que este socket representa, para ignorar mensagens tardias de trocas seguintes
   ws=new WebSocket('wss://stream.bybit.com/v5/public/linear');
   ws.onopen=()=>{
     ws.send(JSON.stringify({op:'subscribe',args:[`kline.${bvInt}.${sym}`]}));
@@ -2551,6 +2552,11 @@ function connectWS(tf){
   };
   ws.onerror=()=>{ if(navigator.onLine && !_wsIntentionalClose) onConnectionLost(); };
   ws.onmessage=evt=>{
+    // Ignora mensagens de um socket "órfão": se o usuário já trocou de ativo desde que
+    // este socket foi aberto, uma mensagem em trânsito do ativo antigo (ex: BTC) não pode
+    // ser aplicada ao array de candles do ativo novo (ex: XAU) — isso causava um candle
+    // com preço de outra escala entrando no meio do histórico e "explodindo" o eixo Y.
+    if(boundAsset!==currentAsset) return;
     const msg=JSON.parse(evt.data);
     if(!msg.data||!msg.topic?.startsWith('kline.')) return;
     const k=msg.data[0];
@@ -2592,10 +2598,12 @@ function connectWS(tf){
   if(tf !== '5m'){
     if(ws5m){try{ws5m.close(1000);}catch(_){}ws5m=null;}
     const sym5m=bybitSymbol(currentAsset);
+    const boundAsset5m=currentAsset; // mesma proteção contra mensagens tardias de ativo trocado
     ws5m = new WebSocket('wss://stream.bybit.com/v5/public/linear');
     ws5m.onopen=()=>{ ws5m.send(JSON.stringify({op:'subscribe',args:[`kline.5.${sym5m}`]})); };
     ws5m.onclose=e=>{if(e.code!==1000)setTimeout(()=>{ if(currentTF!=='5m') connectWS5m(); },3000);};
     ws5m.onmessage=evt=>{
+      if(boundAsset5m!==currentAsset) return;
       const msg=JSON.parse(evt.data);
       if(!msg.data||!msg.topic?.startsWith('kline.')) return;
       const k=msg.data[0];
@@ -2849,7 +2857,10 @@ async function switchAsset(asset){
   document.getElementById('price-chg').textContent='+0.00%';
   tfCache={};
   candles5m=[];
+  candles=[]; // limpa o histórico do ativo anterior; evita que o WS antigo (ver "boundAsset" em connectWS)
+              // escreva em cima de dados do ativo novo caso alguma mensagem já estivesse em trânsito
   open24=0;
+  priceAutoScale=true; // evita usar a escala de preço do ativo anterior (ex: BTC) ao desenhar o novo (ex: XAU)
   await Promise.all([loadCandles(currentTF), load24h()]);
   connectWS(currentTF);
 }
