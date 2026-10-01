@@ -1707,6 +1707,17 @@ function drawFollowLineOnChart(start, end, cw){
   // Pré-calcular ADX para todo o src de uma vez (Wilder RMA precisa de histórico completo)
   const adxArray = calcADXArray(src, _adxLength, 14);
 
+  // Em TF menor que 5m (ex.: 1m), o sinal M5 só é conhecido no FECHAMENTO do candle M5.
+  // Então o label vai no 1º candle do TF atual APÓS o fechamento (nunca para trás, sem repaint).
+  const chartSec = (TF[currentTF] && TF[currentTF].s) || 300;
+  const M5_SEC = 300;
+  const nowSec = Math.floor(Date.now() / 1000);
+  function firstChartIdxAtOrAfter(ts){ // lower bound em candles (ordenados por time)
+    let lo = 0, hi = candles.length;
+    while(lo < hi){ const mid = (lo + hi) >> 1; if(candles[mid].time < ts) lo = mid + 1; else hi = mid; }
+    return lo;
+  }
+
   for(let i = 1; i < flAll.length; i++){
     const fl  = flAll[i];
     const flP = flAll[i - 1];
@@ -1721,11 +1732,22 @@ function drawFollowLineOnChart(start, end, cw){
     // adx_ok = adx_val >= adx_min — bloqueia labels em mercado lateral
     if(adxArray[i] < _adxMin) continue; // mercado lateral — não plota o label
 
-    const x = timeToX(src[i].time);
-    if(x === null) continue;
+    let x, c;
+    if(chartSec < M5_SEC){
+      const closeTime = src[i].time + M5_SEC;        // instante em que o candle M5 fecha
+      if(closeTime > nowSec) continue;               // M5 ainda em formação → sem sinal
+      const ci = firstChartIdxAtOrAfter(closeTime);  // 1º candle do gráfico após o fechamento
+      if(ci >= candles.length || candles[ci].time >= closeTime + M5_SEC) continue;
+      if(ci < start || ci >= end) continue;
+      x = idxToX(ci - start);
+      c = candles[ci];
+    } else {
+      x = timeToX(src[i].time);
+      if(x === null) continue;
+      c = src[i];
+    }
 
     const ty = priceToY(fl.trendLine);
-    const c  = src[i];
     const atr = fl.atr || 0;
     const pad = Math.max(atr * 1.5, (priceMax - priceMin) * 0.015);
     const padPx = Math.max(Math.abs(priceToY(c.low) - priceToY(c.low + pad)), 14);
